@@ -1,19 +1,195 @@
-import type { DrawerBayId } from "../../../lib/cb-workshop-stage-store";
+export type StorageStatus = "보관중" | "작업중" | "재주문 가능" | "검수 필요";
 
-export const drawerBays: {
-  id: DrawerBayId;
+export type StorageItem = {
+  id: string;
   title: string;
-  shelf: string;
-  capacity: string;
-  notes: string[];
-}[] = [
-  { id: "bayA1", title: "상단 좌측", shelf: "A-1", capacity: "완성 키링 16ea", notes: ["투명 박스", "즉시 출고 후보"] },
-  { id: "bayA2", title: "상단 중앙", shelf: "A-2", capacity: "시험 샘플 10ea", notes: ["테스트 샘플", "색상 비교"] },
-  { id: "bayA3", title: "상단 우측", shelf: "A-3", capacity: "링 파츠 24ea", notes: ["금속 파트", "보조 결합"] },
-  { id: "bayB1", title: "중단 좌측", shelf: "B-1", capacity: "전면 플레이트 20ea", notes: ["주요 전면", "인쇄 대기"] },
-  { id: "bayB2", title: "중앙 포커스", shelf: "B-2", capacity: "후면 플레이트 18ea", notes: ["메인 보관 존", "클릭 강조"] },
-  { id: "bayB3", title: "중단 우측", shelf: "B-3", capacity: "연결 파트 26ea", notes: ["보조 고정부", "스냅 후보"] },
-  { id: "bayC1", title: "하단 좌측", shelf: "C-1", capacity: "포장 대기 14ea", notes: ["출고 전", "묶음 보관"] },
-  { id: "bayC2", title: "하단 중앙", shelf: "C-2", capacity: "불량/검수 8ea", notes: ["재검수", "QC 보관"] },
-  { id: "bayC3", title: "하단 우측", shelf: "C-3", capacity: "예비 소재 12ea", notes: ["비상 재고", "교체 후보"] },
+  customer: string;
+  productLine: string;
+  lastWorkedAt: string;
+  status: StorageStatus;
+  quantity: number;
+  drawerCode: string;
+  materialSummary: string;
+  note: string;
+  recommendedRoute: string;
+  tags: string[];
+};
+
+export type StorageShelf = {
+  id: string;
+  title: string;
+  subtitle: string;
+  tone: string;
+  drawers: StorageItem[];
+};
+
+export const storageStatusOptions: StorageStatus[] = [
+  "보관중",
+  "작업중",
+  "재주문 가능",
+  "검수 필요",
+];
+
+export const storageTagOptions = [
+  "키링",
+  "POP",
+  "대량주문",
+  "재주문",
+  "아크릴",
+  "UV",
+  "행사",
+  "보강필요",
+] as const;
+
+export const storageShelves: StorageShelf[] = [
+  {
+    id: "shelf-alpha",
+    title: "전면 보관 월 A",
+    subtitle: "최근 주문과 재호출 빈도가 높은 작업물",
+    tone: "from-cyan-400/20 via-slate-900 to-slate-950",
+    drawers: [
+      {
+        id: "drawer-a1",
+        title: "아이돌 캐릭터 키링",
+        customer: "팬굿즈 반복주문 고객",
+        productLine: "키링",
+        lastWorkedAt: "2026-03-18",
+        status: "재주문 가능",
+        quantity: 24,
+        drawerCode: "A-01",
+        materialSummary: "3T 투명 아크릴 / 양면 인쇄 / 링 실버",
+        note: "최근 반복 발주가 있었고 바로 키링 작업대로 넘기기 좋음",
+        recommendedRoute: "/workbench/keyring",
+        tags: ["키링", "재주문", "UV", "아크릴"],
+      },
+      {
+        id: "drawer-a2",
+        title: "향수 POP 소형 테스트분",
+        customer: "브랜드 쇼케이스",
+        productLine: "POP",
+        lastWorkedAt: "2026-03-17",
+        status: "검수 필요",
+        quantity: 6,
+        drawerCode: "A-02",
+        materialSummary: "5T 투명 아크릴 / 바닥 결합형 / 화이트 테스트",
+        note: "하중 보강 검토 메모가 남아 있어 POP 스튜디오에서 후속 점검 필요",
+        recommendedRoute: "/pop-studio",
+        tags: ["POP", "행사", "보강필요", "아크릴"],
+      },
+      {
+        id: "drawer-a3",
+        title: "행사 배포용 네임택",
+        customer: "오프라인 이벤트 팀",
+        productLine: "대량주문",
+        lastWorkedAt: "2026-03-12",
+        status: "보관중",
+        quantity: 120,
+        drawerCode: "A-03",
+        materialSummary: "2.7T 투명 / 단면 인쇄 / 벌크 포장",
+        note: "대량 재발주 가능성이 있어 B2B 흐름으로 연결 추천",
+        recommendedRoute: "/b2b",
+        tags: ["대량주문", "행사", "UV"],
+      },
+    ],
+  },
+  {
+    id: "shelf-beta",
+    title: "서랍 월 B",
+    subtitle: "옵션/부자재 조합이 자주 바뀌는 작업물",
+    tone: "from-violet-400/20 via-slate-900 to-slate-950",
+    drawers: [
+      {
+        id: "drawer-b1",
+        title: "자석 스탠드 옵션 세트",
+        customer: "테이블 굿즈 고객",
+        productLine: "옵션 조합",
+        lastWorkedAt: "2026-03-19",
+        status: "작업중",
+        quantity: 14,
+        drawerCode: "B-01",
+        materialSummary: "자석 파츠 / 받침 옵션 / 조립 전 검토",
+        note: "옵션 스토어와 파츠룸을 오가며 조합 확인이 필요한 상태",
+        recommendedRoute: "/option-store",
+        tags: ["재주문", "행사"],
+      },
+      {
+        id: "drawer-b2",
+        title: "고리/체인 혼합 파츠 세트",
+        customer: "굿즈 제작 일반 고객",
+        productLine: "부자재",
+        lastWorkedAt: "2026-03-15",
+        status: "보관중",
+        quantity: 48,
+        drawerCode: "B-02",
+        materialSummary: "실버 링 / 컬러 체인 / 연결 부속",
+        note: "부자재 룸 기준으로 재고와 조합 확인이 필요한 묶음",
+        recommendedRoute: "/parts-room",
+        tags: ["키링", "재주문"],
+      },
+      {
+        id: "drawer-b3",
+        title: "형광 아크릴 샘플",
+        customer: "신규 실험용",
+        productLine: "원자재 샘플",
+        lastWorkedAt: "2026-03-10",
+        status: "검수 필요",
+        quantity: 9,
+        drawerCode: "B-03",
+        materialSummary: "형광 아크릴 원장 샘플 / 컷 테스트 전",
+        note: "원자재 룸에서 샘플 상태와 절단 테스트 이력 확인 추천",
+        recommendedRoute: "/materials-room",
+        tags: ["아크릴", "UV"],
+      },
+    ],
+  },
+  {
+    id: "shelf-gamma",
+    title: "후면 보관 월 C",
+    subtitle: "판매/운영과 연결되는 장기 보관 작업물",
+    tone: "from-emerald-400/20 via-slate-900 to-slate-950",
+    drawers: [
+      {
+        id: "drawer-c1",
+        title: "크루 판매 시범 상품",
+        customer: "셀러 온보딩용",
+        productLine: "판매자 샘플",
+        lastWorkedAt: "2026-03-16",
+        status: "재주문 가능",
+        quantity: 18,
+        drawerCode: "C-01",
+        materialSummary: "기본 키링 세트 / 샘플 패키지 포함",
+        note: "판매자 센터에서 후속 판매 흐름 검토 추천",
+        recommendedRoute: "/seller",
+        tags: ["키링", "재주문"],
+      },
+      {
+        id: "drawer-c2",
+        title: "행사 종료 재고 묶음",
+        customer: "재고 정리 대상",
+        productLine: "클리어런스",
+        lastWorkedAt: "2026-03-08",
+        status: "보관중",
+        quantity: 37,
+        drawerCode: "C-02",
+        materialSummary: "잔여 키링 / POP 샘플 혼합",
+        note: "정규 제작 흐름과 분리해 재고 정리 페이지에서 소진 검토",
+        recommendedRoute: "/clearance",
+        tags: ["재주문", "행사"],
+      },
+      {
+        id: "drawer-c3",
+        title: "신규 라우트 안내 샘플",
+        customer: "내부 운영용",
+        productLine: "허브 안내",
+        lastWorkedAt: "2026-03-20",
+        status: "작업중",
+        quantity: 5,
+        drawerCode: "C-03",
+        materialSummary: "허브 소개 카드 / 테스트 데이터",
+        note: "홈 허브와 각 공간 연결 검증용 테스트 세트",
+        recommendedRoute: "/",
+        tags: ["행사"],
+      },
+    ],
+  },
 ];
