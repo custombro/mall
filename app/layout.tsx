@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import CBRouteDock from "@/app/_components/CBRouteDock";
 
 export const metadata: Metadata = {
   title: "CustomBro Workshop Mall",
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body><>
+          <CBRouteDock />
+          {children}
+        </></body>
     </html>
   );
 }
