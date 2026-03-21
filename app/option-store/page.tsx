@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Option Store
+                옵션 보관소
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 옵션은 본체와 분리된 별도 스토어에서 판단해야 구조가 깔끔해집니다.
@@ -53,7 +53,7 @@ export default function Page() {
         <section className="grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Option Rules
+              옵션 규칙
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
               {optionRules.map((item) => (
@@ -69,7 +69,7 @@ export default function Page() {
 
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Option Flows
+              옵션 흐름
             </p>
             <div className="mt-4 space-y-3">
               {optionFlows.map((item) => (

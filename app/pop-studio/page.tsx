@@ -20,7 +20,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                POP Studio
+                POP 제작실
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 POP 제작은 붙일 수 있는 위치를 눈으로 이해하는 작업면이어야 합니다.
