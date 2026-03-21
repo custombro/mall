@@ -1,99 +1,163 @@
 import Link from "next/link";
+import RouteDock from "../_components/RouteDock";
 
-const routeChecks = [
-  { href: "/", label: "홈", goal: "mode-select 진입이 바로 보이는지 확인" },
-  { href: "/mode-select", label: "모드 선택", goal: "workbench / pop / storage 분기 동선 확인" },
-  { href: "/workbench/keyring", label: "키링 작업대", goal: "작업 흐름과 상태 설명이 실제 작업대처럼 읽히는지 확인" },
-  { href: "/pop-studio", label: "POP 스튜디오", goal: "POP 전용 설계 흐름이 키링과 분리되어 보이는지 확인" },
-  { href: "/storage", label: "보관함", goal: "제작 완료 / 재주문 회수 흐름이 보이는지 확인" },
-  { href: "/materials-room", label: "원자재실", goal: "아크릴 판재 랙 중심 톤이 살아있는지 확인" },
-  { href: "/parts-room", label: "부자재실", goal: "금속 하드웨어 존 / 서랍 흐름이 읽히는지 확인" },
-  { href: "/option-store", label: "옵션 스토어", goal: "고리 / 포장 / 추가 옵션 분기 구조 확인" },
-  { href: "/seller", label: "셀러 센터", goal: "크루 판매 / 판매자 흐름 분리 확인" },
-  { href: "/b2b", label: "B2B 허브", goal: "대량 주문 / 기관 주문 흐름 확인" },
-  { href: "/clearance", label: "클리어런스", goal: "남는 재고 / 땡처리 흐름 확인" },
+const qaBuckets = [
+  {
+    title: "허브",
+    intent: "진입 결정",
+    items: [
+      { href: "/", label: "홈", pass: "첫 화면에서 길게 읽지 않아도 어디로 갈지 바로 보인다." },
+      { href: "/mode-select", label: "모드 선택", pass: "제작 · 운영 · 판매 분기가 역할별로 즉시 읽힌다." },
+    ],
+  },
+  {
+    title: "제작",
+    intent: "작업 판단",
+    items: [
+      { href: "/workbench/keyring", label: "키링 작업대", pass: "본체 결정 → 파츠 조합 → 생산 판단 순서가 읽힌다." },
+      { href: "/pop-studio", label: "POP 스튜디오", pass: "구조물 계열 POP 흐름이 키링과 섞이지 않는다." },
+    ],
+  },
+  {
+    title: "운영",
+    intent: "생산 지원",
+    items: [
+      { href: "/materials-room", label: "원자재실", pass: "금속 랙 · 판재 두께 · usable stock 의미가 먼저 보인다." },
+      { href: "/parts-room", label: "부자재실", pass: "링 · 체인 · 포장 파츠가 기능별로 분리되어 읽힌다." },
+      { href: "/storage", label: "보관함", pass: "제작 완료 → 보관 → 재호출/리오더 흐름이 보인다." },
+    ],
+  },
+  {
+    title: "판매",
+    intent: "운영 분리",
+    items: [
+      { href: "/option-store", label: "옵션 스토어", pass: "결합 · 포장 · 후가공 옵션이 본체와 분리되어 보인다." },
+      { href: "/seller", label: "셀러 센터", pass: "판매 운영 · 정산 · 리오더 흐름이 쇼핑 화면과 다르게 읽힌다." },
+      { href: "/b2b", label: "B2B 허브", pass: "수량 · 납기 · 자재 판정이 일반 소비자 주문보다 먼저 보인다." },
+      { href: "/clearance", label: "클리어런스", pass: "정규 제작 흐름이 아니라 소진 허브라는 점이 분명하다." },
+    ],
+  },
 ];
 
-const sceneTargets = [
-  "원자재실은 밝은 소품방이 아니라 금속 랙에 아크릴 원장을 적재한 산업형 존으로 읽혀야 한다.",
-  "부자재실은 D링, O링, 체인, OPP가 텍스트와 구조로 명확하게 분리되어야 한다.",
-  "보관함은 제작 완료 → 보관 → 재주문 회수 흐름이 서랍/박스 단위로 보여야 한다.",
-  "작업대는 레고/테트리스처럼 파츠를 조합하는 제작 허브로 해석되어야 한다.",
-  "이미지 안 AI 글자에 의존하지 말고 실제 DOM 텍스트로 의미를 보강해야 한다.",
+const failSignals = [
+  "모든 페이지가 비슷한 소개 페이지처럼 보인다.",
+  "다음 행동이 아니라 사진/분위기 설명만 보인다.",
+  "운영 공간인데도 생산 조건보다 감성 문구가 먼저 읽힌다.",
+  "판매 운영 화면끼리 서로 역할 차이가 잘 안 느껴진다.",
+  "홈과 모드 선택이 같은 일을 하는 것처럼 보인다.",
 ];
 
-const qaRules = [
-  "첫 화면에서 어디로 들어가야 하는지 3초 안에 이해되어야 한다.",
-  "각 페이지의 제목, 서브카피, 카드 설명이 실제 공정 용어와 맞아야 한다.",
-  "이미 구현된 split IA를 다시 만들지 말고 설명력과 동선만 보강한다.",
-  "화면 톤이 어긋나면 다음 패치에서 이미지보다 텍스트 구조를 먼저 고친다.",
-  "build / tsc 통과 전 완료 선언 금지.",
+const quickJudges = [
+  { title: "3초 판정", body: "첫 화면에서 어디로 들어가야 하는지 3초 안에 말할 수 있어야 한다." },
+  { title: "역할 분리", body: "허브, 제작, 운영, 판매가 문구 단계에서 서로 다른 역할로 읽혀야 한다." },
+  { title: "행동 유도", body: "각 화면은 다음 액션을 명확히 설명해야 한다." },
 ];
 
 export default function QAPage() {
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/45">
-          CustomBro / Split IA QA
-        </p>
-
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-          화면 QA 체크리스트
-        </h1>
-
-        <p className="mt-4 max-w-4xl text-sm leading-7 text-white/70">
-          최신 baseline 다음 우선순위인 화면 QA와 공방 컨셉 디테일 보강을 바로 진행할 수 있도록 만든
-          내부 점검용 라우트입니다. 각 페이지를 빠르게 열어보고 실제 공방 동선, 원자재/부자재 분리,
-          보관함 회수 흐름, 작업대 허브성, 판매/대량주문 분기 구조를 확인합니다.
-        </p>
-
-        <section className="mt-10 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <h2 className="text-lg font-semibold">라우트 점검 순서</h2>
-            <div className="mt-4 grid gap-3">
-              {routeChecks.map((route, index) => (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 transition hover:border-white/25 hover:bg-black/30"
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
+        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
+          <div className="space-y-5">
+            <div className="inline-flex flex-wrap items-center gap-2">
+              {["QA", "Split IA", "Routing", "Pass/Fail", "Review"].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold">
-                      {String(index + 1).padStart(2, "0")}. {route.label}
-                    </span>
-                    <span className="text-xs text-white/45">{route.href}</span>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-white/70">{route.goal}</p>
-                </Link>
+                  {tag}
+                </span>
               ))}
             </div>
-          </div>
 
-          <div className="grid gap-4">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-lg font-semibold">공방 컨셉 타겟</h2>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-white/75">
-                {sceneTargets.map((item) => (
-                  <li key={item} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-lg font-semibold">QA 규칙</h2>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-white/75">
-                {qaRules.map((item) => (
-                  <li key={item} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                    {item}
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
+                Split IA QA
+              </p>
+              <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
+                지금 단계의 QA는 예쁜 화면 확인이 아니라 역할 분리 확인입니다.
+              </h1>
+              <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
+                홈, 모드 선택, 작업대, 운영 공간, 판매 공간이 서로 다른 일을 하는 화면처럼 읽히는지 빠르게 점검합니다.
+              </p>
             </div>
           </div>
         </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {quickJudges.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
+            >
+              <p className="text-sm font-semibold text-white">{item.title}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{item.body}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-4 xl:grid-cols-[1.15fr,0.85fr]">
+          <div className="grid gap-4">
+            {qaBuckets.map((bucket) => (
+              <article
+                key={bucket.title}
+                className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6"
+              >
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+                      {bucket.intent}
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">{bucket.title}</h2>
+                  </div>
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
+                    {bucket.items.length} checks
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {bucket.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-4 transition hover:border-white/20 hover:bg-slate-950/90"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{item.label}</p>
+                        <span className="rounded-full bg-cyan-300/10 px-2.5 py-1 text-[11px] font-medium text-cyan-100">
+                          이동
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">{item.pass}</p>
+                      <p className="mt-2 text-xs text-slate-500">{item.href}</p>
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <aside className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+              Quick Fail Signals
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-white">
+              아래 항목이 보이면 바로 문구 구조를 다시 손봐야 합니다.
+            </h2>
+            <ul className="mt-5 space-y-3">
+              {failSignals.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-3 text-sm leading-6 text-slate-200"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </aside>
+        </section>
+
+        <RouteDock />
       </div>
     </main>
   );
