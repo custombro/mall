@@ -8,7 +8,7 @@ const sellerTiers = [
 ];
 
 const sellerRules = [
-  "판매자 센터는 고객용 쇼핑 화면이 아니라 운영/정산/리오더를 함께 보는 허브여야 합니다.",
+  "셀러 센터는 고객용 쇼핑 화면이 아니라 운영/정산/리오더를 함께 보는 허브여야 합니다.",
   "판매 상태, 제작 상태, 정산 상태를 섞지 말고 단계별로 분리해서 보여줘야 합니다.",
   "크루 판매 구조는 누가 판매했고 누가 제작으로 넘겼는지 흐름이 보여야 합니다.",
 ];
@@ -38,10 +38,10 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Seller Center
+                Seller / Seller Center
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                판매자 센터는 크루 판매 구조를 단계별로 운영하는 허브여야 합니다.
+                셀러 센터는 크루 판매 구조를 단계별로 운영하는 허브여야 합니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
                 입문, 운영, 확장 셀러 흐름과 판매 상품 상태를 한곳에서 판단하도록 유지합니다.
