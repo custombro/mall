@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Materials Room
+                원자재 보관실
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 원자재 존은 금속 랙 기반으로 다음 작업을 판정하는 공간이어야 합니다.

@@ -9,8 +9,8 @@ const modeRules = [
 
 const modeFlows = [
   { title: "제작 모드", body: "작업대 중심으로 프리셋, 파츠 조합, 수량 판단을 진행하는 흐름" },
-  { title: "운영 모드", body: "원자재실, 부자재실, 보관함처럼 생산 지원 판단을 진행하는 흐름" },
-  { title: "판매 모드", body: "옵션, 셀러, 대량주문, 클리어런스처럼 판매 운영으로 이어지는 흐름" },
+  { title: "운영 모드", body: "원자재 보관실, 부자재 보관실, 서랍처럼 생산 지원 판단을 진행하는 흐름" },
+  { title: "판매 모드", body: "옵션, 크루 판매, 대량주문, 재고정리처럼 판매 운영으로 이어지는 흐름" },
 ];
 
 const modeChecks = [
@@ -26,7 +26,7 @@ export default function Page() {
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
           <div className="space-y-5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              {["Mode", "Hub", "Workbench", "Storage", "Sales"].map((tag) => (
+              {["제작 선택", "허브", "작업대", "서랍", "판매"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Mode Select
+                제작 선택
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 모드 선택은 지금 해야 할 공간으로 바로 보내는 분기 허브여야 합니다.

@@ -26,7 +26,7 @@ export default function Page() {
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
           <div className="space-y-5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              {["Storage", "Drawer", "Recall", "Reorder", "Archive"].map((tag) => (
+              {["서랍", "보관", "재호출", "재주문", "보관기록"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Storage
+                서랍
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 서랍은 다시 꺼내 다음 흐름으로 보내는 재호출 허브여야 합니다.
@@ -53,7 +53,7 @@ export default function Page() {
         <section className="grid gap-4 lg:grid-cols-[1fr,1fr]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Storage Stages
+              서랍 단계
             </p>
             <div className="mt-4 space-y-3">
               {storageStages.map((item) => (

@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Parts Room
+                부자재 보관실
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 부자재 존은 조합을 판정하는 벽면 허브여야 합니다.

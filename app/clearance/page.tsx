@@ -8,7 +8,7 @@ const clearanceBuckets = [
 ];
 
 const clearanceRules = [
-  "클리어런스는 정규 제작 카탈로그가 아니라 남은 것을 빠르게 소진하는 운영 허브여야 합니다.",
+  "재고정리는 정규 제작 카탈로그가 아니라 남은 것을 빠르게 소진하는 운영 허브여야 합니다.",
   "새 제품 판매와 남은 재고 소진을 같은 톤으로 섞지 말아야 합니다.",
   "묶음 판매, 빠른 판매, 할인 사유를 텍스트 구조로 먼저 설명해야 합니다.",
 ];
@@ -16,7 +16,7 @@ const clearanceRules = [
 const clearanceChecks = [
   { label: "상태 확인", description: "스크래치, 샘플 표시, 테스트 흔적 등 판매 가능 상태를 먼저 판정" },
   { label: "묶음 구성", description: "단품보다 세트로 빨리 소진할 수 있는지 우선 확인" },
-  { label: "정규 분리", description: "정규 제작 흐름으로 되돌릴지 클리어런스로 보낼지 구분" },
+  { label: "정규/재고정리 분기", description: "정규 제작 흐름으로 되돌릴지 클리어런스로 보낼지 구분" },
 ];
 
 export default function Page() {
@@ -26,7 +26,7 @@ export default function Page() {
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
           <div className="space-y-5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              {["Clearance", "Leftover", "Fast Sale", "Bundle", "Routing"].map((tag) => (
+              {["재고정리", "잔여재고", "빠른판매", "묶음", "분기"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
@@ -38,7 +38,7 @@ export default function Page() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Clearance Hub
+                재고정리 허브
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 재고 정리 탭은 정규 제작 흐름과 분리된 소진 허브여야 합니다.
@@ -53,7 +53,7 @@ export default function Page() {
         <section className="grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Clearance Buckets
+              재고정리 묶음
             </p>
             <div className="mt-4 space-y-3">
               {clearanceBuckets.map((item) => (
@@ -70,7 +70,7 @@ export default function Page() {
 
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Clearance Rules
+              재고정리 규칙
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
               {clearanceRules.map((item) => (

@@ -22,7 +22,7 @@ const routeGroups: RouteGroup[] = [
     items: [
       { href: "/", label: "홈", description: "소개보다 진입 결정을 먼저 보여주는 허브" },
       { href: "/mode-select", label: "모드 선택", description: "제작 · 운영 · 판매 분기 허브" },
-      { href: "/qa", label: "QA", description: "전체 split IA 점검 체크리스트" },
+      { href: "/qa", label: "제작 가이드", description: "전체 split IA 점검 체크리스트" },
     ],
   },
   {
@@ -47,9 +47,9 @@ const routeGroups: RouteGroup[] = [
     caption: "운영과 소진",
     items: [
       { href: "/option-store", label: "옵션 스토어", description: "결합 · 포장 · 후가공 옵션 분리" },
-      { href: "/seller", label: "셀러 센터", description: "크루 판매 · 운영 · 정산 허브" },
-      { href: "/b2b", label: "B2B 허브", description: "대량 주문 · 기관 · 반복 거래 운영" },
-      { href: "/clearance", label: "클리어런스", description: "남은 재고 · 샘플 · 보류 자재 소진" },
+      { href: "/seller", label: "크루 판매", description: "크루 판매 · 운영 · 정산 허브" },
+      { href: "/b2b", label: "대량주문", description: "대량 주문 · 기관 · 반복 거래 운영" },
+      { href: "/clearance", label: "재고정리", description: "남은 재고 · 샘플 · 보류 자재 소진" },
     ],
   },
 ];

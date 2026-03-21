@@ -24,7 +24,7 @@ const qaBuckets = [
     items: [
       { href: "/materials-room", label: "원자재실", pass: "금속 랙 · 판재 두께 · usable stock 의미가 먼저 보인다." },
       { href: "/parts-room", label: "부자재실", pass: "링 · 체인 · 포장 파츠가 기능별로 분리되어 읽힌다." },
-      { href: "/storage", label: "보관함", pass: "제작 완료 → 보관 → 재호출/리오더 흐름이 보인다." },
+      { href: "/storage", label: "서랍", pass: "제작 완료 → 보관 → 재호출/리오더 흐름이 보인다." },
     ],
   },
   {
@@ -32,9 +32,9 @@ const qaBuckets = [
     intent: "운영 분리",
     items: [
       { href: "/option-store", label: "옵션 스토어", pass: "결합 · 포장 · 후가공 옵션이 본체와 분리되어 보인다." },
-      { href: "/seller", label: "셀러 센터", pass: "판매 운영 · 정산 · 리오더 흐름이 쇼핑 화면과 다르게 읽힌다." },
-      { href: "/b2b", label: "B2B 허브", pass: "수량 · 납기 · 자재 판정이 일반 소비자 주문보다 먼저 보인다." },
-      { href: "/clearance", label: "클리어런스", pass: "정규 제작 흐름이 아니라 소진 허브라는 점이 분명하다." },
+      { href: "/seller", label: "크루 판매", pass: "판매 운영 · 정산 · 리오더 흐름이 쇼핑 화면과 다르게 읽힌다." },
+      { href: "/b2b", label: "대량주문", pass: "수량 · 납기 · 자재 판정이 일반 소비자 주문보다 먼저 보인다." },
+      { href: "/clearance", label: "재고정리", pass: "정규 제작 흐름이 아니라 소진 허브라는 점이 분명하다." },
     ],
   },
 ];
@@ -60,7 +60,7 @@ export default function QAPage() {
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
           <div className="space-y-5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              {["QA", "Split IA", "Routing", "Pass/Fail", "Review"].map((tag) => (
+              {["제작 가이드", "분기 IA", "라우팅", "통과/보완", "검수"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
@@ -72,10 +72,10 @@ export default function QAPage() {
 
             <div className="space-y-3">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Split IA QA
+                제작 가이드
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                지금 단계의 QA는 예쁜 화면 확인이 아니라 역할 분리 확인입니다.
+                지금 단계의 제작 가이드는 예쁜 화면 확인이 아니라 역할 분리 확인입니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
                 홈, 모드 선택, 작업대, 운영 공간, 판매 공간이 서로 다른 일을 하는 화면처럼 읽히는지 빠르게 점검합니다.
