@@ -1,6 +1,24 @@
 import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
+const modeRules = [
+  "모드 선택은 홈의 연장선이 아니라 실제 행동을 결정하는 분기 허브여야 합니다.",
+  "제작, 운영, 판매를 같은 말투로 섞지 말고 지금 해야 할 일 기준으로 분리해야 합니다.",
+  "각 모드는 다음 화면에서 무엇을 하게 되는지 한 줄로 이해되어야 합니다.",
+];
+
+const modeFlows = [
+  { title: "제작 모드", body: "작업대 중심으로 프리셋, 파츠 조합, 수량 판단을 진행하는 흐름" },
+  { title: "운영 모드", body: "원자재실, 부자재실, 보관함처럼 생산 지원 판단을 진행하는 흐름" },
+  { title: "판매 모드", body: "옵션, 셀러, 대량주문, 클리어런스처럼 판매 운영으로 이어지는 흐름" },
+];
+
+const modeChecks = [
+  { label: "진입 명확성", description: "사용자가 어떤 공간에 들어가는지 바로 알아야 합니다." },
+  { label: "동선 분리", description: "작업과 운영과 판매가 문구 단계에서 먼저 분리되어야 합니다." },
+  { label: "다음 행동", description: "각 카드가 다음 페이지의 역할을 미리 설명해야 합니다." },
+];
+
 export default function Page() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -30,6 +48,53 @@ export default function Page() {
               </p>
             </div>
           </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[0.95fr,1.05fr]">
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+              Mode Rules
+            </p>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
+              {modeRules.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+              Mode Flows
+            </p>
+            <div className="mt-4 space-y-3">
+              {modeFlows.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
+                >
+                  <p className="text-sm font-semibold text-white">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {modeChecks.map((item) => (
+            <article
+              key={item.label}
+              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
+            >
+              <p className="text-sm font-semibold text-white">{item.label}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+            </article>
+          ))}
         </section>
 
         <ModeSelectClient />
