@@ -139,7 +139,7 @@ export default function QAPage() {
 
           <aside className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Quick Fail Signals
+              즉시 보완 신호
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-white">
               아래 항목이 보이면 바로 문구 구조를 다시 손봐야 합니다.

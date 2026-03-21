@@ -75,7 +75,7 @@ export default function RouteDock() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-            Split IA Route Dock
+            분기 IA 안내
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-white">
             전체 동선은 허브 → 제작 → 운영 → 판매 역할이 분리되어 보여야 합니다.

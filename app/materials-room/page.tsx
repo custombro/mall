@@ -26,7 +26,7 @@ export default function Page() {
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
           <div className="space-y-5">
             <div className="inline-flex flex-wrap items-center gap-2">
-              {["Materials", "Metal Rack", "Acrylic", "Routing", "Stock"].map((tag) => (
+              {["원자재", "금속 랙", "아크릴", "분기", "재고"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
@@ -53,7 +53,7 @@ export default function Page() {
         <section className="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Rack Rules
+              랙 규칙
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-white">
               이 공간은 보기 좋은 진열장이 아니라 판재 판정 허브입니다.
@@ -72,7 +72,7 @@ export default function Page() {
 
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Routing Flow
+              분기 흐름
             </p>
             <div className="mt-4 space-y-3">
               {routingFlow.map((item) => (

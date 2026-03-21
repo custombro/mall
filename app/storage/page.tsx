@@ -70,7 +70,7 @@ export default function Page() {
 
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Drawer Rules
+              서랍 규칙
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
               {drawerRules.map((item) => (

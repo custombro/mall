@@ -53,7 +53,7 @@ export default function Page() {
         <section className="grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Bench Rules
+              작업대 규칙
             </p>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
               {benchRules.map((item) => (
