@@ -39,7 +39,7 @@ const routeGroups: RouteGroup[] = [
     items: [
       { href: "/materials-room", label: "원자재실", description: "판재 두께 · 재질 · usable stock 판정" },
       { href: "/parts-room", label: "부자재실", description: "링 · 체인 · 포장 부품 조합 판정" },
-      { href: "/storage", label: "보관함", description: "제작 완료 → 재호출 → 리오더 회수 허브" },
+      { href: "/storage", label: "서랍", description: "제작 완료 → 재호출 → 리오더 회수 허브" },
     ],
   },
   {

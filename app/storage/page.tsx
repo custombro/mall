@@ -8,7 +8,7 @@ const storageStages = [
 ];
 
 const drawerRules = [
-  "보관함은 창고가 아니라 다시 꺼내 쓸 수 있는 recall 허브여야 합니다.",
+  "서랍은 창고가 아니라 다시 꺼내 쓸 수 있는 recall 허브여야 합니다.",
   "서랍·박스·라벨은 재주문 속도를 올리는 방향으로 읽혀야 합니다.",
   "보관 이유가 아니라 다음 액션을 기준으로 정렬해야 합니다.",
 ];
@@ -41,7 +41,7 @@ export default function Page() {
                 Storage
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                보관함은 다시 꺼내 다음 흐름으로 보내는 재호출 허브여야 합니다.
+                서랍은 다시 꺼내 다음 흐름으로 보내는 재호출 허브여야 합니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
                 완료 작업 보관이 아니라 리오더, 검수 후 재사용, 재호출 중심 흐름으로 연결합니다.
