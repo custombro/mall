@@ -13,7 +13,7 @@ const ORDERED_SLOTS: KeyringUploadSlot[] = [
   "worksheet",
 ];
 
-export function KeyringSharedDraftPreviewCard() {
+export function KeyringSharedDraft미리보기Card() {
   const { keyringProductionDraft } = useKeyringProductionDraft();
 
   const readySlots = useMemo(() => {

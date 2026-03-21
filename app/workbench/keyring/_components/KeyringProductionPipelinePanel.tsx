@@ -71,7 +71,7 @@ export function KeyringProductionPipelinePanel() {
   }
 
   const selectedUpload = draft.uploads[selectedSlot];
-  const jsonPreview = useMemo(() => JSON.stringify(draft, null, 2), [draft]);
+  const json미리보기 = useMemo(() => JSON.stringify(draft, null, 2), [draft]);
 
   async function onFileChange(slot: KeyringUploadSlot, event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
@@ -141,7 +141,7 @@ export function KeyringProductionPipelinePanel() {
         <div className="space-y-6">
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-zinc-900">Preview</h3>
+              <h3 className="text-base font-semibold text-zinc-900">미리보기</h3>
               <div className="text-xs text-zinc-500">{SLOT_LABELS[selectedSlot]}</div>
             </div>
 
@@ -275,7 +275,7 @@ export function KeyringProductionPipelinePanel() {
 
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
             <h3 className="mb-3 text-base font-semibold text-zinc-900">Production draft preview</h3>
-            <textarea className="min-h-[420px] w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 font-mono text-xs text-zinc-700" readOnly value={jsonPreview} />
+            <textarea className="min-h-[420px] w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 font-mono text-xs text-zinc-700" readOnly value={json미리보기} />
           </div>
         </div>
       </div>

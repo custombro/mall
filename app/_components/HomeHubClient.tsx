@@ -62,7 +62,7 @@ export default function HomeHubClient() {
 
         <div className="rounded-[2rem] border border-cyan-300/25 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.92),rgba(99,102,241,0.12))] p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
-            Recommended Start
+            추천 Start
           </p>
           <h3 className="mt-3 text-2xl font-semibold text-white">먼저 모드 선택으로 들어가세요</h3>
           <p className="mt-3 text-sm leading-6 text-slate-200">

@@ -29,7 +29,7 @@ function getKindClass(kind: PopLayer["kind"]) {
 export default function PopStudioClient() {
   const [presetId, setPresetId] = useState(popPresets[0]?.id ?? "");
   const [selectedLayerId, setSelectedLayerId] = useState(popLayers[0]?.id ?? "");
-  const [previewZoneId, setPreviewZoneId] = useState(
+  const [previewZoneId, set미리보기ZoneId] = useState(
     popLayers[0]?.recommendedZoneId ?? "zone-middle-center",
   );
   const [placements, setPlacements] = useState<PlacementMap>({});
@@ -153,7 +153,7 @@ export default function PopStudioClient() {
                 type="button"
                 onClick={() => {
                   setSelectedLayerId(layer.id);
-                  setPreviewZoneId(layer.recommendedZoneId);
+                  set미리보기ZoneId(layer.recommendedZoneId);
                 }}
                 className={
                   active
@@ -196,9 +196,9 @@ export default function PopStudioClient() {
           <div className="mt-4 grid grid-cols-3 gap-3">
             {popZones.map((zone) => {
               const isCompatible = compatibleZoneIds.includes(zone.id);
-              const isPreview = previewZoneId === zone.id;
+              const is미리보기 = previewZoneId === zone.id;
               const occupants = occupancyByZone.find((item) => item.zoneId === zone.id)?.occupants ?? [];
-              const snapClass = isPreview && snapReady
+              const snapClass = is미리보기 && snapReady
                 ? "border-emerald-300/40 bg-emerald-300/15"
                 : isCompatible
                   ? "border-cyan-300/30 bg-cyan-300/10"
@@ -209,7 +209,7 @@ export default function PopStudioClient() {
                   key={zone.id}
                   type="button"
                   onClick={() => {
-                    setPreviewZoneId(zone.id);
+                    set미리보기ZoneId(zone.id);
                     if (selectedLayer && selectedLayer.compatibleZoneIds.includes(zone.id)) {
                       setPlacements((prev) => ({
                         ...prev,
@@ -224,7 +224,7 @@ export default function PopStudioClient() {
                       <div className="text-sm font-semibold text-white">{zone.label}</div>
                       <div className="mt-1 text-[11px] leading-5 text-slate-300">{zone.description}</div>
                     </div>
-                    {isPreview && snapReady ? (
+                    {is미리보기 && snapReady ? (
                       <span className="rounded-full border border-emerald-300/40 bg-emerald-300/15 px-2 py-1 text-[11px] text-emerald-100">
                         ✓ 스냅 가능
                       </span>
