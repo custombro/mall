@@ -1,6 +1,24 @@
 import RouteDock from "../_components/RouteDock";
 import SellerCenterClient from "./_components/SellerCenterClient";
 
+const sellerTiers = [
+  { title: "입문 셀러", body: "소수 SKU와 단순 재주문 중심으로 시작하는 판매 흐름" },
+  { title: "운영 셀러", body: "주문량 증가에 맞춰 옵션, 포장, 리오더를 함께 관리하는 흐름" },
+  { title: "확장 셀러", body: "크루 단위 판매와 반복 거래를 운영하는 상위 판매 흐름" },
+];
+
+const sellerRules = [
+  "판매자 센터는 고객용 쇼핑 화면이 아니라 운영/정산/리오더를 함께 보는 허브여야 합니다.",
+  "판매 상태, 제작 상태, 정산 상태를 섞지 말고 단계별로 분리해서 보여줘야 합니다.",
+  "크루 판매 구조는 누가 판매했고 누가 제작으로 넘겼는지 흐름이 보여야 합니다.",
+];
+
+const sellerChecks = [
+  { label: "상품 운영", description: "어떤 상품이 판매 중인지, 보류인지, 재정비 중인지 바로 확인" },
+  { label: "정산 흐름", description: "판매 발생 후 정산 대기와 지급 완료를 운영 화면에서 구분" },
+  { label: "리오더 연결", description: "같은 디자인 재판매를 빠르게 다시 태울 수 있게 연결" },
+];
+
 export default function Page() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -30,6 +48,53 @@ export default function Page() {
               </p>
             </div>
           </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[0.95fr,1.05fr]">
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+              Seller Tiers
+            </p>
+            <div className="mt-4 space-y-3">
+              {sellerTiers.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-4"
+                >
+                  <p className="text-sm font-semibold text-white">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+              Seller Rules
+            </p>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
+              {sellerRules.map((item) => (
+                <li
+                  key={item}
+                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-3"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {sellerChecks.map((item) => (
+            <article
+              key={item.label}
+              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
+            >
+              <p className="text-sm font-semibold text-white">{item.label}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
+            </article>
+          ))}
         </section>
 
         <SellerCenterClient />
