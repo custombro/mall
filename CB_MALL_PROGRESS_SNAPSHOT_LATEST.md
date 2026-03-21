@@ -1,24 +1,21 @@
 # CB_MALL_PROGRESS_SNAPSHOT_LATEST
 
 - Branch: main
-- LOCAL_HEAD: ed0ab3d8e92a386dd5c828f475c29c37a59919c6
-- ORIGIN_HEAD: ed0ab3d8e92a386dd5c828f475c29c37a59919c6
+- LOCAL_HEAD: 9ad9a0f3abb0a73351308339d9bb828512f91ffa
+- ORIGIN_HEAD: 9ad9a0f3abb0a73351308339d9bb828512f91ffa
 - Ahead / Behind: 0 / 0
-- Snapshot Time: 2026-03-21 15:01:33
-- Last Commit: docs(cb-mall): refresh onefile handoff after split ia final
+- Snapshot Time: 2026-03-21 15:22:29
+- Previous Snapshot Matched Repo Before Patch: False
+- Previous Snapshot LOCAL_HEAD: ed0ab3d8e92a386dd5c828f475c29c37a59919c6
+- Last Commit: fix(cb-mall): align final qa fail route copy
 - Updated Files:
-  1. CB_MALL_ONEFILE_HANDOFF_LATEST.md
-  2. CB_MALL_ONEFILE_HANDOFF_*.md
+  1. app\seller\page.tsx
+  2. CB_MALL_FINAL_QA_REPORT_LATEST.md
+  3. CB_MALL_FINAL_QA_REPORT_20260321_152229.md
 - Build: PASS
 - TSC: PASS
-- Final Status:
-  1. /qa 강화 완료
-  2. RouteDock split IA 전체 동선 정리 완료
-  3. home / mode-select / workbench/keyring copy 보강 완료
-  4. materials-room / parts-room / storage copy 보강 완료
-  5. option-store / seller / b2b / clearance copy 보강 완료
-  6. latest handoff 갱신 완료
+- Final QA: PASS
 - Next Priority:
-  1. 실제 화면 최종 QA
+  1. 실제 화면 눈검수만 최종 확인
   2. 어색한 페이지만 미세 문구 패치
-  3. 작업 종료 시 최신 handoff / snapshot 기준으로 다음 방 이어가기
+  3. 다음 채팅방에서는 latest snapshot / handoff / final qa report 기준으로 즉시 이어가기
