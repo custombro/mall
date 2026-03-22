@@ -1,104 +1,441 @@
-import RouteDock from "../../_components/RouteDock";
-import KeyringWorkbenchClient from "./_components/KeyringWorkbenchClient";
+"use client";
 
-const benchRules = [
-  "키링 작업대는 단순 상품 소개가 아니라 실제 조합 판단을 내리는 작업 허브여야 합니다.",
-  "두께, 인쇄면, 고리, 후가공, 수량을 따로 보지 말고 한 작업 흐름 안에서 연결해야 합니다.",
-  "작업대는 레고/테트리스처럼 파츠를 조합하는 감각으로 읽혀야 하며, 제작 전 판단이 먼저 보여야 합니다.",
+import { useMemo, useState } from "react";
+
+type ShapeKey = "circle" | "square" | "free";
+type SizeKey = "s" | "m" | "l";
+type ThicknessKey = "2t" | "3t" | "5t";
+type RingKey = "silver" | "ball" | "strap";
+
+const STEPS = [
+  "1. 이미지",
+  "2. 모양",
+  "3. 크기",
+  "4. 옵션",
+  "5. 주문",
+] as const;
+
+const SHAPES: Array<{ key: ShapeKey; label: string; hint: string }> = [
+  { key: "circle", label: "원형", hint: "가장 무난한 기본형" },
+  { key: "square", label: "사각형", hint: "사진/문구 배치에 유리" },
+  { key: "free", label: "자유형", hint: "윤곽 따라 커팅" },
 ];
 
-const benchFlow = [
-  { title: "본체 결정", body: "아크릴 두께, 크기, 인쇄면, 기본 구조를 먼저 고정하는 단계" },
-  { title: "파츠 조합", body: "링, 체인, 자석, 추가 파츠처럼 결합 요소를 붙여보는 단계" },
-  { title: "생산 판단", body: "수량, 후가공, 단가, 납기 영향을 함께 읽고 다음 단계로 넘기는 단계" },
+const SIZES: Array<{ key: SizeKey; label: string; mm: number; price: number }> = [
+  { key: "s", label: "40mm", mm: 40, price: 4500 },
+  { key: "m", label: "50mm", mm: 50, price: 5200 },
+  { key: "l", label: "60mm", mm: 60, price: 6100 },
 ];
 
-const benchSignals = [
-  { label: "프리셋", description: "빠르게 시작하되 최종 판단은 작업대에서 이뤄져야 합니다." },
-  { label: "조합 우선", description: "옵션 나열보다 어떤 부품이 맞는지 먼저 판단해야 합니다." },
-  { label: "생산 연결", description: "보여주기용 화면이 아니라 실제 제작 흐름으로 이어져야 합니다." },
+const THICKNESS: Array<{ key: ThicknessKey; label: string; hint: string }> = [
+  { key: "2t", label: "2T", hint: "가볍고 얇은 편" },
+  { key: "3t", label: "3T", hint: "가장 무난한 기본 두께" },
+  { key: "5t", label: "5T", hint: "두껍고 존재감 있는 편" },
 ];
 
-export default function Page() {
+const RINGS: Array<{ key: RingKey; label: string; hint: string }> = [
+  { key: "silver", label: "실버링", hint: "가장 기본" },
+  { key: "ball", label: "볼체인", hint: "가볍고 간단" },
+  { key: "strap", label: "스트랩", hint: "가방/파우치용" },
+];
+
+function cn(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+export default function KeyringWorkbenchPage() {
+  const [fileName, setFileName] = useState("아직 업로드한 이미지가 없습니다");
+  const [shape, setShape] = useState<ShapeKey>("circle");
+  const [size, setSize] = useState<SizeKey>("m");
+  const [thickness, setThickness] = useState<ThicknessKey>("3t");
+  const [ring, setRing] = useState<RingKey>("silver");
+  const [doubleSide, setDoubleSide] = useState(false);
+  const [quantity, setQuantity] = useState(20);
+
+  const selectedSize = useMemo(() => SIZES.find((item) => item.key === size) ?? SIZES[1], [size]);
+  const selectedShape = useMemo(() => SHAPES.find((item) => item.key === shape) ?? SHAPES[0], [shape]);
+  const selectedThickness = useMemo(() => THICKNESS.find((item) => item.key === thickness) ?? THICKNESS[1], [thickness]);
+  const selectedRing = useMemo(() => RINGS.find((item) => item.key === ring) ?? RINGS[0], [ring]);
+
+  const unitPrice = selectedSize.price + (doubleSide ? 600 : 0);
+  const totalPrice = unitPrice * quantity;
+
+  const previewStyle =
+    shape === "circle"
+      ? "rounded-full"
+      : shape === "square"
+      ? "rounded-[22px]"
+      : "rounded-[32px]";
+
+  const previewWidth = Math.max(116, selectedSize.mm * 2.2);
+  const previewHeight = shape === "free" ? previewWidth * 0.82 : previewWidth;
+
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
-          <div className="space-y-5">
-            <div className="inline-flex flex-wrap items-center gap-2">
-              {["Keyring", "Workbench", "Preset", "Estimate", "Flow"].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
-                >
-                  {tag}
+    <main className="min-h-screen bg-[#efefec] text-slate-900">
+      <div className="mx-auto max-w-[1500px] px-4 py-5 md:px-6">
+        <div className="rounded-[28px] border border-slate-200 bg-white/90 shadow-[0_16px_50px_rgba(15,23,42,0.08)]">
+          <div className="border-b border-slate-200 px-5 py-4 md:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">CustomBro Workshop</p>
+                <h1 className="mt-2 text-2xl font-bold tracking-[-0.03em] md:text-4xl">키링 작업대</h1>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
+                  처음 온 주문자도 바로 이해할 수 있게, 작업대 중심으로 다시 정리한 키링 주문 화면입니다.
+                  이미지 올리고, 모양 고르고, mm 크기만 선택하면 바로 주문서가 완성됩니다.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                {STEPS.map((step, index) => (
+                  <div
+                    key={step}
+                    className={cn(
+                      "rounded-2xl border px-3 py-2 text-center text-xs font-semibold md:text-sm",
+                      index < 4
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-slate-50 text-slate-500"
+                    )}
+                  >
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-5 p-5 md:p-8 xl:grid-cols-[320px_minmax(520px,1fr)_320px]">
+            <section className="rounded-[26px] border border-slate-200 bg-[#faf9f5] p-4 md:p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">재료 서랍</p>
+                  <h2 className="mt-1 text-xl font-bold tracking-[-0.02em]">기본 재료 고르기</h2>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
+                  공방형 선택
                 </span>
-              ))}
-            </div>
+              </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                Keyring Workbench
-              </p>
-              <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                키링 제작은 작업대에서 실제 조합을 판단하는 흐름이어야 합니다.
-              </h1>
-              <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                프리셋, 두께, 인쇄면, 링, 후가공, 수량을 작업대 맥락에서 조합해 제작 흐름을 다룹니다.
-              </p>
-            </div>
-          </div>
-        </section>
+              <div className="mt-5 space-y-5">
+                <div>
+                  <p className="mb-2 text-sm font-semibold">1. 모양</p>
+                  <div className="grid gap-2">
+                    {SHAPES.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setShape(item.key)}
+                        className={cn(
+                          "rounded-2xl border px-4 py-3 text-left transition",
+                          shape === item.key
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-white hover:border-slate-400"
+                        )}
+                      >
+                        <p className="text-sm font-semibold">{item.label}</p>
+                        <p className={cn("mt-1 text-xs", shape === item.key ? "text-slate-200" : "text-slate-500")}>
+                          {item.hint}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-        <section className="grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              작업대 규칙
-            </p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
-              {benchRules.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+                <div>
+                  <p className="mb-2 text-sm font-semibold">2. 크기</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {SIZES.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setSize(item.key)}
+                        className={cn(
+                          "rounded-2xl border px-3 py-4 text-center transition",
+                          size === item.key
+                            ? "border-sky-600 bg-sky-50 text-sky-700"
+                            : "border-slate-200 bg-white hover:border-slate-400"
+                        )}
+                      >
+                        <p className="text-sm font-bold">{item.label}</p>
+                        <p className="mt-1 text-[11px] text-slate-500">직경 기준</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              Bench Flow
-            </p>
-            <div className="mt-4 space-y-3">
-              {benchFlow.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                <div>
+                  <p className="mb-2 text-sm font-semibold">3. 두께</p>
+                  <div className="grid gap-2">
+                    {THICKNESS.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setThickness(item.key)}
+                        className={cn(
+                          "rounded-2xl border px-4 py-3 text-left transition",
+                          thickness === item.key
+                            ? "border-amber-500 bg-amber-50"
+                            : "border-slate-200 bg-white hover:border-slate-400"
+                        )}
+                      >
+                        <p className="text-sm font-semibold">{item.label}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-semibold">4. 체결</p>
+                  <div className="grid gap-2">
+                    {RINGS.map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setRing(item.key)}
+                        className={cn(
+                          "rounded-2xl border px-4 py-3 text-left transition",
+                          ring === item.key
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-slate-200 bg-white hover:border-slate-400"
+                        )}
+                      >
+                        <p className="text-sm font-semibold">{item.label}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[26px] border border-slate-200 bg-[#f7f6f2] p-4 md:p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">작업대</p>
+                  <h2 className="mt-1 text-xl font-bold tracking-[-0.02em]">내 키링 바로 만들기</h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    업로드 → 모양 → mm 크기 → 옵션 순서만 따라가면 됩니다.
+                  </p>
+                </div>
+
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+                  이미지 올리기
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      setFileName(file ? file.name : "아직 업로드한 이미지가 없습니다");
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_320px]">
+                <div className="rounded-[28px] border border-slate-200 bg-[#ece8dd] p-5 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-700">현재 작업물</p>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm">
+                      {selectedShape.label} · {selectedSize.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 rounded-[30px] border border-dashed border-slate-400/60 bg-white/70 p-6">
+                    <div className="flex flex-col items-center justify-center gap-5">
+                      <div className="relative flex items-start justify-center">
+                        <div
+                          className={cn(
+                            "relative border-[3px] border-slate-300 bg-gradient-to-b from-white to-slate-100 shadow-[0_20px_40px_rgba(15,23,42,0.15)]",
+                            previewStyle
+                          )}
+                          style={{
+                            width: `${previewWidth}px`,
+                            height: `${previewHeight}px`,
+                          }}
+                        >
+                          <div className="absolute inset-x-0 top-4 flex justify-center">
+                            <div className="h-4 w-4 rounded-full border-2 border-slate-300 bg-white" />
+                          </div>
+
+                          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                            <p className="text-sm font-semibold text-slate-700">{fileName}</p>
+                            <p className="mt-2 text-xs text-slate-500">
+                              {selectedSize.label} · {selectedThickness.label} · {doubleSide ? "양면 인쇄" : "단면 인쇄"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="ml-4 mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-600 shadow-sm">
+                          {selectedRing.label}
+                        </div>
+                      </div>
+
+                      <div className="w-full max-w-[420px]">
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                          <span>0</span>
+                          <span>{selectedSize.mm / 2}mm</span>
+                          <span>{selectedSize.mm}mm</span>
+                        </div>
+                        <div className="mt-2 h-3 rounded-full bg-[linear-gradient(90deg,#d6d3d1_0%,#fafaf9_50%,#d6d3d1_100%)] shadow-inner" />
+                        <p className="mt-3 text-center text-xs text-slate-500">
+                          아래 눈금은 완성 크기 기준입니다.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-sm font-semibold">간단 설정</p>
+                      <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">양면 인쇄</p>
+                          <p className="text-xs text-slate-500">앞뒤 모두 인쇄</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDoubleSide((prev) => !prev)}
+                          className={cn(
+                            "h-8 w-16 rounded-full transition",
+                            doubleSide ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"
+                          )}
+                        >
+                          {doubleSide ? "ON" : "OFF"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-sm font-semibold">수량</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        {[10, 20, 50].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setQuantity(value)}
+                            className={cn(
+                              "rounded-xl border px-4 py-2 text-sm font-semibold transition",
+                              quantity === value
+                                ? "border-slate-900 bg-slate-900 text-white"
+                                : "border-slate-200 bg-white hover:border-slate-400"
+                            )}
+                          >
+                            {value}개
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-slate-400"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={quantity}
+                        onChange={(event) => setQuantity(Math.max(1, Number(event.target.value || 1)))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <aside className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">주문서</p>
+                  <h2 className="mt-1 text-xl font-bold tracking-[-0.02em]">클립보드 요약</h2>
+
+                  <div className="mt-5 space-y-3 rounded-[24px] border border-slate-200 bg-[#faf9f5] p-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">상품</span>
+                      <span className="font-semibold">아크릴 키링</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">모양</span>
+                      <span className="font-semibold">{selectedShape.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">크기</span>
+                      <span className="font-semibold">{selectedSize.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">두께</span>
+                      <span className="font-semibold">{selectedThickness.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">체결</span>
+                      <span className="font-semibold">{selectedRing.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">인쇄</span>
+                      <span className="font-semibold">{doubleSide ? "양면" : "단면"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">수량</span>
+                      <span className="font-semibold">{quantity}개</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-[24px] bg-slate-900 p-4 text-white">
+                    <p className="text-sm text-slate-300">예상 단가</p>
+                    <p className="mt-1 text-2xl font-bold">{unitPrice.toLocaleString()}원</p>
+                    <div className="mt-4 h-px bg-white/10" />
+                    <p className="mt-4 text-sm text-slate-300">예상 합계</p>
+                    <p className="mt-1 text-3xl font-bold">{totalPrice.toLocaleString()}원</p>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    <button
+                      type="button"
+                      className="h-12 rounded-2xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      장바구니 담기
+                    </button>
+                    <button
+                      type="button"
+                      className="h-12 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-900 transition hover:border-slate-500"
+                    >
+                      주문서 작성
+                    </button>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold">처음 주문자 안내</p>
+                    <ul className="mt-2 space-y-2 text-xs leading-5 text-slate-600">
+                      <li>• 먼저 이미지 올리고, 모양과 mm 크기만 골라도 됩니다.</li>
+                      <li>• 세부 옵션은 꼭 필요한 것만 먼저 노출했습니다.</li>
+                      <li>• 복잡한 제작 정보는 주문자 화면에서 숨겼습니다.</li>
+                    </ul>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
+            <section className="rounded-[26px] border border-slate-200 bg-[#faf9f5] p-4 md:p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">공방 메모</p>
+              <h2 className="mt-1 text-xl font-bold tracking-[-0.02em]">왜 이렇게 바꿨는지</h2>
+
+              <div className="mt-5 space-y-3">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold">시작점 하나만 남김</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    처음 진입 시 업로드, 모양, mm 크기, 주문서만 보이도록 줄였습니다.
+                  </p>
                 </article>
-              ))}
-            </div>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold">드롭다운 대신 샘플칩</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    소/중/대 대신 40mm, 50mm, 60mm를 직접 누르는 방식으로 바꿨습니다.
+                  </p>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold">관리자 정보 제거</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    생산 요약, 작업 메모, 부자재 판단 같은 운영자 정보는 주문자 화면에서 숨겼습니다.
+                  </p>
+                </article>
+              </div>
+            </section>
           </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {benchSignals.map((item) => (
-            <article
-              key={item.label}
-              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
-            >
-              <p className="text-sm font-semibold text-white">{item.label}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-            </article>
-          ))}
-        </section>
-
-        <KeyringWorkbenchClient />
-        <RouteDock />
+        </div>
       </div>
     </main>
   );
