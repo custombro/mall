@@ -54,39 +54,6 @@ export const modeRouteCards: ModeRouteCard[] = [
     tags: ["리오더", "재호출", "보관", "검수"],
   },
   {
-    id: "route-materials",
-    title: "원자재 룸",
-    category: "자재",
-    href: "/materials-room",
-    eyebrow: "Materials / Rack",
-    summary: "금속 랙 기반으로 원장 두께, 재질, 재고 상태를 보고 다음 작업 흐름을 판단하는 공간",
-    whenToUse: "3T·5T·2.7T, 형광판, 특수판, 하중 보강 여부를 먼저 확인해야 할 때",
-    statusLine: "금속 랙 원장 존 + 재고 상태 + 작업대 라우팅",
-    tags: ["아크릴", "원장", "3T", "5T"],
-  },
-  {
-    id: "route-parts",
-    title: "부자재 룸",
-    category: "자재",
-    href: "/parts-room",
-    eyebrow: "Parts / Wall",
-    summary: "링, 체인, 스탠드, 자석, 보조파츠를 벽면·트레이 개념으로 분리한 조합 판정 공간",
-    whenToUse: "체결 방식, 스탠드 발, 자석 결합, 보강 파츠를 먼저 골라야 할 때",
-    statusLine: "벽면 파츠 존 + 재고 확인 + 조합 판정",
-    tags: ["링", "체인", "자석", "스탠드"],
-  },
-  {
-    id: "route-option",
-    title: "옵션 스토어",
-    category: "자재",
-    href: "/option-store",
-    eyebrow: "Options / Split Choice",
-    summary: "후가공, 포장, 결합, 전시, 프리미엄 옵션을 본체와 분리해 고르는 공간",
-    whenToUse: "에폭시, 글리터, 포장, 자석 결합, 프리미엄 카드 패키지를 따로 판단할 때",
-    statusLine: "옵션 분리 구조 + 가격 변화 + 라우팅",
-    tags: ["에폭시", "포장", "결합", "프리미엄"],
-  },
-  {
     id: "route-seller",
     title: "판매자 센터",
     category: "판매운영",
@@ -118,7 +85,7 @@ export const modeRouteCards: ModeRouteCard[] = [
     whenToUse: "행사 종료 재고, 샘플 잔량, 테스트 파츠, 보류 자재를 빠르게 소진해야 할 때",
     statusLine: "정리 상태 분리 + 잔량 소진 + 출처 추적",
     tags: ["클리어런스", "잔량", "소진", "묶음"],
-  },
+  }
 ];
 
 export function getCategoryClass(category: ModeCategory) {
