@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import CBRouteDock from "@/app/_components/CBRouteDock";
 import Link from "next/link";
+import PersistentHomeLogo from "./_components/PersistentHomeLogo";
 
 export const metadata: Metadata = {
   title: "CustomBro Workshop Mall",
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
       <body>
+        <PersistentHomeLogo />
       <Link
         href="/"
         aria-label="홈으로 이동"
