@@ -37,8 +37,6 @@ const routeGroups: RouteGroup[] = [
     title: "운영",
     caption: "생산 지원",
     items: [
-      { href: "/materials-room", label: "원자재실", description: "판재 두께 · 재질 · usable stock 판정" },
-      { href: "/parts-room", label: "부자재실", description: "링 · 체인 · 포장 부품 조합 판정" },
       { href: "/storage", label: "서랍", description: "제작 완료 → 재호출 → 리오더 회수 허브" },
     ],
   },

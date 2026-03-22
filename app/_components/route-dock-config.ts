@@ -13,8 +13,6 @@ export const routeDockItems: RouteDockItem[] = [
   { id: "dock-keyring",   label: "키링",     href: "/workbench/keyring", kind: "production" },
   { id: "dock-pop",       label: "POP",      href: "/pop-studio",        kind: "production" },
   { id: "dock-storage",   label: "보관함",    href: "/storage",           kind: "ops" },
-  { id: "dock-materials", label: "원자재",    href: "/materials-room",    kind: "resource" },
-  { id: "dock-parts",     label: "부자재",    href: "/parts-room",        kind: "resource" },
   { id: "dock-option",    label: "옵션",     href: "/option-store",      kind: "resource" },
   { id: "dock-seller",    label: "판매자",    href: "/seller",            kind: "ops" },
   { id: "dock-b2b",       label: "B2B",      href: "/b2b",               kind: "ops" },
