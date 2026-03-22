@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import SiteHeader from "@/components/site-header";
 import type { ReactNode } from "react";
 import "./globals.css";
 import CBRouteDock from "@/app/_components/CBRouteDock";
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body>
+      <body>`r`n        <SiteHeader />
         <PersistentHomeLogo />
       <Link
         href="/"
