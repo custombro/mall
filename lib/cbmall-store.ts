@@ -145,7 +145,7 @@ export const ACRYLIC_MATERIALS: Array<{
   color: AcrylicColor;
   note: string;
 }> = [
-  { id: "acrylic_transparent_2t", name: "투명 2T 아크릴", thickness: 2, color: "투명", note: "가벼운 태그/소형 출력용" },
+  { id: "acrylic_transparent_2t", name: "투명 2T 아크릴", thickness: 2, color: "투명", note: "가벼운 태그/6x8mm 출력용" },
   { id: "acrylic_transparent_3t", name: "투명 3T 아크릴", thickness: 3, color: "투명", note: "기본 키링 메인 자재" },
   { id: "acrylic_transparent_5t", name: "투명 5T 아크릴", thickness: 5, color: "투명", note: "두께감 있는 POP 보조 구조용" },
   { id: "acrylic_white_3t", name: "진백 3T 아크릴", thickness: 3, color: "진백", note: "선명한 바탕용" },
@@ -167,9 +167,9 @@ export const PARTS_CATALOG: Array<{
   { id: "d_ring_25_gold", name: "D고리 25mm", partType: "d_ring", spec: "25mm / 골드", note: "고급형 D고리" },
   { id: "o_ring_8_silver", name: "O링 8mm", partType: "o_ring", spec: "8mm / 실버", note: "기본 연결용" },
   { id: "o_ring_10_gold", name: "O링 10mm", partType: "o_ring", spec: "10mm / 골드", note: "포인트 연결용" },
-  { id: "opp_6x8", name: "OPP 봉투 6x8", partType: "opp_bag", spec: "6x8", note: "소형 키링 포장용" },
-  { id: "opp_8x10", name: "OPP 봉투 8x10", partType: "opp_bag", spec: "8x10", note: "중형 포장용" },
-  { id: "opp_10x15", name: "OPP 봉투 10x15", partType: "opp_bag", spec: "10x15", note: "대형 POP 동봉 포장용" },
+  { id: "opp_6x8", name: "OPP 봉투 6x8", partType: "opp_bag", spec: "6x8", note: "6x8mm 키링 포장용" },
+  { id: "opp_8x10", name: "OPP 봉투 8x10", partType: "opp_bag", spec: "8x10", note: "8x10mm 포장용" },
+  { id: "opp_10x15", name: "OPP 봉투 10x15", partType: "opp_bag", spec: "10x15", note: "10x15mm POP 동봉 포장용" },
 ];
 
 export const PART_CATEGORY_LABEL: Record<SelectedPart["partType"], string> = {
