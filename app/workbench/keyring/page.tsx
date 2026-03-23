@@ -338,7 +338,7 @@ export default function KeyringWorkbenchPage() {
               <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자동 저장</p>
                 <p className="mt-3 text-sm leading-7 text-white/70">
-                  현재 선택 상태는 작업대 초안으로 자동 저장됩니다. 페이지를 벗어나도 최근 값이 다시 복원됩니다.
+                  현재 선택 상태는 자동 저장되어 최근 값이 다시 복원됩니다.
                 </p>
               </div>
             </div>
@@ -350,7 +350,7 @@ export default function KeyringWorkbenchPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">작업대</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">자재 + 부자재를 조합해 제품 완성</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-white/65">
-                  중앙 작업대는 실제 주문 스펙의 기준점입니다. 여기서 고른 값이 서랍 저장과 주문 큐에 그대로 이어집니다.
+                  중앙 작업대에서 고른 값이 서랍 저장과 주문 큐에 그대로 이어집니다.
                 </p>
               </div>
               <button
