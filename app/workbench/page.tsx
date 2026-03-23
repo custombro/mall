@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { loadDrawerEntries, loadOrderEntries, loadWorkbenchDraft } from "../../lib/cbmall-store";
 
 type StartMode = "입문형" | "빠른 작업";
 
@@ -51,6 +52,15 @@ const QUICK_ACTIONS = [
 
 export default function WorkbenchHubPage() {
   const [startMode, setStartMode] = useState<(typeof START_MODES)[number]["key"]>("빠른 작업");
+  const [drawerCount, setDrawerCount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const [draftCode, setDraftCode] = useState("아직 없음");
+
+  useEffect(() => {
+    setDrawerCount(loadDrawerEntries().length);
+    setOrderCount(loadOrderEntries().length);
+    setDraftCode(loadWorkbenchDraft()?.productCode ?? "아직 없음");
+  }, []);
 
   const summary = useMemo(() => {
     return startMode === "입문형"
@@ -79,7 +89,7 @@ export default function WorkbenchHubPage() {
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
                 제작 허브는 일반 카테고리 페이지가 아닙니다.
                 공방형 제작 시스템 안에서 어떤 작업 흐름으로 들어갈지 정하는 허브이며,
-                처음 오는 손님과 자주 오는 손님이 서로 다른 속도로 진입할 수 있어야 합니다.
+                실제 서랍/주문/초안 상태를 함께 보여줍니다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {START_MODES.map((mode) => {
@@ -107,18 +117,26 @@ export default function WorkbenchHubPage() {
             </div>
 
             <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 진입 방식</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">실제 상태</p>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">요약</p>
-                  <p className="mt-2 text-lg font-bold text-white">{summary.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/60">{summary.description}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">최근 초안 코드</p>
+                  <p className="mt-2 break-all text-base font-semibold text-white">{draftCode}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">서랍</p>
+                    <p className="mt-2 font-semibold text-white">{drawerCount}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">주문</p>
+                    <p className="mt-2 font-semibold text-white">{orderCount}</p>
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">원칙</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">
-                    기본은 빠른 작업이고, 입문형은 선택형으로 제공한다.
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">현재 진입 방식</p>
+                  <p className="mt-2 text-sm font-medium text-cyan-50">{summary.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-cyan-100/80">{summary.description}</p>
                 </div>
               </div>
             </div>
@@ -156,15 +174,6 @@ export default function WorkbenchHubPage() {
                   <p className="mt-2 text-xs leading-6 text-white/60">{item.description}</p>
                 </Link>
               ))}
-            </div>
-
-            <div className="mt-5 rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">다음 확장</p>
-              <div className="mt-3 space-y-2 text-sm text-cyan-50">
-                <p>· POP 작업대에 스냅/레이어 결합 규칙 연결</p>
-                <p>· 상품군별 서랍 저장 단위 구분</p>
-                <p>· 주문/생산 데이터와 실제 연결 강화</p>
-              </div>
             </div>
           </aside>
         </section>

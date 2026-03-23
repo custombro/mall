@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { loadDrawerEntries, loadOrderEntries, loadWorkbenchDraft } from "../lib/cbmall-store";
 
 type EntryMode = "둘러보기" | "작업대 바로가기";
 
@@ -23,7 +24,7 @@ const QUICK_PATHS = [
     title: "처음 방문",
     description: "기본조합으로 시작해 공방 흐름을 짧게 익히는 경로",
     action: "기본조합으로 시작",
-    href: "/workbench",
+    href: "/workbench/keyring",
   },
   {
     title: "자주 오는 손님",
@@ -35,7 +36,7 @@ const QUICK_PATHS = [
     title: "하이 레벨",
     description: "자재/두께/홀 위치/인쇄를 세부 제어하는 경로",
     action: "작업대 세부 설정",
-    href: "/workbench",
+    href: "/workbench/keyring",
   },
   {
     title: "VIP / 대량",
@@ -51,7 +52,7 @@ const HUB_CARDS = [
     eyebrow: "WORKBENCH",
     description: "자재칸 → 작업대 → 부자재칸 흐름으로 실제 제품을 조합하는 중심 화면",
     href: "/workbench",
-    cta: "작업대로 이동",
+    cta: "제작 허브로 이동",
   },
   {
     title: "서랍",
@@ -85,6 +86,19 @@ const SYSTEM_PRINCIPLES = [
 
 export default function HomePage() {
   const [entryMode, setEntryMode] = useState<EntryMode>("작업대 바로가기");
+  const [drawerCount, setDrawerCount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const [lastDraftCode, setLastDraftCode] = useState("아직 없음");
+
+  useEffect(() => {
+    const drawers = loadDrawerEntries();
+    const orders = loadOrderEntries();
+    const draft = loadWorkbenchDraft();
+
+    setDrawerCount(drawers.length);
+    setOrderCount(orders.length);
+    setLastDraftCode(draft?.productCode ?? "아직 없음");
+  }, []);
 
   const modeInfo = ENTRY_MODES.find((item) => item.key === entryMode) ?? ENTRY_MODES[1];
 
@@ -136,7 +150,7 @@ export default function HomePage() {
                     </button>
                   );
                 })}
-                <Link href="/workbench" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                <Link href="/workbench/keyring" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
                   제작 시작
                 </Link>
               </div>
@@ -157,6 +171,24 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 서랍 항목</p>
+            <p className="mt-3 text-3xl font-bold text-white">{drawerCount}</p>
+            <p className="mt-2 text-sm text-white/55">작업대에서 저장된 실제 항목 수</p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 주문 큐</p>
+            <p className="mt-3 text-3xl font-bold text-white">{orderCount}</p>
+            <p className="mt-2 text-sm text-white/55">작업대/서랍에서 넘어온 실제 주문 수</p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안 코드</p>
+            <p className="mt-3 break-all text-lg font-bold text-white">{lastDraftCode}</p>
+            <p className="mt-2 text-sm text-white/55">최근 작업대 자동 저장 상태</p>
           </div>
         </section>
 
@@ -217,21 +249,6 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-5 rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">다음 이동</p>
-              <div className="mt-4 grid gap-3">
-                <Link href="/workbench" className="rounded-2xl bg-cyan-400 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-                  키링 작업대로 이동
-                </Link>
-                <Link href="/storage" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                  서랍 콘솔 열기
-                </Link>
-                <Link href="/order-check" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                  주문확인 보기
-                </Link>
-              </div>
             </div>
           </aside>
         </section>

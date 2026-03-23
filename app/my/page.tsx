@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { loadDrawerEntries, loadOrderEntries, loadWorkbenchDraft } from "../../lib/cbmall-store";
 
 type AccountMode = "일반" | "VIP";
 
@@ -16,13 +17,6 @@ const ACCOUNT_MODES = [
     title: "VIP / 프로젝트 모드",
     description: "프로젝트 단위 재주문, 빠른 견적, 대량 주문 우선",
   },
-] as const;
-
-const PROFILE_CARDS = [
-  { label: "최근 주문", value: "14건", note: "이번 달 기준" },
-  { label: "저장 스펙", value: "9개", note: "서랍 저장 기준" },
-  { label: "진행중 주문", value: "3건", note: "출력/가공/조립 포함" },
-  { label: "VIP 프로젝트", value: "2개", note: "프로젝트 단위 관리" },
 ] as const;
 
 const QUICK_LINKS = [
@@ -77,6 +71,15 @@ const ACCOUNT_SECTIONS = [
 
 export default function MyPage() {
   const [mode, setMode] = useState<(typeof ACCOUNT_MODES)[number]["key"]>("일반");
+  const [drawerCount, setDrawerCount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const [draftCode, setDraftCode] = useState("아직 없음");
+
+  useEffect(() => {
+    setDrawerCount(loadDrawerEntries().length);
+    setOrderCount(loadOrderEntries().length);
+    setDraftCode(loadWorkbenchDraft()?.productCode ?? "아직 없음");
+  }, []);
 
   const summary = useMemo(() => {
     return mode === "일반"
@@ -89,6 +92,13 @@ export default function MyPage() {
           note: "VIP는 일반 고객보다 빠른 재사용과 프로젝트 단위 관리가 중요하다.",
         };
   }, [mode]);
+
+  const profileCards = [
+    { label: "실제 주문", value: `${orderCount}건`, note: "로컬 주문 큐 기준" },
+    { label: "실제 서랍", value: `${drawerCount}개`, note: "로컬 저장 항목 기준" },
+    { label: "최근 초안", value: draftCode, note: "최근 작업대 자동 저장" },
+    { label: "VIP 프로젝트", value: mode === "VIP" ? "활성" : "대기", note: "프로젝트 단위 확장 준비" },
+  ];
 
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
@@ -103,9 +113,8 @@ export default function MyPage() {
                 다시 작업하기 위한 계정 허브다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                내정보는 단순한 프로필 페이지가 아니라 최근 작업, 저장 스펙, 진행중 주문,
-                VIP 프로젝트를 빠르게 여는 계정 허브입니다.
-                자주 오는 손님과 VIP가 시간을 뺏기지 않도록 가장 많이 다시 찾는 동선을 먼저 배치합니다.
+                최근 작업, 저장 스펙, 진행중 주문, VIP 프로젝트를 빠르게 여는 계정 허브입니다.
+                이제 실제 서랍/주문/초안 상태를 바로 읽어와 가장 많이 다시 찾는 동선을 먼저 보여줍니다.
               </p>
 
               <div className="flex flex-wrap gap-3">
@@ -142,10 +151,8 @@ export default function MyPage() {
                   <p className="mt-2 text-sm leading-6 text-white/60">{summary.note}</p>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">원칙</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">
-                    설정은 나중이고, 지금 가장 자주 다시 쓰는 흐름을 먼저 보여준다.
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">핵심</p>
+                  <p className="mt-2 text-sm font-medium text-cyan-50">설정보다 재사용 속도를 먼저 보여준다.</p>
                 </div>
               </div>
             </div>
@@ -153,10 +160,10 @@ export default function MyPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-4">
-          {PROFILE_CARDS.map((card) => (
+          {profileCards.map((card) => (
             <div key={card.label} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{card.label}</p>
-              <p className="mt-3 text-3xl font-bold text-white">{card.value}</p>
+              <p className="mt-3 break-all text-3xl font-bold text-white">{card.value}</p>
               <p className="mt-2 text-sm text-white/55">{card.note}</p>
             </div>
           ))}
@@ -216,15 +223,6 @@ export default function MyPage() {
               <Link href="/workbench" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
                 제작 허브로 이동
               </Link>
-            </div>
-
-            <div className="mt-5 rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">다음 확장</p>
-              <div className="mt-3 space-y-2 text-sm text-cyan-50">
-                <p>· 실제 계정 데이터 연결</p>
-                <p>· 포인트 / 쿠폰 / 배송지 관리 연결</p>
-                <p>· VIP 담당자 메모 / 프로젝트 히스토리 확장</p>
-              </div>
             </div>
           </aside>
         </section>
