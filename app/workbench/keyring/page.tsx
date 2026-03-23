@@ -303,7 +303,7 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">빠른 시작</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">이미지, 모양, 크기, 옵션만 정리해 바로 주문서를 완성하는 키링 작업 화면입니다.</p>
               <div className="mt-4 space-y-3">
                 {QUICK_PRESETS.map((preset) => (
                   <button
