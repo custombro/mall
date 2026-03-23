@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { loadDrawerEntries, loadOrderEntries, loadWorkbenchDraft } from "../../lib/cbmall-store";
+import {
+  loadDrawerEntries,
+  loadOrderEntries,
+  loadWorkbenchDraft,
+  type DrawerEntry,
+  type OrderEntry,
+  type WorkbenchDraft,
+} from "../../lib/cbmall-store";
 
 type StartMode = "입문형" | "빠른 작업";
 
@@ -50,17 +57,29 @@ const QUICK_ACTIONS = [
   { title: "주문확인 보기", href: "/order-check", description: "고객 진행 / 제작 진행 상태 확인" },
 ] as const;
 
+function formatDate(value?: string) {
+  if (!value) return "아직 없음";
+  try {
+    return new Date(value).toLocaleString("ko-KR");
+  } catch {
+    return value;
+  }
+}
+
 export default function WorkbenchHubPage() {
   const [startMode, setStartMode] = useState<(typeof START_MODES)[number]["key"]>("빠른 작업");
-  const [drawerCount, setDrawerCount] = useState(0);
-  const [orderCount, setOrderCount] = useState(0);
-  const [draftCode, setDraftCode] = useState("아직 없음");
+  const [drawerEntries, setDrawerEntries] = useState<DrawerEntry[]>([]);
+  const [orderEntries, setOrderEntries] = useState<OrderEntry[]>([]);
+  const [draft, setDraft] = useState<WorkbenchDraft | null>(null);
 
   useEffect(() => {
-    setDrawerCount(loadDrawerEntries().length);
-    setOrderCount(loadOrderEntries().length);
-    setDraftCode(loadWorkbenchDraft()?.productCode ?? "아직 없음");
+    setDrawerEntries(loadDrawerEntries());
+    setOrderEntries(loadOrderEntries());
+    setDraft(loadWorkbenchDraft());
   }, []);
+
+  const latestDrawer = drawerEntries[0] ?? null;
+  const latestOrder = orderEntries[0] ?? null;
 
   const summary = useMemo(() => {
     return startMode === "입문형"
@@ -121,16 +140,16 @@ export default function WorkbenchHubPage() {
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">최근 초안 코드</p>
-                  <p className="mt-2 break-all text-base font-semibold text-white">{draftCode}</p>
+                  <p className="mt-2 break-all text-base font-semibold text-white">{draft?.productCode ?? "아직 없음"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">서랍</p>
-                    <p className="mt-2 font-semibold text-white">{drawerCount}</p>
+                    <p className="mt-2 font-semibold text-white">{drawerEntries.length}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">주문</p>
-                    <p className="mt-2 font-semibold text-white">{orderCount}</p>
+                    <p className="mt-2 font-semibold text-white">{orderEntries.length}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
@@ -140,6 +159,30 @@ export default function WorkbenchHubPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안</p>
+            <p className="mt-3 break-all text-lg font-bold text-white">{draft?.productCode ?? "아직 없음"}</p>
+            <p className="mt-2 text-sm text-white/55">
+              {draft ? `${draft.specText} · ${draft.quantity}개` : "아직 작업대 자동 저장이 없다"}
+            </p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 서랍</p>
+            <p className="mt-3 text-lg font-bold text-white">{latestDrawer?.title ?? "아직 없음"}</p>
+            <p className="mt-2 text-sm text-white/55">
+              {latestDrawer ? `${latestDrawer.spec} · ${formatDate(latestDrawer.updatedAt)}` : "아직 저장 항목이 없다"}
+            </p>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 주문</p>
+            <p className="mt-3 text-lg font-bold text-white">{latestOrder?.title ?? "아직 없음"}</p>
+            <p className="mt-2 text-sm text-white/55">
+              {latestOrder ? `${latestOrder.spec} · ${formatDate(latestOrder.updatedAt)}` : "아직 주문 준비 항목이 없다"}
+            </p>
           </div>
         </section>
 

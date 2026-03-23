@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { loadDrawerEntries, loadOrderEntries, loadWorkbenchDraft } from "../lib/cbmall-store";
+import {
+  loadDrawerEntries,
+  loadOrderEntries,
+  loadWorkbenchDraft,
+  type DrawerEntry,
+  type OrderEntry,
+  type WorkbenchDraft,
+} from "../lib/cbmall-store";
 
 type EntryMode = "둘러보기" | "작업대 바로가기";
 
@@ -84,23 +91,61 @@ const SYSTEM_PRINCIPLES = [
   "시선전환은 선택형이고 기본은 빠른 작업 흐름이다",
 ] as const;
 
+function formatDate(value?: string) {
+  if (!value) return "아직 없음";
+  try {
+    return new Date(value).toLocaleString("ko-KR");
+  } catch {
+    return value;
+  }
+}
+
+function LiveCard({
+  title,
+  description,
+  primary,
+  secondary,
+  href,
+  cta,
+}: {
+  title: string;
+  description: string;
+  primary: string;
+  secondary: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-[24px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{title}</p>
+      <p className="mt-3 text-sm leading-6 text-white/60">{description}</p>
+      <p className="mt-4 break-all text-base font-bold text-white">{primary}</p>
+      <p className="mt-2 text-xs leading-5 text-white/45">{secondary}</p>
+      <div className="mt-4 inline-flex rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/80">
+        {cta}
+      </div>
+    </Link>
+  );
+}
+
 export default function HomePage() {
   const [entryMode, setEntryMode] = useState<EntryMode>("작업대 바로가기");
-  const [drawerCount, setDrawerCount] = useState(0);
-  const [orderCount, setOrderCount] = useState(0);
-  const [lastDraftCode, setLastDraftCode] = useState("아직 없음");
+  const [drawerEntries, setDrawerEntries] = useState<DrawerEntry[]>([]);
+  const [orderEntries, setOrderEntries] = useState<OrderEntry[]>([]);
+  const [draft, setDraft] = useState<WorkbenchDraft | null>(null);
 
   useEffect(() => {
-    const drawers = loadDrawerEntries();
-    const orders = loadOrderEntries();
-    const draft = loadWorkbenchDraft();
-
-    setDrawerCount(drawers.length);
-    setOrderCount(orders.length);
-    setLastDraftCode(draft?.productCode ?? "아직 없음");
+    setDrawerEntries(loadDrawerEntries());
+    setOrderEntries(loadOrderEntries());
+    setDraft(loadWorkbenchDraft());
   }, []);
 
   const modeInfo = ENTRY_MODES.find((item) => item.key === entryMode) ?? ENTRY_MODES[1];
+  const latestDrawer = drawerEntries[0] ?? null;
+  const latestOrder = orderEntries[0] ?? null;
 
   const summary = useMemo(() => {
     return {
@@ -177,18 +222,57 @@ export default function HomePage() {
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 서랍 항목</p>
-            <p className="mt-3 text-3xl font-bold text-white">{drawerCount}</p>
+            <p className="mt-3 text-3xl font-bold text-white">{drawerEntries.length}</p>
             <p className="mt-2 text-sm text-white/55">작업대에서 저장된 실제 항목 수</p>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 주문 큐</p>
-            <p className="mt-3 text-3xl font-bold text-white">{orderCount}</p>
+            <p className="mt-3 text-3xl font-bold text-white">{orderEntries.length}</p>
             <p className="mt-2 text-sm text-white/55">작업대/서랍에서 넘어온 실제 주문 수</p>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안 코드</p>
-            <p className="mt-3 break-all text-lg font-bold text-white">{lastDraftCode}</p>
+            <p className="mt-3 break-all text-lg font-bold text-white">{draft?.productCode ?? "아직 없음"}</p>
             <p className="mt-2 text-sm text-white/55">최근 작업대 자동 저장 상태</p>
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 최근 상태</p>
+              <h2 className="mt-2 text-2xl font-bold text-white">지금 내가 마지막으로 만진 작업이 바로 보인다</h2>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+              홈에서도 <span className="ml-2 font-semibold text-white">실제 최근 작업</span>을 읽는다
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <LiveCard
+              title="최근 초안"
+              description="작업대 자동 저장 상태"
+              primary={draft?.productCode ?? "아직 없음"}
+              secondary={draft ? `${draft.specText} · ${draft.quantity}개` : "아직 작업대 초안이 없다"}
+              href="/workbench/keyring"
+              cta="초안 열기"
+            />
+            <LiveCard
+              title="최근 서랍"
+              description="마지막 저장 항목"
+              primary={latestDrawer?.title ?? "아직 없음"}
+              secondary={latestDrawer ? `${latestDrawer.spec} · ${formatDate(latestDrawer.updatedAt)}` : "아직 서랍 저장 항목이 없다"}
+              href="/storage"
+              cta="서랍 열기"
+            />
+            <LiveCard
+              title="최근 주문"
+              description="마지막 주문 큐 항목"
+              primary={latestOrder?.title ?? "아직 없음"}
+              secondary={latestOrder ? `${latestOrder.spec} · ${formatDate(latestOrder.updatedAt)}` : "아직 주문 큐 항목이 없다"}
+              href="/orders"
+              cta="주문 보기"
+            />
           </div>
         </section>
 
