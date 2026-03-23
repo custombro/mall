@@ -201,7 +201,7 @@ export default function OrderCheckPage() {
 
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-5 py-8 md:px-8">
+      <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-6 px-5 py-8 md:px-8">
         <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl space-y-4">
@@ -265,7 +265,7 @@ export default function OrderCheckPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.7fr_0.95fr]">
+        <section className="grid gap-6 xl:grid-cols-[2.05fr_0.85fr]">
           <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">실제 주문 목록</p>
             <div className="mt-4 space-y-3">
