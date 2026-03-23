@@ -23,7 +23,7 @@ const QUICK_PATHS = [
     title: "처음 방문",
     description: "기본조합으로 시작해 공방 흐름을 짧게 익히는 경로",
     action: "기본조합으로 시작",
-    href: "/workbench/keyring",
+    href: "/workbench",
   },
   {
     title: "자주 오는 손님",
@@ -35,7 +35,7 @@ const QUICK_PATHS = [
     title: "하이 레벨",
     description: "자재/두께/홀 위치/인쇄를 세부 제어하는 경로",
     action: "작업대 세부 설정",
-    href: "/workbench/keyring",
+    href: "/workbench",
   },
   {
     title: "VIP / 대량",
@@ -50,7 +50,7 @@ const HUB_CARDS = [
     title: "제작",
     eyebrow: "WORKBENCH",
     description: "자재칸 → 작업대 → 부자재칸 흐름으로 실제 제품을 조합하는 중심 화면",
-    href: "/workbench/keyring",
+    href: "/workbench",
     cta: "작업대로 이동",
   },
   {
@@ -136,7 +136,7 @@ export default function HomePage() {
                     </button>
                   );
                 })}
-                <Link href="/workbench/keyring" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                <Link href="/workbench" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
                   제작 시작
                 </Link>
               </div>
@@ -222,7 +222,7 @@ export default function HomePage() {
             <div className="mt-5 rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">다음 이동</p>
               <div className="mt-4 grid gap-3">
-                <Link href="/workbench/keyring" className="rounded-2xl bg-cyan-400 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                <Link href="/workbench" className="rounded-2xl bg-cyan-400 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
                   키링 작업대로 이동
                 </Link>
                 <Link href="/storage" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
