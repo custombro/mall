@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { loadOrderEntries, type OrderEntry } from "../../lib/cbmall-store";
 
 type CustomerStepKey = "received" | "waiting";
 type MakerStepKey = "printing" | "cutting" | "assembling" | "checking" | "shipped";
@@ -131,8 +132,12 @@ function StepCard({
 
 export default function OrderCheckPage() {
   const [scenarioKey, setScenarioKey] = useState<string>("basic");
-  const scenario = ORDER_SCENARIOS.find((item) => item.key === scenarioKey) ?? ORDER_SCENARIOS[0];
+  const [latestOrder] = useState<OrderEntry | null>(() => {
+    const orders = loadOrderEntries();
+    return orders[0] ?? null;
+  });
 
+  const scenario = ORDER_SCENARIOS.find((item) => item.key === scenarioKey) ?? ORDER_SCENARIOS[0];
   const currentMakerStage = getMakerStage(scenario);
   const makerIndex = MAKER_STEPS.findIndex((step) => step.key === currentMakerStage);
 
@@ -144,6 +149,24 @@ export default function OrderCheckPage() {
       { label: "송장번호", value: scenario.invoiceNumber ?? "아직 입력 전" },
     ];
   }, [scenario]);
+
+  const summaryOrder = latestOrder
+    ? {
+        orderNo: latestOrder.id,
+        product: latestOrder.product,
+        qty: latestOrder.qty,
+        total: latestOrder.amount,
+        spec: latestOrder.spec,
+        source: latestOrder.source,
+      }
+    : {
+        orderNo: "CB-20260323-KEYRING-0142",
+        product: "아크릴 키링",
+        qty: 30,
+        total: 118800,
+        spec: "투명 · 3T · 자유형 · 단면 · D고리 실버 · OPP 8x10",
+        source: "sample",
+      };
 
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
@@ -159,7 +182,7 @@ export default function OrderCheckPage() {
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
                 접수와 제작대기까지는 고객 기준으로, 출력중 이후는 제작자 기준으로 흐릅니다.
-                고객은 단순 상태명만 보는 것이 아니라 어떤 이벤트 때문에 현재 단계가 되었는지 함께 읽을 수 있어야 합니다.
+                이제 주문 요약도 작업대/서랍에서 넘어온 실제 주문 항목을 우선해서 보여줍니다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {ORDER_SCENARIOS.map((item) => {
@@ -180,8 +203,8 @@ export default function OrderCheckPage() {
                     </button>
                   );
                 })}
-                <Link href="/workbench/keyring" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                  작업대로 이동
+                <Link href="/orders" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                  주문 허브 보기
                 </Link>
               </div>
             </div>
@@ -191,24 +214,28 @@ export default function OrderCheckPage() {
               <div className="mt-4 space-y-3 text-sm text-white/80">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">주문번호</p>
-                  <p className="mt-2 text-base font-semibold text-white">CB-20260323-KEYRING-0142</p>
+                  <p className="mt-2 break-all text-base font-semibold text-white">{summaryOrder.orderNo}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">스펙</p>
+                  <p className="mt-2 text-sm leading-6 text-white">{summaryOrder.spec}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">상품</p>
-                    <p className="mt-2 font-semibold text-white">아크릴 키링</p>
+                    <p className="mt-2 font-semibold text-white">{summaryOrder.product}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">수량</p>
-                    <p className="mt-2 font-semibold text-white">30개</p>
+                    <p className="mt-2 font-semibold text-white">{summaryOrder.qty}개</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">총액</p>
-                    <p className="mt-2 font-semibold text-white">{formatMoney(118800)}</p>
+                    <p className="mt-2 font-semibold text-white">{formatMoney(summaryOrder.total)}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">출고예상일</p>
-                    <p className="mt-2 font-semibold text-white">{scenario.expectedShipDate}</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">출처</p>
+                    <p className="mt-2 font-semibold text-white">{summaryOrder.source}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
@@ -316,15 +343,6 @@ export default function OrderCheckPage() {
                 <p>검수: 출고 전 최종 검수 중입니다.</p>
                 <p>출고완료: 송장 입력이 완료되어 배송이 시작되었습니다.</p>
               </div>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              <Link href="/orders" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                주문 목록으로 이동
-              </Link>
-              <Link href="/workbench/keyring" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                작업대로 돌아가기
-              </Link>
             </div>
           </aside>
         </section>
