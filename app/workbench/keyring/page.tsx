@@ -273,8 +273,7 @@ export default function KeyringWorkbenchPage() {
                 서랍과 주문으로 실제로 넘어간다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                이제 키링 작업대는 보기용 화면이 아니라 실제 상태를 저장하는 제작 화면입니다.
-                초안은 자동 저장되고, 서랍 저장과 주문 큐 이동이 실제로 동작합니다.
+                실제 제작 상태를 저장하고 서랍·주문 큐와 연결되는 키링 작업 화면입니다.
               </p>
 
               <div className="flex flex-wrap gap-3">
