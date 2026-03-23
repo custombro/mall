@@ -1,4 +1,4 @@
-# CB_MALL_PROGRESS_SNAPSHOT_LATEST
+# CB_MALL_PROGRESS_SNAPSHOT_20260324_040716
 
 - Snapshot Time: 2026-03-24 04:07:16
 - Repo Path: C:\Users\hjk86\mall_front\next-app
