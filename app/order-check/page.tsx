@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 
 type CustomerStepKey = "received" | "waiting";
 type MakerStepKey = "printing" | "cutting" | "assembling" | "checking" | "shipped";
-
 type StepStatus = "done" | "current" | "upcoming";
 
 type OrderScenario = {
@@ -44,18 +43,18 @@ const ORDER_SCENARIOS: OrderScenario[] = [
   {
     key: "checking",
     title: "검수 직전",
-    printDownloadedAt: "2026-03-21 09:10",
-    cutDownloadedAt: "2026-03-21 10:00",
-    expectedShipDate: "2026-03-23",
+    printDownloadedAt: "2026-03-22 09:10",
+    cutDownloadedAt: "2026-03-22 10:00",
+    expectedShipDate: "2026-03-24",
     invoiceNumber: null,
     courier: null,
   },
   {
     key: "shipped",
     title: "출고완료 예시",
-    printDownloadedAt: "2026-03-19 08:40",
-    cutDownloadedAt: "2026-03-19 09:30",
-    expectedShipDate: "2026-03-21",
+    printDownloadedAt: "2026-03-20 08:40",
+    cutDownloadedAt: "2026-03-20 09:30",
+    expectedShipDate: "2026-03-22",
     invoiceNumber: "5784-1122-8899",
     courier: "CJ대한통운",
   },
@@ -77,8 +76,7 @@ function getMakerStage(scenario: OrderScenario): MakerStepKey {
 
   if (scenario.cutDownloadedAt) {
     const diffDays = Math.ceil((expected.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 0) return "checking";
-    if (diffDays === 1) return "checking";
+    if (diffDays <= 1) return "checking";
     return "assembling";
   }
 
