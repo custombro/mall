@@ -1,185 +1,239 @@
-import Link from "next/link";
+"use client";
 
-const entries = [
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+type EntryMode = "둘러보기" | "작업대 바로가기";
+
+const ENTRY_MODES = [
   {
-    href: "/workbench/keyring",
-    eyebrow: "Workbench",
-    title: "제작",
-    description: "키링 편집과 작업대 진입. 제작 시작점을 여기로 고정합니다.",
-    cta: "제작 시작",
+    key: "둘러보기",
+    title: "둘러보기로 시작",
+    description: "처음 오는 손님이 공방 흐름을 이해한 뒤 작업대로 들어가는 입문형 진입",
   },
   {
+    key: "작업대 바로가기",
+    title: "작업대 바로가기",
+    description: "자주 오는 손님과 VIP가 바로 제작에 들어가는 빠른 진입",
+  },
+] as const;
+
+const QUICK_PATHS = [
+  {
+    title: "처음 방문",
+    description: "기본조합으로 시작해 공방 흐름을 짧게 익히는 경로",
+    action: "기본조합으로 시작",
+    href: "/workbench/keyring",
+  },
+  {
+    title: "자주 오는 손님",
+    description: "최근 작업을 열고 수량만 바꿔 빠르게 재주문하는 경로",
+    action: "최근 작업 열기",
     href: "/storage",
-    eyebrow: "Drawer",
+  },
+  {
+    title: "하이 레벨",
+    description: "자재/두께/홀 위치/인쇄를 세부 제어하는 경로",
+    action: "작업대 세부 설정",
+    href: "/workbench/keyring",
+  },
+  {
+    title: "VIP / 대량",
+    description: "프로젝트 단위 서랍과 빠른 주문 흐름으로 진입하는 경로",
+    action: "VIP 서랍 열기",
+    href: "/storage",
+  },
+] as const;
+
+const HUB_CARDS = [
+  {
+    title: "제작",
+    eyebrow: "WORKBENCH",
+    description: "자재칸 → 작업대 → 부자재칸 흐름으로 실제 제품을 조합하는 중심 화면",
+    href: "/workbench/keyring",
+    cta: "작업대로 이동",
+  },
+  {
     title: "서랍",
-    description: "보관함, 재주문, 저장 디자인 확인. 작업 결과물을 쌓아두는 영역입니다.",
+    eyebrow: "DRAWER",
+    description: "최근 작업, 저장 스펙, 제작완료품, VIP 프로젝트를 빠르게 다시 여는 재주문 콘솔",
+    href: "/storage",
     cta: "서랍 열기",
   },
   {
-    href: "/orders",
-    eyebrow: "Orders",
-    title: "주문",
-    description: "주문 생성/정리의 진입점. 생산 흐름으로 넘기는 허브 역할입니다.",
-    cta: "주문 보기",
-  },
-  {
-    href: "/order-check",
-    eyebrow: "Tracking",
     title: "주문확인",
-    description: "주문번호 기반 확인과 상태 추적 진입점입니다.",
-    cta: "상태 확인",
+    eyebrow: "ORDER CHECK",
+    description: "고객 진행과 제작자 진행을 분리해 현재 단계와 근거 이벤트를 읽는 화면",
+    href: "/order-check",
+    cta: "주문확인 보기",
   },
   {
-    href: "/my",
-    eyebrow: "Account",
-    title: "내정보",
-    description: "내 작업, 계정, 저장된 선호 정보를 다루는 개인 허브입니다.",
-    cta: "내 정보",
+    title: "주문",
+    eyebrow: "ORDERS",
+    description: "작업대와 서랍에서 넘어온 주문을 정리하고 생산 흐름과 연결하는 구간",
+    href: "/orders",
+    cta: "주문 목록 보기",
   },
 ] as const;
 
-const flow = [
-  "손님이 홈에서 제작/서랍/주문으로 진입",
-  "디자인 저장 후 주문 데이터 생성",
-  "주문 메타가 생산 큐로 이동",
-  "생산 데이터 정리 후 출력/제작 단계로 연결",
-] as const;
-
-const rules = [
-  "홈은 긴 스크롤 판매 페이지가 아니라 허브형 진입 화면",
-  "주요 기능은 각각 독립 페이지로 분리",
-  "제작과 서랍이 가장 앞에 보이도록 배치",
+const SYSTEM_PRINCIPLES = [
+  "작업대가 중심이고 상품 상세는 그 뒤에 온다",
+  "서랍은 저장소가 아니라 시간 절약 장치다",
+  "주문확인은 상태명보다 근거 이벤트를 먼저 보여준다",
+  "시선전환은 선택형이고 기본은 빠른 작업 흐름이다",
 ] as const;
 
 export default function HomePage() {
+  const [entryMode, setEntryMode] = useState<EntryMode>("작업대 바로가기");
+
+  const modeInfo = ENTRY_MODES.find((item) => item.key === entryMode) ?? ENTRY_MODES[1];
+
+  const summary = useMemo(() => {
+    return {
+      title:
+        entryMode === "둘러보기"
+          ? "처음 오는 손님도 공방 흐름을 짧게 이해"
+          : "자주 오는 손님과 VIP가 시간을 뺏기지 않음",
+      description:
+        entryMode === "둘러보기"
+          ? "둘러보기는 입문용이다. 구조를 이해한 뒤 작업대로 전환한다."
+          : "기본은 작업대와 서랍 중심의 빠른 경로다. 느린 연출을 강요하지 않는다.",
+    };
+  }, [entryMode]);
+
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 md:px-10 lg:px-12">
-        <section className="overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 shadow-2xl">
-          <div className="flex flex-col gap-6 p-6 md:p-8 lg:p-10">
-            <div className="flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-[0.24em] text-zinc-400">
-              <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-cyan-200">
-                CB Mall
-              </span>
-              <span>Home Hub</span>
-              <span>GitHub-first</span>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-              <div className="space-y-4">
-                <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
-                  홈은 소개 페이지가 아니라
-                  <br />
-                  작업 허브여야 한다.
-                </h1>
-                <p className="max-w-3xl text-sm leading-7 text-zinc-300 md:text-base">
-                  CB Mall의 첫 화면을 긴 스크롤 쇼핑 페이지가 아니라, 제작/서랍/주문/주문확인/내정보로
-                  즉시 진입하는 허브형 구조로 정리했습니다. 손님은 홈에서 방향을 정하고, 실제 작업은 각
-                  페이지에서 수행합니다.
-                </p>
-
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <Link
-                    href="/workbench/keyring"
-                    className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:-translate-y-0.5"
-                  >
-                    키링 제작 시작
-                  </Link>
-                  <Link
-                    href="/storage"
-                    className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                  >
-                    서랍 바로가기
-                  </Link>
-                </div>
-              </div>
-
-              <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
-                  Production Flow
-                </p>
-                <ol className="mt-4 space-y-3">
-                  {flow.map((step, index) => (
-                    <li
-                      key={step}
-                      className="flex gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+    <main className="min-h-screen bg-[#090b10] text-white">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
+        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-3xl space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO MALL HUB</p>
+              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
+                공방을 이해할 수도 있고
+                <br />
+                바로 작업대에 들어갈 수도 있다
+              </h1>
+              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
+                CB Mall은 일반 상품몰이 아니라 작업대와 서랍을 가진 제작형 커머스 허브입니다.
+                처음 오는 손님은 공방 흐름을 이해하고, 자주 오는 손님과 VIP는 시간을 뺏기지 않도록 빠른 경로로 바로 진입합니다.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {ENTRY_MODES.map((mode) => {
+                  const active = mode.key === entryMode;
+                  return (
+                    <button
+                      key={mode.key}
+                      type="button"
+                      onClick={() => setEntryMode(mode.key)}
+                      className={[
+                        "rounded-full border px-5 py-3 text-sm font-semibold transition",
+                        active
+                          ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
+                          : "border-white/15 text-white/75 hover:border-white/30 hover:bg-white/[0.05] hover:text-white",
+                      ].join(" ")}
                     >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-zinc-950">
-                        {index + 1}
-                      </div>
-                      <p className="text-sm leading-6 text-zinc-300">{step}</p>
-                    </li>
-                  ))}
-                </ol>
+                      {mode.key}
+                    </button>
+                  );
+                })}
+                <Link href="/workbench/keyring" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                  제작 시작
+                </Link>
+              </div>
+            </div>
+
+            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 진입 모드</p>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">모드</p>
+                  <p className="mt-2 text-lg font-bold text-white">{modeInfo.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/60">{modeInfo.description}</p>
+                </div>
+                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">판정</p>
+                  <p className="mt-2 text-sm font-medium text-cyan-50">{summary.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-cyan-100/80">{summary.description}</p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-5">
-          {entries.map((entry) => (
-            <Link
-              key={entry.href}
-              href={entry.href}
-              className="group rounded-[24px] border border-white/10 bg-white/[0.045] p-5 transition hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-white/[0.08]"
-            >
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
-                    {entry.eyebrow}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">{entry.title}</h2>
-                </div>
-                <p className="min-h-[72px] text-sm leading-6 text-zinc-300">{entry.description}</p>
-                <div className="inline-flex items-center rounded-full border border-white/15 px-3 py-2 text-sm font-medium text-zinc-200 transition group-hover:border-cyan-300/40 group-hover:text-cyan-100">
-                  {entry.cta}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
-              Hub Rules
-            </p>
-            <div className="mt-4 grid gap-3">
-              {rules.map((rule) => (
-                <div
-                  key={rule}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm leading-6 text-zinc-300"
-                >
-                  {rule}
-                </div>
-              ))}
+        <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">빠른 경로</p>
+              <h2 className="mt-2 text-2xl font-bold text-white">손님 유형별 시간을 아끼는 시작점</h2>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
+              기본은 <span className="ml-2 font-semibold text-white">빠른 작업 흐름</span>
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
-              Immediate Routes
-            </p>
-            <div className="mt-4 grid gap-3">
-              {entries.map((entry) => (
-                <div
-                  key={entry.href}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-white">{entry.title}</p>
-                    <p className="text-xs text-zinc-400">{entry.href}</p>
+          <div className="mt-5 grid gap-4 lg:grid-cols-4">
+            {QUICK_PATHS.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="rounded-[24px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+              >
+                <p className="text-sm font-semibold text-white">{item.title}</p>
+                <p className="mt-2 text-xs leading-6 text-white/60">{item.description}</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/80">{item.action}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_360px]">
+          <section className="grid gap-4 md:grid-cols-2">
+            {HUB_CARDS.map((card) => (
+              <Link
+                key={card.title}
+                href={card.href}
+                className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{card.eyebrow}</p>
+                <h3 className="mt-3 text-2xl font-bold text-white">{card.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-white/65">{card.description}</p>
+                <div className="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/30 hover:text-white">
+                  {card.cta}
+                </div>
+              </Link>
+            ))}
+          </section>
+
+          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">시스템 원칙</p>
+            <div className="mt-4 space-y-3">
+              {SYSTEM_PRINCIPLES.map((item, index) => (
+                <div key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-xs font-semibold text-cyan-200">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm leading-7 text-white/70">{item}</p>
                   </div>
-                  <Link
-                    href={entry.href}
-                    className="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:border-cyan-300/40 hover:text-cyan-100"
-                  >
-                    이동
-                  </Link>
                 </div>
               ))}
             </div>
-          </div>
+
+            <div className="mt-5 rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">다음 이동</p>
+              <div className="mt-4 grid gap-3">
+                <Link href="/workbench/keyring" className="rounded-2xl bg-cyan-400 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                  키링 작업대로 이동
+                </Link>
+                <Link href="/storage" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                  서랍 콘솔 열기
+                </Link>
+                <Link href="/order-check" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                  주문확인 보기
+                </Link>
+              </div>
+            </div>
+          </aside>
         </section>
       </div>
     </main>
