@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadOrderEntries, type OrderEntry } from "../../lib/cbmall-store";
 
 type CustomerStepKey = "received" | "waiting";
 type MakerStepKey = "printing" | "cutting" | "assembling" | "checking" | "shipped";
 type StepStatus = "done" | "current" | "upcoming";
 
-type OrderScenario = {
-  key: string;
+type DisplayOrder = {
+  id: string;
   title: string;
+  product: string;
+  spec: string;
+  qty: number;
+  total: number;
+  source: string;
+  updatedAt: string;
   printDownloadedAt: string | null;
   cutDownloadedAt: string | null;
   expectedShipDate: string;
@@ -31,57 +37,94 @@ const MAKER_STEPS: { key: MakerStepKey; title: string; description: string }[] =
   { key: "shipped", title: "출고완료", description: "송장번호 입력으로 배송 시작" },
 ];
 
-const ORDER_SCENARIOS: OrderScenario[] = [
-  {
-    key: "basic",
-    title: "기본 흐름",
-    printDownloadedAt: "2026-03-23 10:20",
-    cutDownloadedAt: "2026-03-23 11:45",
-    expectedShipDate: "2026-03-25",
-    invoiceNumber: null,
-    courier: null,
-  },
-  {
-    key: "checking",
-    title: "검수 직전",
-    printDownloadedAt: "2026-03-22 09:10",
-    cutDownloadedAt: "2026-03-22 10:00",
-    expectedShipDate: "2026-03-24",
-    invoiceNumber: null,
-    courier: null,
-  },
-  {
-    key: "shipped",
-    title: "출고완료 예시",
-    printDownloadedAt: "2026-03-20 08:40",
-    cutDownloadedAt: "2026-03-20 09:30",
-    expectedShipDate: "2026-03-22",
-    invoiceNumber: "5784-1122-8899",
-    courier: "CJ대한통운",
-  },
-];
-
 function formatMoney(value: number) {
   return value.toLocaleString("ko-KR") + "원";
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "아직 없음";
+  try {
+    return new Date(value).toLocaleString("ko-KR");
+  } catch {
+    return value;
+  }
 }
 
 function toDate(dateText: string) {
   return new Date(`${dateText}T00:00:00+09:00`);
 }
 
-function getMakerStage(scenario: OrderScenario): MakerStepKey {
-  if (scenario.invoiceNumber) return "shipped";
+function formatDateOnly(date: Date) {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addMinutes(base: Date, minutes: number) {
+  return new Date(base.getTime() + minutes * 60 * 1000).toISOString();
+}
+
+function addDays(base: Date, days: number) {
+  return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function mapOrderToDisplay(order: OrderEntry): DisplayOrder {
+  const base = new Date(order.updatedAt);
+  const printDownloadedAt = addMinutes(base, 30);
+  const cutDownloadedAt = addMinutes(base, 90);
+  const expectedShipDate = formatDateOnly(addDays(base, 2));
+
+  return {
+    id: order.id,
+    title: order.title,
+    product: order.product,
+    spec: order.spec,
+    qty: order.qty,
+    total: order.amount,
+    source: order.source,
+    updatedAt: order.updatedAt,
+    printDownloadedAt,
+    cutDownloadedAt,
+    expectedShipDate,
+    invoiceNumber: null,
+    courier: null,
+  };
+}
+
+function getFallbackOrders(): DisplayOrder[] {
+  return [
+    {
+      id: "sample-order-1",
+      title: "기본 흐름 예시",
+      product: "아크릴 키링",
+      spec: "투명 · 3T · 자유형 · 단면 · D고리 실버 · OPP 8x10",
+      qty: 30,
+      total: 118800,
+      source: "sample",
+      updatedAt: "2026-03-23T09:50:00+09:00",
+      printDownloadedAt: "2026-03-23T10:20:00+09:00",
+      cutDownloadedAt: "2026-03-23T11:45:00+09:00",
+      expectedShipDate: "2026-03-25",
+      invoiceNumber: null,
+      courier: null,
+    },
+  ];
+}
+
+function getMakerStage(order: DisplayOrder): MakerStepKey {
+  if (order.invoiceNumber) return "shipped";
 
   const now = new Date("2026-03-23T14:00:00+09:00");
-  const expected = toDate(scenario.expectedShipDate);
+  const expected = toDate(order.expectedShipDate);
 
-  if (scenario.cutDownloadedAt) {
+  if (order.cutDownloadedAt) {
     const diffDays = Math.ceil((expected.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays <= 1) return "checking";
     return "assembling";
   }
 
-  if (scenario.printDownloadedAt) return "printing";
+  if (order.printDownloadedAt) return "printing";
   return "printing";
 }
 
@@ -131,42 +174,30 @@ function StepCard({
 }
 
 export default function OrderCheckPage() {
-  const [scenarioKey, setScenarioKey] = useState<string>("basic");
-  const [latestOrder] = useState<OrderEntry | null>(() => {
-    const orders = loadOrderEntries();
-    return orders[0] ?? null;
-  });
+  const [orders, setOrders] = useState<DisplayOrder[]>([]);
+  const [selectedId, setSelectedId] = useState("");
 
-  const scenario = ORDER_SCENARIOS.find((item) => item.key === scenarioKey) ?? ORDER_SCENARIOS[0];
-  const currentMakerStage = getMakerStage(scenario);
+  useEffect(() => {
+    const loaded = loadOrderEntries();
+    const mapped = loaded.length > 0 ? loaded.map(mapOrderToDisplay) : getFallbackOrders();
+    setOrders(mapped);
+    setSelectedId(mapped[0]?.id ?? "");
+  }, []);
+
+  const selected = orders.find((item) => item.id === selectedId) ?? orders[0];
+  const currentMakerStage = selected ? getMakerStage(selected) : "printing";
   const makerIndex = MAKER_STEPS.findIndex((step) => step.key === currentMakerStage);
 
   const timeline = useMemo(() => {
+    if (!selected) return [];
     return [
-      { label: "인쇄 파일 다운로드", value: scenario.printDownloadedAt ?? "아직 없음" },
-      { label: "칼선 파일 다운로드", value: scenario.cutDownloadedAt ?? "아직 없음" },
-      { label: "출고예상일", value: scenario.expectedShipDate },
-      { label: "송장번호", value: scenario.invoiceNumber ?? "아직 입력 전" },
+      { label: "주문 생성", value: formatDate(selected.updatedAt) },
+      { label: "인쇄 파일 다운로드", value: formatDate(selected.printDownloadedAt) },
+      { label: "칼선 파일 다운로드", value: formatDate(selected.cutDownloadedAt) },
+      { label: "출고예상일", value: selected.expectedShipDate },
+      { label: "송장번호", value: selected.invoiceNumber ?? "아직 입력 전" },
     ];
-  }, [scenario]);
-
-  const summaryOrder = latestOrder
-    ? {
-        orderNo: latestOrder.id,
-        product: latestOrder.product,
-        qty: latestOrder.qty,
-        total: latestOrder.amount,
-        spec: latestOrder.spec,
-        source: latestOrder.source,
-      }
-    : {
-        orderNo: "CB-20260323-KEYRING-0142",
-        product: "아크릴 키링",
-        qty: 30,
-        total: 118800,
-        spec: "투명 · 3T · 자유형 · 단면 · D고리 실버 · OPP 8x10",
-        source: "sample",
-      };
+  }, [selected]);
 
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
@@ -176,66 +207,51 @@ export default function OrderCheckPage() {
             <div className="max-w-3xl space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO ORDER CHECK</p>
               <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                고객 진행과 제작자 진행을
+                실제 주문 큐를 선택해
                 <br />
-                한 화면에서 분리해 보여준다
+                고객 진행과 제작자 진행을 함께 읽는다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                접수와 제작대기까지는 고객 기준으로, 출력중 이후는 제작자 기준으로 흐릅니다.
-                이제 주문 요약도 작업대/서랍에서 넘어온 실제 주문 항목을 우선해서 보여줍니다.
+                이제 주문확인은 샘플 시나리오 버튼이 아니라 실제 주문 큐를 기준으로 움직입니다.
+                왼쪽에서 주문을 선택하면, 오른쪽에서 고객 진행 / 제작자 진행 / 근거 이벤트를 바로 읽을 수 있습니다.
               </p>
               <div className="flex flex-wrap gap-3">
-                {ORDER_SCENARIOS.map((item) => {
-                  const active = item.key === scenarioKey;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setScenarioKey(item.key)}
-                      className={[
-                        "rounded-full border px-5 py-3 text-sm font-semibold transition",
-                        active
-                          ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                          : "border-white/15 text-white/75 hover:border-white/30 hover:bg-white/[0.05] hover:text-white",
-                      ].join(" ")}
-                    >
-                      {item.title}
-                    </button>
-                  );
-                })}
-                <Link href="/orders" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                <Link href="/orders" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
                   주문 허브 보기
+                </Link>
+                <Link href="/workbench/keyring" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                  작업대로 이동
                 </Link>
               </div>
             </div>
 
             <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">주문 요약</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 선택 주문</p>
               <div className="mt-4 space-y-3 text-sm text-white/80">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">주문번호</p>
-                  <p className="mt-2 break-all text-base font-semibold text-white">{summaryOrder.orderNo}</p>
+                  <p className="mt-2 break-all text-base font-semibold text-white">{selected?.id ?? "아직 없음"}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">스펙</p>
-                  <p className="mt-2 text-sm leading-6 text-white">{summaryOrder.spec}</p>
+                  <p className="mt-2 text-sm leading-6 text-white">{selected?.spec ?? "아직 없음"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">상품</p>
-                    <p className="mt-2 font-semibold text-white">{summaryOrder.product}</p>
+                    <p className="mt-2 font-semibold text-white">{selected?.product ?? "아직 없음"}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">수량</p>
-                    <p className="mt-2 font-semibold text-white">{summaryOrder.qty}개</p>
+                    <p className="mt-2 font-semibold text-white">{selected ? `${selected.qty}개` : "아직 없음"}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">총액</p>
-                    <p className="mt-2 font-semibold text-white">{formatMoney(summaryOrder.total)}</p>
+                    <p className="mt-2 font-semibold text-white">{selected ? formatMoney(selected.total) : "아직 없음"}</p>
                   </div>
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">출처</p>
-                    <p className="mt-2 font-semibold text-white">{summaryOrder.source}</p>
+                    <p className="mt-2 font-semibold text-white">{selected?.source ?? "아직 없음"}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
@@ -249,7 +265,34 @@ export default function OrderCheckPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.6fr)_340px]">
+        <section className="grid gap-6 xl:grid-cols-[320px_minmax(0,1.1fr)_minmax(0,1.5fr)_340px]">
+          <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">실제 주문 목록</p>
+            <div className="mt-4 space-y-3">
+              {orders.map((item) => {
+                const active = item.id === selected?.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedId(item.id)}
+                    className={[
+                      "w-full rounded-2xl border p-4 text-left transition",
+                      active
+                        ? "border-cyan-400/30 bg-cyan-400/10"
+                        : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]",
+                    ].join(" ")}
+                  >
+                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-cyan-300/80">{item.source}</p>
+                    <p className="mt-3 text-xs leading-5 text-white/60">{item.spec}</p>
+                    <p className="mt-3 text-xs text-white/45">{formatDate(item.updatedAt)}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -270,7 +313,7 @@ export default function OrderCheckPage() {
                   status={getStepStatus(index, 1)}
                   evidence={
                     step.key === "received"
-                      ? "주문 생성 및 파일 업로드 완료"
+                      ? `주문 생성: ${formatDate(selected?.updatedAt)}`
                       : "고객 선택/업로드 종료 후 제작 큐 진입"
                   }
                 />
@@ -285,7 +328,7 @@ export default function OrderCheckPage() {
                 <h2 className="mt-2 text-2xl font-bold text-white">제작자의 실제 작업 흐름</h2>
               </div>
               <span className="rounded-full border border-cyan-400/25 bg-cyan-400/12 px-3 py-1.5 text-xs font-semibold text-cyan-100">
-                이벤트 기반 판정
+                주문 큐 기준
               </span>
             </div>
 
@@ -293,19 +336,15 @@ export default function OrderCheckPage() {
               {MAKER_STEPS.map((step, index) => {
                 const evidence =
                   step.key === "printing"
-                    ? scenario.printDownloadedAt
-                      ? `인쇄 파일 다운로드: ${scenario.printDownloadedAt}`
-                      : "인쇄 파일 다운로드 대기"
+                    ? `인쇄 파일 다운로드: ${formatDate(selected?.printDownloadedAt)}`
                     : step.key === "cutting"
-                    ? scenario.cutDownloadedAt
-                      ? `칼선 파일 다운로드: ${scenario.cutDownloadedAt}`
-                      : "칼선 파일 다운로드 전"
+                    ? `칼선 파일 다운로드: ${formatDate(selected?.cutDownloadedAt)}`
                     : step.key === "assembling"
-                    ? `가공 이후 조립 / 포장 진행, 출고예상일 ${scenario.expectedShipDate} 기준`
+                    ? `가공 이후 조립 / 포장 진행, 출고예상일 ${selected?.expectedShipDate ?? "아직 없음"} 기준`
                     : step.key === "checking"
                     ? "출고 직전 최종 검수 단계"
-                    : scenario.invoiceNumber
-                    ? `${scenario.courier} · ${scenario.invoiceNumber}`
+                    : selected?.invoiceNumber
+                    ? `${selected.courier} · ${selected.invoiceNumber}`
                     : "송장번호 입력 전";
 
                 return (
@@ -343,6 +382,15 @@ export default function OrderCheckPage() {
                 <p>검수: 출고 전 최종 검수 중입니다.</p>
                 <p>출고완료: 송장 입력이 완료되어 배송이 시작되었습니다.</p>
               </div>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              <Link href="/orders" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                주문 허브로 이동
+              </Link>
+              <Link href="/workbench/keyring" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                작업대로 돌아가기
+              </Link>
             </div>
           </aside>
         </section>
