@@ -337,9 +337,7 @@ export default function KeyringWorkbenchPage() {
               <OptionGroup title="두께" items={THICKNESS} selected={thickness} onSelect={setThickness} />
               <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자동 저장</p>
-                <p className="mt-3 text-sm leading-7 text-white/70">
-                  현재 선택 상태는 자동 저장되어 최근 값이 다시 복원됩니다.
-                </p>
+                <p className="mt-3 text-sm text-white/70">최근 상태가 유지됩니다.</p>
               </div>
             </div>
           </aside>
@@ -349,9 +347,15 @@ export default function KeyringWorkbenchPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">작업대</p>
                 <h2 className="mt-2 text-2xl font-bold text-white">자재 + 부자재를 조합해 제품 완성</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/65">
-                  중앙 작업대에서 고른 값이 서랍 저장과 주문 큐에 그대로 이어집니다.
-                </p>
+                <details className="mt-2 max-w-2xl rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white/85">
+                    작업 안내 보기
+                  </summary>
+                  <div className="mt-3 space-y-2 text-sm leading-7 text-white/65">
+                    <p>중앙 작업대에서 고른 값이 서랍 저장과 주문 큐에 그대로 이어집니다.</p>
+                    <p>최근 상태는 자동 저장되어 다시 복원됩니다.</p>
+                  </div>
+                </details>
               </div>
               <button
                 type="button"
