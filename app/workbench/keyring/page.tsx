@@ -365,6 +365,12 @@ undefined
 
 undefined
 
+undefined
+
+undefined
+
+undefined
+
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자재 랙</p>
             <h2 className="mt-2 text-xl font-bold text-white">아크릴 원장 꺼내기</h2>
