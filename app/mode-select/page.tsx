@@ -1,7 +1,6 @@
 import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
-const modeRules: string[] = [];
 
 const modeFlows = [
   { title: "제작 모드", body: "작업대 중심으로 프리셋, 파츠 조합, 수량 판단을 진행하는 흐름" },
@@ -48,16 +47,6 @@ export default function Page() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
               제작 선택 규칙
             </p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
-              {modeRules.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
 
           <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
