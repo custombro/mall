@@ -132,7 +132,7 @@ function OptionGroup({
                 "rounded-2xl border px-3 py-3 text-left transition",
                 active
                   ? "border-cyan-400/40 bg-cyan-400/12 text-cyan-50"
-                  : "border-white/10 bg-black/20 text-white/75 hover:border-white/20 hover:bg-white/[0.05]",
+                  : "border-white/10 bg-white/[0.05] text-white/82 hover:border-cyan-200/20 hover:bg-white/[0.08]",
               ].join(" ")}
             >
               <p className="text-sm font-semibold">{item.value}</p>
@@ -360,13 +360,13 @@ export default function KeyringWorkbenchPage() {
 
         
 
-          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+          <aside className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_52px_rgba(0,0,0,0.16)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">부자재칸 / 주문 요약</p>
             <div className="mt-5 space-y-5">
               <OptionGroup title="고리" items={HARDWARE} selected={hardware} onSelect={setHardware} />
               <OptionGroup title="포장" items={PACKAGES} selected={packageType} onSelect={setPackageType} />
 
-              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+              <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)]">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>
                   <p className="text-[11px] text-white/45">직접 입력 + 빠른 증감</p>

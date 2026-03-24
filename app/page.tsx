@@ -118,13 +118,13 @@ function LiveCard({
   return (
     <Link
       href={href}
-      className="rounded-[24px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+      className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] transition hover:border-cyan-200/25 hover:bg-white/[0.08]"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{title}</p>
-      <p className="mt-3 text-sm leading-6 text-white/60">{description}</p>
+      <p className="mt-3 text-sm leading-6 text-white/72">{description}</p>
       <p className="mt-4 break-all text-base font-bold text-white">{primary}</p>
-      <p className="mt-2 text-xs leading-5 text-white/45">{secondary}</p>
-      <div className="mt-4 inline-flex rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/80">
+      <p className="mt-2 text-xs leading-5 text-white/58">{secondary}</p>
+      <div className="mt-4 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3.5 py-2 text-[11px] font-semibold tracking-[0.08em] text-cyan-50">
         {cta}
       </div>
     </Link>
@@ -246,12 +246,12 @@ export default function HomePage() {
               <Link
                 key={card.title}
                 href={card.href}
-                className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
+                className="rounded-[26px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_52px_rgba(0,0,0,0.16)] transition hover:border-cyan-200/25 hover:bg-white/[0.08]"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{card.eyebrow}</p>
                 <h3 className="mt-3 text-2xl font-bold text-white">{card.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-white/65">{card.description}</p>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/30 hover:text-white">
+                <p className="mt-3 text-sm leading-7 text-white/74">{card.description}</p>
+                <div className="mt-5 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/35 hover:bg-cyan-300/15">
                   {card.cta}
                 </div>
               </Link>
