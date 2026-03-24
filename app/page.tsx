@@ -41,8 +41,8 @@ const QUICK_PATHS = [
   },
   {
     title: "하이 레벨",
-    description: "자재/두께/홀 위치/인쇄를 세부 제어하는 경로",
-    action: "작업대 세부 설정",
+    description: "자재 랙에서 두께를 고르고 중앙 작업대에서 바로 조합하는 세부 경로",
+    action: "작업대 바로 조합",
     href: "/workbench/keyring",
   },
   {
@@ -57,9 +57,9 @@ const HUB_CARDS = [
   {
     title: "제작",
     eyebrow: "WORKBENCH",
-    description: "자재칸 → 작업대 → 부자재칸 흐름으로 실제 제품을 조합하는 중심 화면",
+    description: "밝은 작업실 허브에서 자재 랙 → 중앙 작업대 → 부자재칸 흐름으로 바로 조합하는 중심 화면",
     href: "/workbench",
-    cta: "공방 허브로 이동",
+    cta: "작업대로 들어가기",
   },
   {
     title: "서랍",
@@ -173,7 +173,7 @@ export default function HomePage() {
                 바로 작업대에 들어갈 수도 있다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                좌측 자재 랙, 중앙 작업대, 우측 부자재, 뒤쪽 서랍으로 이어지는 공방 허브만 남긴다.
+                좌측 자재 랙, 중앙 작업대, 우측 부자재, 뒤쪽 서랍으로 이어지는 밝은 공방 동선만 남긴다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {ENTRY_MODES.map((mode) => {

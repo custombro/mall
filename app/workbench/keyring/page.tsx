@@ -13,10 +13,10 @@ import {
 
 const SYSTEM_MODES = ["둘러보기", "작업대 바로가기"] as const;
 const ZONES = [
-  { key: "materials", title: "자재칸", description: "아크릴 재질과 두께를 먼저 고르는 구역" },
-  { key: "workbench", title: "작업대", description: "자재와 부자재가 실제 제품으로 합쳐지는 중심 구역" },
-  { key: "hardware", title: "부자재칸", description: "고리와 포장, 마감 방식을 고르는 구역" },
-  { key: "finish", title: "완성 / 서랍", description: "완성 스펙을 저장하고 재주문으로 넘기는 구역" },
+  { key: "materials", title: "자재칸", description: "좌측 자재 랙에서 아크릴 재질과 두께를 먼저 고르는 시작 구역" },
+  { key: "workbench", title: "작업대", description: "중앙 작업대에서 자재와 부자재를 실제 제품으로 조합하는 중심 구역" },
+  { key: "hardware", title: "부자재칸", description: "우측 부자재칸에서 고리와 포장, 마감 방식을 고르는 구역" },
+  { key: "finish", title: "완성 / 서랍", description: "뒤쪽 서랍에 완성 스펙을 저장하고 재주문으로 넘기는 구역" },
 ] as const;
 
 const MATERIALS = [
