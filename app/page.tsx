@@ -173,8 +173,7 @@ export default function HomePage() {
                 바로 작업대에 들어갈 수도 있다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                CB Mall은 일반 상품몰이 아니라 작업대와 서랍을 가진 제작형 커머스 허브입니다.
-                처음 오는 손님은 공방 흐름을 이해하고, 자주 오는 손님과 VIP는 시간을 뺏기지 않도록 빠른 경로로 바로 진입합니다.
+                홈은 설명을 늘어놓지 않고 작업대로 들어가는 허브만 남긴다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {ENTRY_MODES.map((mode) => {
@@ -237,70 +236,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 최근 상태</p>
-              <h2 className="mt-2 text-2xl font-bold text-white">지금 내가 마지막으로 만진 작업이 바로 보인다</h2>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
-              홈에서도 <span className="ml-2 font-semibold text-white">실제 최근 작업</span>을 읽는다
-            </div>
-          </div>
+        
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            <LiveCard
-              title="최근 초안"
-              description="작업대 자동 저장 상태"
-              primary={draft?.productCode ?? "아직 없음"}
-              secondary={draft ? `${draft.specText} · ${draft.quantity}개` : "아직 작업대 초안이 없다"}
-              href="/workbench/keyring"
-              cta="초안 열기"
-            />
-            <LiveCard
-              title="최근 서랍"
-              description="마지막 저장 항목"
-              primary={latestDrawer?.title ?? "아직 없음"}
-              secondary={latestDrawer ? `${latestDrawer.spec} · ${formatDate(latestDrawer.updatedAt)}` : "아직 서랍 저장 항목이 없다"}
-              href="/storage"
-              cta="서랍 열기"
-            />
-            <LiveCard
-              title="최근 주문"
-              description="마지막 주문 큐 항목"
-              primary={latestOrder?.title ?? "아직 없음"}
-              secondary={latestOrder ? `${latestOrder.spec} · ${formatDate(latestOrder.updatedAt)}` : "아직 주문 큐 항목이 없다"}
-              href="/orders"
-              cta="주문 보기"
-            />
-          </div>
-        </section>
-
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">빠른 경로</p>
-              <h2 className="mt-2 text-2xl font-bold text-white">손님 유형별 시간을 아끼는 시작점</h2>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70">
-              기본은 <span className="ml-2 font-semibold text-white">빠른 작업 흐름</span>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-4">
-            {QUICK_PATHS.map((item) => (
-              <Link
-                key={item.title}
-                href={item.href}
-                className="rounded-[24px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
-              >
-                <p className="text-sm font-semibold text-white">{item.title}</p>
-                <p className="mt-2 text-xs leading-6 text-white/60">{item.description}</p>
-                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/80">{item.action}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_360px]">
           <section className="grid gap-4 md:grid-cols-2">
