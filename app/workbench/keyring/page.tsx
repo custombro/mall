@@ -298,16 +298,12 @@ export default function KeyringWorkbenchPage() {
     <main className="min-h-screen bg-[#090b10] text-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
         <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl space-y-4">
+          <div className="flex flex-col gap-4">
+            <div className="max-w-3xl space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO KEYRING WORKBENCH</p>
-              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                작업대에서 고른 값이
-                <br />
-                서랍과 주문으로 실제로 넘어간다
-              </h1>
+              <h1 className="text-2xl font-bold leading-tight md:text-3xl">키링 작업대</h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                실제 제작 상태를 저장하고 서랍·주문 큐와 연결되는 키링 작업 화면입니다.
+                좌측 랙에서 자재를 고르고, 중앙 작업 매트에서 조합한 뒤, 우측 트레이에서 부자재와 수량을 정리합니다.
               </p>
 
               <div className="flex flex-wrap gap-3">
@@ -335,7 +331,7 @@ export default function KeyringWorkbenchPage() {
               </div>
             </div>
 
-            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
+            <div className="hidden">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">빠른 시작</p>
               <div className="mt-4 space-y-3">
                 {QUICK_PRESETS.map((preset) => (
@@ -362,10 +358,10 @@ export default function KeyringWorkbenchPage() {
           ) : null}
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
+        <section className="grid gap-6 xl:grid-cols-[260px_minmax(0,1.35fr)_300px]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자재칸</p>
-            <h2 className="mt-2 text-xl font-bold text-white">아크릴 가져오기</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자재 랙</p>
+            <h2 className="mt-2 text-xl font-bold text-white">아크릴 원장 꺼내기</h2>
             <div className="mt-5 space-y-5">
               <OptionGroup title="자재" items={MATERIALS} selected={material} onSelect={setMaterial} />
               <OptionGroup title="두께" items={THICKNESS} selected={thickness} onSelect={setThickness} />
@@ -379,17 +375,9 @@ export default function KeyringWorkbenchPage() {
           <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">작업대</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">자재 + 부자재를 조합해 제품 완성</h2>
-                <details className="mt-2 max-w-2xl rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white/85">
-                    작업 안내 보기
-                  </summary>
-                  <div className="mt-3 space-y-2 text-sm leading-7 text-white/65">
-                    <p>중앙 작업대에서 고른 값이 서랍 저장과 주문 큐에 그대로 이어집니다.</p>
-                    <p>최근 상태는 자동 저장되어 다시 복원됩니다.</p>
-                  </div>
-                </details>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">작업 매트</p>
+                <h2 className="mt-2 text-2xl font-bold text-white">작업 매트에서 조합하기</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/60">왼쪽 랙에서 자재를 꺼내고, 중앙 작업 매트에서 조합한 뒤, 오른쪽 트레이에서 부자재와 수량을 정리합니다.</p>
               </div>
               <button
                 type="button"
