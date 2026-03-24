@@ -35,7 +35,7 @@ export default function Page() {
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
                 제작 선택
               </p>
-              <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
+              <h1 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
                 모드 선택
               </h1>
               </div>
