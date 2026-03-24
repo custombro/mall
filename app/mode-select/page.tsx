@@ -32,7 +32,7 @@ export default function Page() {
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">제작</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-cyan-200/60">제작</p>
               <h1 className="text-lg font-semibold leading-tight text-white sm:text-xl">
                 모드 선택
               </h1>
