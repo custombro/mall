@@ -38,14 +38,14 @@ export default function Page() {
   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
     제작 선택 흐름
   </p>
-  <div className="mt-4 grid gap-3 md:grid-cols-3">
+  <div className="mt-3 grid gap-2 md:grid-cols-3">
     {modeFlows.map((item) => (
       <article
         key={item.title}
-        className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
+        className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-3"
       >
         <p className="text-sm font-semibold text-white">{item.title}</p>
-        <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-300">{item.body}</p>
       </article>
     ))}
   </div>
