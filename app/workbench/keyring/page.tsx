@@ -160,7 +160,7 @@ export default function KeyringWorkbenchPage() {
   const [packageType, setPackageType] = useState("OPP 8x10");
   const [sizePreset, setSizePreset] = useState("40 x 40");
   const [quantity, setQuantity] = useState(10);
-  const [quantityInput, setQuantityInput] = useState("10");
+  const [quantityInput, setQuantityInput] = useState(String(quantity));
 
   const clampQuantity = (value: number) => {
     if (!Number.isFinite(value)) return 1;
@@ -499,28 +499,116 @@ export default function KeyringWorkbenchPage() {
               <OptionGroup title="포장" items={PACKAGES} selected={packageType} onSelect={setPackageType} />
 
               <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                <div className="flex items-center justify-between gap-3">`r`n          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>`r`n          <p className="text-[11px] text-white/45">직접 입력 + 빠른 증감</p>`r`n        </div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>
+                  <p className="text-[11px] text-white/45">직접 입력 + 빠른 증감</p>
+                </div>
                 <div className="mt-3 flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => changeQuantityBy(-1)}
+                    onClick={() =>
+                      setQuantity((prev) => {
+                        const next = Math.max(1, prev - 1);
+                        setQuantityInput(String(next));
+                        return next;
+                      })
+                    }
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg text-white/75 transition hover:border-white/30 hover:text-white"
                   >
-                    −
+                    -
                   </button>
-                  <div className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-lg font-semibold text-white">
-                    {quantity}개
-                  </div>
+                  <label className="flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-white/45">quantity</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={9999}
+                        step={1}
+                        value={quantityInput}
+                        onChange={(event) => setQuantityInput(event.target.value.replace(/[^\d]/g, ""))}
+                        onBlur={() => {
+                          const digits = quantityInput.replace(/[^\d]/g, "");
+                          const parsed = digits === "" ? 1 : Number(digits);
+                          const next = Math.min(9999, Math.max(1, parsed));
+                          setQuantity(next);
+                          setQuantityInput(String(next));
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            const digits = quantityInput.replace(/[^\d]/g, "");
+                            const parsed = digits === "" ? 1 : Number(digits);
+                            const next = Math.min(9999, Math.max(1, parsed));
+                            setQuantity(next);
+                            setQuantityInput(String(next));
+                            event.currentTarget.blur();
+                          }
+                        }}
+                        onFocus={(event) => event.currentTarget.select()}
+                        className="w-full bg-transparent text-lg font-semibold text-white outline-none"
+                        aria-label="수량 입력"
+                      />
+                      <span className="shrink-0 text-sm font-semibold text-white/60">개</span>
+                    </div>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => changeQuantityBy(1)}
+                    onClick={() =>
+                      setQuantity((prev) => {
+                        const next = Math.min(9999, prev + 1);
+                        setQuantityInput(String(next));
+                        return next;
+                      })
+                    }
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg text-white/75 transition hover:border-white/30 hover:text-white"
                   >
                     +
                   </button>
                 </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuantity((prev) => {
+                        const next = Math.max(1, prev - 10);
+                        setQuantityInput(String(next));
+                        return next;
+                      })
+                    }
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                  >
+                    -10
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuantity((prev) => {
+                        const next = Math.min(9999, prev + 10);
+                        setQuantityInput(String(next));
+                        return next;
+                      })
+                    }
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                  >
+                    +10
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuantity((prev) => {
+                        const next = Math.min(9999, prev + 50);
+                        setQuantityInput(String(next));
+                        return next;
+                      })
+                    }
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                  >
+                    +50
+                  </button>
+                </div>
               </div>
-
               <div className="rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">실시간 주문 요약</p>
                 <div className="mt-4 space-y-3 text-sm text-cyan-50">
