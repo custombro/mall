@@ -2,9 +2,8 @@ import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
 const modeRules = [
-  "모드 선택은 지금 할 작업을 나누는 빠른 진입입니다.",
-  "제작, 운영, 판매는 서로 다른 흐름으로 분리합니다.",
-  "다음 화면에서 할 일이 한 줄로 보이게 유지합니다.",
+  "지금 할 작업 기준으로 바로 이동합니다.",
+  "다음 화면에서 할 일이 바로 보이게 유지합니다.",
 ];
 
 const modeFlows = [
