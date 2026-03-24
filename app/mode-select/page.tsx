@@ -1,9 +1,7 @@
 import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
-const modeRules = [
-  "바로 이동합니다.",
-];
+const modeRules: string[] = [];
 
 const modeFlows = [
   { title: "제작 모드", body: "작업대 중심으로 프리셋, 파츠 조합, 수량 판단을 진행하는 흐름" },
