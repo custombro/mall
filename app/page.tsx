@@ -11,7 +11,7 @@ import {
   type WorkbenchDraft,
 } from "../lib/cbmall-store";
 
-type EntryMode = "둘러보기" | "제작 허브";
+type EntryMode = "둘러보기" | "공방 허브";
 
 const ENTRY_MODES = [
   {
@@ -20,8 +20,8 @@ const ENTRY_MODES = [
     description: "처음 오는 손님이 공방 흐름을 이해한 뒤 작업대로 들어가는 입문형 진입",
   },
   {
-    key: "제작 허브",
-    title: "제작 허브",
+    key: "공방 허브",
+    title: "공방 허브",
     description: "자주 오는 손님과 VIP가 바로 제작에 들어가는 빠른 진입",
   },
 ] as const;
@@ -59,7 +59,7 @@ const HUB_CARDS = [
     eyebrow: "WORKBENCH",
     description: "자재칸 → 작업대 → 부자재칸 흐름으로 실제 제품을 조합하는 중심 화면",
     href: "/workbench",
-    cta: "제작 허브로 이동",
+    cta: "공방 허브로 이동",
   },
   {
     title: "서랍",
@@ -132,7 +132,7 @@ function LiveCard({
 }
 
 export default function HomePage() {
-  const [entryMode, setEntryMode] = useState<EntryMode>("제작 허브");
+  const [entryMode, setEntryMode] = useState<EntryMode>("공방 허브");
   const [drawerEntries, setDrawerEntries] = useState<DrawerEntry[]>([]);
   const [orderEntries, setOrderEntries] = useState<OrderEntry[]>([]);
   const [draft, setDraft] = useState<WorkbenchDraft | null>(null);
@@ -173,7 +173,7 @@ export default function HomePage() {
                 바로 작업대에 들어갈 수도 있다
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                홈은 설명을 늘어놓지 않고 작업대로 들어가는 허브만 남긴다.
+                좌측 자재 랙, 중앙 작업대, 우측 부자재, 뒤쪽 서랍으로 이어지는 공방 허브만 남긴다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {ENTRY_MODES.map((mode) => {
