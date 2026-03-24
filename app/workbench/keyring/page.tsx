@@ -477,49 +477,49 @@ export default function KeyringWorkbenchPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">실시간 주문 요약</p>
+              <div className="rounded-[24px] border border-cyan-300/28 bg-cyan-300/12 p-4 shadow-[0_16px_40px_rgba(34,211,238,0.14)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-100/90">실시간 주문 요약</p>
                 <div className="mt-4 space-y-3 text-sm text-cyan-50">
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">제품 코드</p>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+                    <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">제품 코드</p>
                     <p className="mt-2 break-all text-base font-semibold">{pricing.productCode}</p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">스펙</p>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+                    <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">스펙</p>
                     <p className="mt-2 text-sm leading-6">{pricing.specText}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">개당</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+                      <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">개당</p>
                       <p className="mt-2 font-semibold">{pricing.unitPrice.toLocaleString()}원</p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">총액</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+                      <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">총액</p>
                       <p className="mt-2 font-semibold">{pricing.total.toLocaleString()}원</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-3">
+              <div className="grid gap-3.5">
                 <button
                   type="button"
                   onClick={handleSaveDrawer}
-                  className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  className="rounded-2xl bg-cyan-300 px-4 py-3.5 text-sm font-semibold tracking-[0.01em] text-slate-950 shadow-[0_12px_32px_rgba(34,211,238,0.24)] transition hover:bg-cyan-200"
                 >
                   서랍에 저장하고 열기
                 </button>
                 <button
                   type="button"
                   onClick={handlePushOrder}
-                  className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white"
+                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/82 transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white"
                 >
                   주문으로 넘기기
                 </button>
                 <button
                   type="button"
                   onClick={() => applyPreset("지난번과 동일")}
-                  className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white"
+                  className="rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/82 transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white"
                 >
                   지난번과 동일 불러오기
                 </button>
