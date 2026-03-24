@@ -2,7 +2,7 @@ import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
 const modeRules = [
-  "선택 후 바로 이동합니다.",
+  "바로 이동합니다.",
 ];
 
 const modeFlows = [
