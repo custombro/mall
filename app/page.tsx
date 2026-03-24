@@ -218,21 +218,21 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+        <section className="grid gap-5 md:grid-cols-3">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 서랍 항목</p>
             <p className="mt-3 text-3xl font-bold text-white">{drawerEntries.length}</p>
-            <p className="mt-2 text-sm text-white/55">작업대에서 저장된 실제 항목 수</p>
+            <p className="mt-2 text-sm text-white/65">작업대에서 저장된 실제 항목 수</p>
           </div>
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 주문 큐</p>
             <p className="mt-3 text-3xl font-bold text-white">{orderEntries.length}</p>
-            <p className="mt-2 text-sm text-white/55">작업대/서랍에서 넘어온 실제 주문 수</p>
+            <p className="mt-2 text-sm text-white/65">작업대/서랍에서 넘어온 실제 주문 수</p>
           </div>
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안 코드</p>
             <p className="mt-3 break-all text-lg font-bold text-white">{draft?.productCode ?? "아직 없음"}</p>
-            <p className="mt-2 text-sm text-white/55">최근 작업대 자동 저장 상태</p>
+            <p className="mt-2 text-sm text-white/65">최근 작업대 자동 저장 상태</p>
           </div>
         </section>
 

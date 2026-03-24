@@ -118,9 +118,9 @@ function OptionGroup({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{title}</p>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => {
           const active = selected === item.value;
           return (
@@ -129,14 +129,14 @@ function OptionGroup({
               type="button"
               onClick={() => onSelect(item.value)}
               className={[
-                "rounded-2xl border px-3 py-3 text-left transition",
+                "rounded-2xl border px-3.5 py-3.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition",
                 active
                   ? "border-cyan-400/40 bg-cyan-400/12 text-cyan-50"
                   : "border-white/10 bg-white/[0.05] text-white/82 hover:border-cyan-200/20 hover:bg-white/[0.08]",
               ].join(" ")}
             >
-              <p className="text-sm font-semibold">{item.value}</p>
-              <p className="mt-1 text-xs leading-5 text-white/68">{item.note}</p>
+              <p className="text-[15px] font-semibold">{item.value}</p>
+              <p className="mt-1 text-xs leading-5 text-white/74">{item.note}</p>
             </button>
           );
         })}
