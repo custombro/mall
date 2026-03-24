@@ -160,6 +160,40 @@ export default function KeyringWorkbenchPage() {
   const [packageType, setPackageType] = useState("OPP 8x10");
   const [sizePreset, setSizePreset] = useState("40 x 40");
   const [quantity, setQuantity] = useState(10);
+  const [quantityInput, setQuantityInput] = useState("10");
+
+  const clampQuantity = (value: number) => {
+    if (!Number.isFinite(value)) return 1;
+    const normalized = Math.floor(value);
+    if (normalized < 1) return 1;
+    if (normalized > 9999) return 9999;
+    return normalized;
+  };
+
+  const applyQuantity = (value: number) => {
+    const next = clampQuantity(value);
+    setQuantity(next);
+    setQuantityInput(String(next));
+  };
+
+  const changeQuantityBy = (delta: number) => {
+    applyQuantity(quantity + delta);
+  };
+
+  const handleQuantityInputChange = (rawValue: string) => {
+    const digitsOnly = rawValue.replace(/\D/g, "");
+    setQuantityInput(digitsOnly);
+    if (!digitsOnly) return;
+    setQuantity(clampQuantity(Number(digitsOnly)));
+  };
+
+  const handleQuantityInputBlur = () => {
+    if (!quantityInput) {
+      applyQuantity(1);
+      return;
+    }
+    applyQuantity(Number(quantityInput));
+  };
 
   useEffect(() => {
     const saved = loadWorkbenchDraft();
