@@ -131,7 +131,7 @@ function OptionGroup({
               className={[
                 "rounded-2xl border px-3.5 py-3.5 text-left shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition",
                 active
-                  ? "border-cyan-400/40 bg-cyan-400/12 text-cyan-50"
+                  ? "border-cyan-300/55 bg-cyan-300/16 text-cyan-50 shadow-[0_10px_28px_rgba(34,211,238,0.16)]"
                   : "border-white/10 bg-white/[0.05] text-white/82 hover:border-cyan-200/20 hover:bg-white/[0.08]",
               ].join(" ")}
             >
@@ -317,7 +317,7 @@ export default function KeyringWorkbenchPage() {
                       className={[
                         "rounded-full border px-5 py-3 text-sm font-semibold transition",
                         active
-                          ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
+                          ? "border-cyan-300/70 bg-cyan-300/18 text-cyan-50 shadow-[0_10px_28px_rgba(34,211,238,0.2)]"
                           : "border-white/15 bg-white/[0.04] text-white/82 hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white",
                       ].join(" ")}
                     >
@@ -352,7 +352,7 @@ export default function KeyringWorkbenchPage() {
           </div>
 
           {notice ? (
-            <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-50">
+            <div className="mt-5 rounded-2xl border border-cyan-300/30 bg-cyan-300/14 px-4 py-3 text-sm text-cyan-50 shadow-[0_14px_38px_rgba(34,211,238,0.16)]">
               {notice}
             </div>
           ) : null}

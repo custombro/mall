@@ -186,7 +186,7 @@ export default function HomePage() {
                       className={[
                         "rounded-full border px-5 py-3 text-sm font-semibold transition",
                         active
-                          ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
+                          ? "border-cyan-300/70 bg-cyan-300/18 text-cyan-50 shadow-[0_10px_28px_rgba(34,211,238,0.2)]"
                           : "border-white/15 bg-white/[0.04] text-white/82 hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white",
                       ].join(" ")}
                     >
@@ -208,10 +208,10 @@ export default function HomePage() {
                   <p className="mt-2 text-lg font-bold text-white">{modeInfo.title}</p>
                   <p className="mt-2 text-sm leading-6 text-white/72">{modeInfo.description}</p>
                 </div>
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
+                <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/14 p-3.5 shadow-[0_14px_38px_rgba(34,211,238,0.16)]">
                   <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">판정</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">{summary.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-cyan-100/80">{summary.description}</p>
+                  <p className="mt-2 text-[15px] font-semibold tracking-[-0.01em] text-cyan-50">{summary.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-cyan-50/90">{summary.description}</p>
                 </div>
               </div>
             </div>
@@ -221,17 +221,17 @@ export default function HomePage() {
         <section className="grid gap-5 md:grid-cols-3">
           <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 서랍 항목</p>
-            <p className="mt-3 text-3xl font-bold text-white">{drawerEntries.length}</p>
+            <p className="mt-3 text-[34px] font-bold tracking-[-0.03em] text-white">{drawerEntries.length}</p>
             <p className="mt-2 text-sm text-white/65">작업대에서 저장된 실제 항목 수</p>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">실제 주문 큐</p>
-            <p className="mt-3 text-3xl font-bold text-white">{orderEntries.length}</p>
+            <p className="mt-3 text-[34px] font-bold tracking-[-0.03em] text-white">{orderEntries.length}</p>
             <p className="mt-2 text-sm text-white/65">작업대/서랍에서 넘어온 실제 주문 수</p>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안 코드</p>
-            <p className="mt-3 break-all text-lg font-bold text-white">{draft?.productCode ?? "아직 없음"}</p>
+            <p className="mt-3 break-all text-[20px] font-bold tracking-[-0.02em] text-white">{draft?.productCode ?? "아직 없음"}</p>
             <p className="mt-2 text-sm text-white/65">최근 작업대 자동 저장 상태</p>
           </div>
         </section>
