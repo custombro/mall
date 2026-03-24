@@ -39,10 +39,10 @@ export default function Page() {
                 제작 선택
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                지금 할 작업에 맞는 모드로 바로 이동합니다.
+                지금 할 작업으로 바로 이동합니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                제작, 운영, 판매 흐름 중 현재 필요한 곳으로 바로 들어갑니다.
+                필요한 흐름으로 바로 들어갑니다.
               </p>
             </div>
           </div>
