@@ -8,12 +8,6 @@ const modeFlows = [
   { title: "판매 모드", body: "옵션, 크루 판매, 대량주문, 재고정리처럼 판매 운영으로 이어지는 흐름" },
 ];
 
-const modeChecks = [
-  { label: "진입 명확성", description: "사용자가 어떤 공간에 들어가는지 바로 알아야 합니다." },
-  { label: "동선 분리", description: "작업과 운영과 판매가 문구 단계에서 먼저 분리되어야 합니다." },
-  { label: "다음 행동", description: "각 카드가 다음 페이지의 역할을 미리 설명해야 합니다." },
-];
-
 export default function Page() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -63,18 +57,6 @@ export default function Page() {
               ))}
             </div>
           </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {modeChecks.map((item) => (
-            <article
-              key={item.label}
-              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
-            >
-              <p className="text-sm font-semibold text-white">{item.label}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-            </article>
-          ))}
         </section>
 
         <ModeSelectClient />
