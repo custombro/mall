@@ -358,7 +358,7 @@ export default function KeyringWorkbenchPage() {
           ) : null}
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[260px_minmax(0,1.35fr)_300px]">
+        <section className="relative overflow-hidden rounded-[24px] border border-zinc-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(244,244,245,0.94))] px-5 py-5 lg:min-h-[520px] shadow-[0_18px_40px_-30px_rgba(0,0,0,0.32)]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">자재 랙</p>
             <h2 className="mt-2 text-xl font-bold text-white">아크릴 원장 꺼내기</h2>
