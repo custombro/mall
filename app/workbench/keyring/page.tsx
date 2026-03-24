@@ -358,7 +358,7 @@ export default function KeyringWorkbenchPage() {
           ) : null}
         </section>
 
-        <section className="relative overflow-hidden rounded-[24px] border border-zinc-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(244,244,245,0.94))] px-5 py-5 lg:min-h-[520px] shadow-[0_18px_40px_-30px_rgba(0,0,0,0.32)] isolate">
+        <section className="relative overflow-hidden rounded-[24px] border border-zinc-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(244,244,245,0.94))] px-5 lg:min-h-[520px] shadow-[0_18px_40px_-30px_rgba(0,0,0,0.32)] isolate pt-36 pb-5">
 undefined
 
 undefined
