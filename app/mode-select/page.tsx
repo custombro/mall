@@ -42,7 +42,7 @@ export default function Page() {
                 지금 할 작업으로 바로 이동합니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                필요한 흐름을 고르세요.
+                모드를 고르세요.
               </p>
             </div>
           </div>
