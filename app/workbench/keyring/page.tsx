@@ -209,7 +209,7 @@ export default function KeyringWorkbenchPage() {
       setPackageType(saved.packageType || "OPP 8x10");
       setSizePreset(saved.sizePreset || "40 x 40");
       setQuantity(saved.quantity || 10);
-      setNotice("저장된 작업 초안을 복원했습니다.");
+      setNotice("저장된 작업 초안을 복원했습니다. 중앙 작업대에서 바로 이어갑니다.");
     }
     setHydrated(true);
   }, []);
@@ -279,18 +279,18 @@ export default function KeyringWorkbenchPage() {
     setQuantity(preset.quantity);
     setSystemMode("작업대 바로가기");
     setActiveZone("workbench");
-    setNotice(`${preset.name} 조합을 불러왔습니다.`);
+    setNotice(`${preset.name} 조합을 불러왔습니다. 중앙 작업대로 바로 이어집니다.`);
   };
 
   const handleSaveDrawer = () => {
     const entry = saveDrawerFromDraft(draft);
-    setNotice(`서랍 저장 완료 · ${entry.title}`);
+    setNotice(`서랍 저장 완료 · ${entry.title} · 뒤쪽 서랍으로 이동합니다.`);
     router.push("/storage");
   };
 
   const handlePushOrder = () => {
     const entry = saveOrderFromDraft(draft, "workbench");
-    setNotice(`주문 큐 등록 완료 · ${entry.title}`);
+    setNotice(`주문 큐 등록 완료 · ${entry.title} · 주문 화면으로 이동합니다.`);
     router.push("/orders");
   };
 

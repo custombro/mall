@@ -17,12 +17,12 @@ const ENTRY_MODES = [
   {
     key: "둘러보기",
     title: "둘러보기로 시작",
-    description: "처음 오는 손님이 공방 흐름을 이해한 뒤 작업대로 들어가는 입문형 진입",
+    description: "처음 오는 손님이 공방 흐름을 짧게 읽고 중앙 작업대로 자연스럽게 넘어가는 입문형 진입",
   },
   {
     key: "공방 허브",
     title: "공방 허브",
-    description: "자주 오는 손님과 VIP가 바로 제작에 들어가는 빠른 진입",
+    description: "자주 오는 손님과 VIP가 설명 단계 없이 중앙 작업대로 바로 진입하는 빠른 경로",
   },
 ] as const;
 
@@ -59,7 +59,7 @@ const HUB_CARDS = [
     eyebrow: "WORKBENCH",
     description: "밝은 작업실 허브에서 좌측 자재 랙 → 중앙 작업대 → 우측 부자재칸 흐름으로 바로 조합하는 중심 화면",
     href: "/workbench",
-    cta: "작업대로 들어가기",
+    cta: "작업대 바로가기",
   },
   {
     title: "서랍",
@@ -155,8 +155,8 @@ export default function HomePage() {
           : "자주 오는 손님과 VIP가 시간을 뺏기지 않음",
       description:
         entryMode === "둘러보기"
-          ? "둘러보기는 입문용이다. 구조를 이해한 뒤 작업대로 전환한다."
-          : "기본은 작업대와 서랍 중심의 빠른 경로다. 느린 연출을 강요하지 않는다.",
+          ? "둘러보기는 입문용이다. 구조를 확인한 뒤 중앙 작업대로 자연스럽게 넘어간다."
+          : "기본은 중앙 작업대와 뒤쪽 서랍 중심의 빠른 경로다. 느린 연출을 강요하지 않는다.",
     };
   }, [entryMode]);
 
@@ -195,7 +195,7 @@ export default function HomePage() {
                   );
                 })}
                 <Link href="/workbench/keyring" className="rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold tracking-[0.02em] text-slate-950 shadow-[0_12px_34px_rgba(34,211,238,0.28)] transition hover:bg-cyan-200">
-                  제작 시작
+                  키링 작업대로 이동
                 </Link>
               </div>
             </div>
