@@ -361,15 +361,15 @@ export default function KeyringWorkbenchPage() {
         
 
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_52px_rgba(0,0,0,0.16)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">부자재칸 / 주문 요약</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200/85">부자재칸 / 주문 요약</p>
             <div className="mt-5 space-y-5">
               <OptionGroup title="고리" items={HARDWARE} selected={hardware} onSelect={setHardware} />
               <OptionGroup title="포장" items={PACKAGES} selected={packageType} onSelect={setPackageType} />
 
               <div className="rounded-[22px] border border-white/10 bg-white/[0.06] p-4 shadow-[0_14px_42px_rgba(0,0,0,0.16)]">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>
-                  <p className="text-[11px] font-medium tracking-[0.04em] text-white/58">직접 입력 + 빠른 증감</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200/85">수량</p>
+                  <p className="text-[11px] font-medium tracking-[0.05em] text-white/66">직접 입력 + 빠른 증감</p>
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <button

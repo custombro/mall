@@ -251,7 +251,7 @@ export default function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{card.eyebrow}</p>
                 <h3 className="mt-3 text-2xl font-bold text-white">{card.title}</h3>
                 <p className="mt-3 text-sm leading-7 text-white/74">{card.description}</p>
-                <div className="mt-5 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/35 hover:bg-cyan-300/15">
+                <div className="mt-5 inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/12 px-4.5 py-2 text-sm font-semibold tracking-[0.01em] text-cyan-50 shadow-[0_10px_30px_rgba(34,211,238,0.16)] transition hover:border-cyan-200/40 hover:bg-cyan-300/18">
                   {card.cta}
                 </div>
               </Link>
@@ -264,7 +264,7 @@ export default function HomePage() {
               {SYSTEM_PRINCIPLES.map((item, index) => (
                 <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-xs font-semibold text-cyan-200">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/14 text-xs font-semibold text-cyan-100 shadow-[0_8px_20px_rgba(34,211,238,0.12)]">
                       {index + 1}
                     </span>
                     <p className="text-sm leading-7 text-white/78">{item}</p>
