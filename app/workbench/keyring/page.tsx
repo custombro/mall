@@ -136,7 +136,7 @@ function OptionGroup({
               ].join(" ")}
             >
               <p className="text-[15px] font-semibold">{item.value}</p>
-              <p className="mt-1 text-xs leading-5 text-white/74">{item.note}</p>
+              <p className="mt-1 text-xs leading-5 text-white/78">{item.note}</p>
             </button>
           );
         })}
@@ -366,10 +366,10 @@ export default function KeyringWorkbenchPage() {
               <OptionGroup title="고리" items={HARDWARE} selected={hardware} onSelect={setHardware} />
               <OptionGroup title="포장" items={PACKAGES} selected={packageType} onSelect={setPackageType} />
 
-              <div className="rounded-[22px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)]">
+              <div className="rounded-[22px] border border-white/10 bg-white/[0.06] p-4 shadow-[0_14px_42px_rgba(0,0,0,0.16)]">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>
-                  <p className="text-[11px] text-white/45">직접 입력 + 빠른 증감</p>
+                  <p className="text-[11px] font-medium tracking-[0.04em] text-white/58">직접 입력 + 빠른 증감</p>
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <button

@@ -231,8 +231,8 @@ export default function HomePage() {
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_14px_40px_rgba(0,0,0,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">최근 초안 코드</p>
-            <p className="mt-3 break-all text-[20px] font-bold tracking-[-0.02em] text-white">{draft?.productCode ?? "아직 없음"}</p>
-            <p className="mt-2 text-sm text-white/65">최근 작업대 자동 저장 상태</p>
+            <p className="mt-3 break-all text-[22px] font-bold tracking-[-0.025em] text-white">{draft?.productCode ?? "아직 없음"}</p>
+            <p className="mt-2 text-sm text-white/72">최근 작업대 자동 저장 상태</p>
           </div>
         </section>
 
