@@ -499,11 +499,11 @@ export default function KeyringWorkbenchPage() {
               <OptionGroup title="포장" items={PACKAGES} selected={packageType} onSelect={setPackageType} />
 
               <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>
+                <div className="flex items-center justify-between gap-3">`r`n          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">수량</p>`r`n          <p className="text-[11px] text-white/45">직접 입력 + 빠른 증감</p>`r`n        </div>
                 <div className="mt-3 flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                    onClick={() => changeQuantityBy(-1)}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg text-white/75 transition hover:border-white/30 hover:text-white"
                   >
                     −
@@ -513,7 +513,7 @@ export default function KeyringWorkbenchPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setQuantity((prev) => prev + 1)}
+                    onClick={() => changeQuantityBy(1)}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-lg text-white/75 transition hover:border-white/30 hover:text-white"
                   >
                     +
