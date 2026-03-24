@@ -11,7 +11,7 @@ import {
   type WorkbenchDraft,
 } from "../lib/cbmall-store";
 
-type EntryMode = "둘러보기" | "작업대 바로가기";
+type EntryMode = "둘러보기" | "제작 허브";
 
 const ENTRY_MODES = [
   {
@@ -20,8 +20,8 @@ const ENTRY_MODES = [
     description: "처음 오는 손님이 공방 흐름을 이해한 뒤 작업대로 들어가는 입문형 진입",
   },
   {
-    key: "작업대 바로가기",
-    title: "작업대 바로가기",
+    key: "제작 허브",
+    title: "제작 허브",
     description: "자주 오는 손님과 VIP가 바로 제작에 들어가는 빠른 진입",
   },
 ] as const;
@@ -132,7 +132,7 @@ function LiveCard({
 }
 
 export default function HomePage() {
-  const [entryMode, setEntryMode] = useState<EntryMode>("작업대 바로가기");
+  const [entryMode, setEntryMode] = useState<EntryMode>("제작 허브");
   const [drawerEntries, setDrawerEntries] = useState<DrawerEntry[]>([]);
   const [orderEntries, setOrderEntries] = useState<OrderEntry[]>([]);
   const [draft, setDraft] = useState<WorkbenchDraft | null>(null);

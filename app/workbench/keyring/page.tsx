@@ -526,7 +526,6 @@ export default function KeyringWorkbenchPage() {
               </div>
             </div>
           </aside>
-        </section>
       </div>
     </main>
   );
