@@ -34,30 +34,22 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[0.95fr,1.05fr]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              제작 선택 규칙
-            </p>
-          </div>
-
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              제작 선택 흐름
-            </p>
-            <div className="mt-4 space-y-3">
-              {modeFlows.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+        <section className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
+  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
+    제작 선택 흐름
+  </p>
+  <div className="mt-4 grid gap-3 md:grid-cols-3">
+    {modeFlows.map((item) => (
+      <article
+        key={item.title}
+        className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
+      >
+        <p className="text-sm font-semibold text-white">{item.title}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+      </article>
+    ))}
+  </div>
+</section>
 
         <ModeSelectClient />
         <RouteDock />
