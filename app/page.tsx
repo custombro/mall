@@ -163,16 +163,16 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
-        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
+        <section className="rounded-[30px] border border-white/10 bg-white/[0.06] p-6 shadow-[0_26px_96px_rgba(0,0,0,0.24)] md:p-8">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO MALL HUB</p>
-              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
+              <h1 className="text-[34px] font-bold leading-[1.02] tracking-[-0.03em] md:text-[56px]">
                 공방을 이해할 수도 있고
                 <br />
                 바로 작업대에 들어갈 수도 있다
               </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
+              <p className="max-w-3xl text-sm leading-7 text-white/78 md:text-[17px]">
                 좌측 자재 랙, 중앙 작업대, 우측 부자재, 뒤쪽 서랍으로 이어지는 밝은 공방 동선만 남긴다.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -187,26 +187,26 @@ export default function HomePage() {
                         "rounded-full border px-5 py-3 text-sm font-semibold transition",
                         active
                           ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                          : "border-white/15 text-white/75 hover:border-white/30 hover:bg-white/[0.05] hover:text-white",
+                          : "border-white/15 bg-white/[0.04] text-white/82 hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white",
                       ].join(" ")}
                     >
                       {mode.key}
                     </button>
                   );
                 })}
-                <Link href="/workbench/keyring" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
+                <Link href="/workbench/keyring" className="rounded-full bg-cyan-300 px-5 py-3 text-sm font-semibold tracking-[0.02em] text-slate-950 shadow-[0_12px_34px_rgba(34,211,238,0.28)] transition hover:bg-cyan-200">
                   제작 시작
                 </Link>
               </div>
             </div>
 
-            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
+            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_18px_56px_rgba(0,0,0,0.18)]">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 진입 모드</p>
               <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">모드</p>
                   <p className="mt-2 text-lg font-bold text-white">{modeInfo.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/60">{modeInfo.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/72">{modeInfo.description}</p>
                 </div>
                 <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">판정</p>
@@ -258,16 +258,16 @@ export default function HomePage() {
             ))}
           </section>
 
-          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+          <aside className="rounded-[28px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_18px_56px_rgba(0,0,0,0.18)]">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">시스템 원칙</p>
             <div className="mt-4 space-y-3">
               {SYSTEM_PRINCIPLES.map((item, index) => (
-                <div key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-xs font-semibold text-cyan-200">
                       {index + 1}
                     </span>
-                    <p className="text-sm leading-7 text-white/70">{item}</p>
+                    <p className="text-sm leading-7 text-white/78">{item}</p>
                   </div>
                 </div>
               ))}

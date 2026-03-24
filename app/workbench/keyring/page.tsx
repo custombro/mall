@@ -136,7 +136,7 @@ function OptionGroup({
               ].join(" ")}
             >
               <p className="text-sm font-semibold">{item.value}</p>
-              <p className="mt-1 text-xs leading-5 text-white/55">{item.note}</p>
+              <p className="mt-1 text-xs leading-5 text-white/68">{item.note}</p>
             </button>
           );
         })}
@@ -297,12 +297,12 @@ export default function KeyringWorkbenchPage() {
   return (
     <main className="min-h-screen bg-[#090b10] text-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
-        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
+        <section className="rounded-[30px] border border-white/10 bg-white/[0.06] p-6 shadow-[0_26px_96px_rgba(0,0,0,0.24)] md:p-8">
           <div className="flex flex-col gap-4">
             <div className="max-w-3xl space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO KEYRING WORKBENCH</p>
-              <h1 className="text-2xl font-bold leading-tight md:text-3xl">키링 작업대</h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
+              <h1 className="text-[30px] font-bold leading-[1.03] tracking-[-0.02em] md:text-[38px]">키링 작업대</h1>
+              <p className="max-w-3xl text-sm leading-7 text-white/78 md:text-[17px]">
                 좌측 랙에서 자재를 고르고, 중앙 작업 매트에서 조합한 뒤, 우측 트레이에서 부자재와 수량을 정리합니다.
               </p>
 
@@ -318,14 +318,14 @@ export default function KeyringWorkbenchPage() {
                         "rounded-full border px-5 py-3 text-sm font-semibold transition",
                         active
                           ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                          : "border-white/15 text-white/75 hover:border-white/30 hover:bg-white/[0.05] hover:text-white",
+                          : "border-white/15 bg-white/[0.04] text-white/82 hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white",
                       ].join(" ")}
                     >
                       {mode}
                     </button>
                   );
                 })}
-                <Link href="/storage" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+                <Link href="/storage" className="rounded-full border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/82 transition hover:border-cyan-200/25 hover:bg-white/[0.08] hover:text-white">
                   서랍 보기
                 </Link>
               </div>
