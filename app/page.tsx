@@ -204,8 +204,8 @@ export default function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 진입 모드</p>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">모드</p>
-                  <p className="mt-2 text-lg font-bold text-white">{modeInfo.title}</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/55">모드</p>
+                  <p className="mt-2 text-[19px] font-bold tracking-[-0.015em] text-white">{modeInfo.title}</p>
                   <p className="mt-2 text-sm leading-6 text-white/72">{modeInfo.description}</p>
                 </div>
                 <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/14 p-3.5 shadow-[0_14px_38px_rgba(34,211,238,0.16)]">
@@ -263,11 +263,11 @@ export default function HomePage() {
             <div className="mt-4 space-y-3">
               {SYSTEM_PRINCIPLES.map((item, index) => (
                 <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3.5">
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/14 text-xs font-semibold text-cyan-100 shadow-[0_8px_20px_rgba(34,211,238,0.12)]">
                       {index + 1}
                     </span>
-                    <p className="text-sm leading-7 text-white/78">{item}</p>
+                    <p className="text-sm leading-7 text-white/82">{item}</p>
                   </div>
                 </div>
               ))}
