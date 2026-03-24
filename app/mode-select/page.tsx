@@ -39,10 +39,7 @@ export default function Page() {
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
                 지금 할 작업으로 바로 이동합니다.
               </h1>
-              <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                선택하세요.
-              </p>
-            </div>
+              </div>
           </div>
         </section>
 
