@@ -2,9 +2,9 @@ import RouteDock from "../_components/RouteDock";
 import ModeSelectClient from "./_components/ModeSelectClient";
 
 const modeRules = [
-  "모드 선택은 홈의 연장선이 아니라 실제 행동을 결정하는 분기 허브여야 합니다.",
-  "제작, 운영, 판매를 같은 말투로 섞지 말고 지금 해야 할 일 기준으로 분리해야 합니다.",
-  "각 모드는 다음 화면에서 무엇을 하게 되는지 한 줄로 이해되어야 합니다.",
+  "모드 선택은 지금 할 작업을 나누는 빠른 진입입니다.",
+  "제작, 운영, 판매는 서로 다른 흐름으로 분리합니다.",
+  "다음 화면에서 할 일이 한 줄로 보이게 유지합니다.",
 ];
 
 const modeFlows = [
@@ -41,10 +41,10 @@ export default function Page() {
                 제작 선택
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                모드 선택은 지금 해야 할 공간으로 바로 보내는 분기 허브여야 합니다.
+                지금 할 작업에 맞는 모드로 바로 이동합니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                제작, 보관, 자재, 판매운영을 먼저 분기해서 긴 홈 구조 대신 정확한 진입으로 연결합니다.
+                제작, 운영, 판매 흐름 중 현재 필요한 곳으로 바로 들어갑니다.
               </p>
             </div>
           </div>
