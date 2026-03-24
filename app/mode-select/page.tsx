@@ -36,7 +36,7 @@ export default function Page() {
                 제작 선택
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                지금 할 작업으로 바로 이동합니다.
+                바로 이동합니다.
               </h1>
               </div>
           </div>
