@@ -119,7 +119,7 @@ function OptionGroup({
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200/85">{title}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => {
           const active = selected === item.value;
@@ -135,8 +135,8 @@ function OptionGroup({
                   : "border-white/10 bg-white/[0.05] text-white/82 hover:border-cyan-200/20 hover:bg-white/[0.08]",
               ].join(" ")}
             >
-              <p className="text-[15px] font-semibold">{item.value}</p>
-              <p className="mt-1 text-xs leading-5 text-white/78">{item.note}</p>
+              <p className="text-[15px] font-semibold tracking-[-0.01em]">{item.value}</p>
+              <p className="mt-1 text-xs leading-5 text-white/80">{item.note}</p>
             </button>
           );
         })}
