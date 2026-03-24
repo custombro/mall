@@ -57,7 +57,7 @@ const HUB_CARDS = [
   {
     title: "제작",
     eyebrow: "WORKBENCH",
-    description: "밝은 작업실 허브에서 자재 랙 → 중앙 작업대 → 부자재칸 흐름으로 바로 조합하는 중심 화면",
+    description: "밝은 작업실 허브에서 좌측 자재 랙 → 중앙 작업대 → 우측 부자재칸 흐름으로 바로 조합하는 중심 화면",
     href: "/workbench",
     cta: "작업대로 들어가기",
   },
@@ -173,7 +173,7 @@ export default function HomePage() {
                 바로 작업대에 들어갈 수도 있다
               </h1>
               <p className="max-w-3xl text-sm leading-7 text-white/78 md:text-[17px]">
-                좌측 자재 랙, 중앙 작업대, 우측 부자재, 뒤쪽 서랍으로 이어지는 밝은 공방 동선만 남긴다.
+                좌측 자재 랙, 중앙 작업대, 우측 부자재칸, 뒤쪽 서랍이 한눈에 읽히는 밝은 공방 동선만 남긴다.
               </p>
               <div className="flex flex-wrap gap-3">
                 {ENTRY_MODES.map((mode) => {

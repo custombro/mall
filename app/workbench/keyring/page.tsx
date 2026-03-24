@@ -13,10 +13,10 @@ import {
 
 const SYSTEM_MODES = ["둘러보기", "작업대 바로가기"] as const;
 const ZONES = [
-  { key: "materials", title: "자재칸", description: "좌측 자재 랙에서 아크릴 재질과 두께를 먼저 고르는 시작 구역" },
-  { key: "workbench", title: "작업대", description: "중앙 작업대에서 자재와 부자재를 실제 제품으로 조합하는 중심 구역" },
-  { key: "hardware", title: "부자재칸", description: "우측 부자재칸에서 고리와 포장, 마감 방식을 고르는 구역" },
-  { key: "finish", title: "완성 / 서랍", description: "뒤쪽 서랍에 완성 스펙을 저장하고 재주문으로 넘기는 구역" },
+  { key: "materials", title: "좌측 자재 랙", description: "좌측 자재 랙에서 아크릴 재질과 두께를 먼저 고르는 시작 구역" },
+  { key: "workbench", title: "중앙 작업대", description: "중앙 작업대에서 자재와 부자재를 실제 제품으로 조합하는 중심 구역" },
+  { key: "hardware", title: "우측 부자재칸", description: "우측 부자재칸에서 고리와 포장, 마감 방식을 고르는 구역" },
+  { key: "finish", title: "뒤쪽 서랍", description: "뒤쪽 서랍에 완성 스펙을 저장하고 재주문으로 넘기는 구역" },
 ] as const;
 
 const MATERIALS = [
@@ -119,7 +119,7 @@ function OptionGroup({
 }) {
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200/85">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-100/90">{title}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => {
           const active = selected === item.value;
