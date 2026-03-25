@@ -1,104 +1,190 @@
-import RouteDock from "../_components/RouteDock";
-import OptionStoreClient from "./_components/OptionStoreClient";
+import Link from "next/link";
 
-const optionRules = [
-  "옵션은 본체 설계와 섞지 말고 결합/포장/후가공 판단을 분리해서 읽어야 합니다.",
-  "고객이 고르는 항목과 작업자가 확인할 생산 조건을 같은 구조 안에서 맞춰야 합니다.",
-  "추가금이 붙는 프리미엄 옵션은 보기용 장식이 아니라 실제 공정 차이로 설명되어야 합니다.",
+const categories = [
+  { name: "링 / 체인", hint: "가장 많이 쓰는 기본 연결 부자재" },
+  { name: "패키지", hint: "포장만 빠르게 선택" },
+  { name: "스탠드 / 받침", hint: "POP와 전시용 중심" },
+  { name: "보강 옵션", hint: "재주문 대비 저장용" }
 ];
 
-const optionFlows = [
-  { title: "결합 옵션", body: "고리, 체인, 자석, 받침처럼 본체와 연결되는 부품 흐름" },
-  { title: "포장 옵션", body: "OPP, 백카드, 보호재, 선물 포장처럼 출고 형태를 바꾸는 흐름" },
-  { title: "후가공 옵션", body: "에폭시, 추가 인쇄, 특수 마감처럼 생산 조건을 바꾸는 흐름" },
+const options = [
+  {
+    name: "기본 링 세트",
+    price: "₩900",
+    stock: "재고 충분",
+    summary: "가장 빠르게 붙는 기본 연결 부자재 구성",
+    bullets: ["은색 기본 링", "즉시 선택 가능", "키링 주문과 바로 연결"]
+  },
+  {
+    name: "패키지 간소화 세트",
+    price: "₩1,500",
+    stock: "잔여 28",
+    summary: "설명 없이 바로 담는 기본 포장 옵션",
+    bullets: ["기본 포장", "단일 규격", "수량만 정하면 끝"]
+  },
+  {
+    name: "POP 받침 세트",
+    price: "₩2,900",
+    stock: "잔여 11",
+    summary: "전시용 POP에 필요한 핵심만 남긴 구성",
+    bullets: ["투명 받침", "기본 고정부", "바로 저장 가능"]
+  }
 ];
 
-const optionSignals = [
-  { label: "기본 포함", description: "본체 가격 안에 들어가는 항목과 별도 옵션을 명확히 분리" },
-  { label: "추가금 발생", description: "고객 선택 순간 비용이 올라가는 항목을 분명히 표기" },
-  { label: "제작 영향", description: "납기, 자재, 결합 난이도에 영향을 주는 옵션을 먼저 경고" },
+const summaryRows = [
+  { label: "선택 구조", value: "좌측 카테고리" },
+  { label: "핵심 비교", value: "중앙 카드 3개" },
+  { label: "마지막 행동", value: "우측 저장 / 주문" }
 ];
 
-export default function Page() {
+export default function OptionStorePage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
-          <div className="space-y-5">
-            <div className="inline-flex flex-wrap items-center gap-2">
-              {["Option", "Addon", "Package", "Premium", "Routing"].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
-                >
-                  {tag}
-                </span>
-              ))}
+    <main className="min-h-screen bg-[#f6f3ee] text-neutral-900">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 lg:px-6">
+        <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">OPTION STORE</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재는 복잡한 설명 없이 바로 고른다</h1>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-neutral-600">
+              부자재몰을 안내 문구 중심이 아니라 선택 · 비교 · 저장 · 주문 흐름으로 다시 정리한 단순 화면이다.
+            </p>
+          </div>
+        </header>
+
+        <section className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
+          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-neutral-900">좌측 · 선택 / 옵션</p>
+            <div className="mt-3 space-y-2">
+              {categories.map((item, index) => {
+                const active = index === 0;
+                return (
+                  <div
+                    key={item.name}
+                    className={[
+                      "rounded-2xl border px-4 py-3",
+                      active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f8f4ec] text-neutral-900"
+                    ].join(" ")}
+                  >
+                    <div className="text-sm font-semibold">{item.name}</div>
+                    <div className={active ? "mt-1 text-xs text-white/70" : "mt-1 text-xs text-neutral-500"}>{item.hint}</div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                옵션 보관소
-              </p>
-              <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                옵션은 본체와 분리된 별도 스토어에서 판단해야 구조가 깔끔해집니다.
-              </h1>
-              <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                후가공, 포장, 결합, 전시, 프리미엄 옵션을 작업 본체와 분리해 선택합니다.
-              </p>
+            <div className="mt-4 rounded-2xl bg-[#f8f4ec] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">정리 기준</p>
+              <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+                <li className="rounded-xl bg-white px-3 py-2">중복 박스 제거</li>
+                <li className="rounded-xl bg-white px-3 py-2">선택 이유 설명 최소화</li>
+                <li className="rounded-xl bg-white px-3 py-2">가격과 CTA를 우측 고정</li>
+              </ul>
             </div>
-          </div>
-        </section>
+          </aside>
 
-        <section className="grid gap-4 lg:grid-cols-[1.05fr,0.95fr]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              옵션 규칙
-            </p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
-              {optionRules.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <section className="flex flex-col gap-4">
+            <div className="grid gap-4 xl:grid-cols-3">
+              {options.map((option, index) => (
+                <article key={option.name} className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold tracking-tight">{option.name}</p>
+                      <p className="mt-1 text-sm leading-6 text-neutral-600">{option.summary}</p>
+                    </div>
+                    <span className="rounded-full bg-neutral-900 px-2 py-1 text-[11px] font-semibold text-white">
+                      {index === 0 ? "추천" : "선택"}
+                    </span>
+                  </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              옵션 흐름
-            </p>
-            <div className="mt-4 space-y-3">
-              {optionFlows.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-4"
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                  <div className="mt-4 rounded-2xl bg-[#f8f4ec] px-4 py-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">기준가</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">{option.price}</div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-black/10 p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">핵심 구성</div>
+                    <ul className="mt-3 space-y-2 text-sm text-neutral-800">
+                      {option.bullets.map((bullet) => (
+                        <li key={bullet} className="rounded-xl bg-[#f8f4ec] px-3 py-2">
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between text-sm">
+                    <span className="text-neutral-500">재고 상태</span>
+                    <span className="font-semibold text-neutral-900">{option.stock}</span>
+                  </div>
                 </article>
               ))}
             </div>
-          </div>
-        </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {optionSignals.map((item) => (
-            <article
-              key={item.label}
-              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
-            >
-              <p className="text-sm font-semibold text-white">{item.label}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-            </article>
-          ))}
-        </section>
+            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-neutral-900">중앙 · 바로 이동</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  키링 작업으로 이동
+                </Link>
+                <Link href="/pop-studio" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  POP 작업으로 이동
+                </Link>
+                <Link href="/storage" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  서랍 열기
+                </Link>
+              </div>
+            </div>
+          </section>
 
-        <OptionStoreClient />
-        <RouteDock />
+          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+            <div className="sticky top-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">우측 · 수량 / 가격 / 저장 / 주문</p>
+                <p className="mt-1 text-sm text-neutral-600">마지막 판단 카드만 남겨서 주문 흐름을 짧게 만든 상태다.</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#f8f4ec] p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">화면 요약</div>
+                <div className="mt-3 space-y-3">
+                  {summaryRows.map((row) => (
+                    <div key={row.label} className="flex items-start justify-between gap-3 text-sm">
+                      <span className="text-neutral-500">{row.label}</span>
+                      <span className="text-right font-medium text-neutral-900">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">현재 기준 선택</div>
+                <div className="mt-2 text-2xl font-semibold tracking-tight">기본 링 세트</div>
+                <div className="mt-1 text-sm text-neutral-600">설명보다 바로 담기 쉬운 기본 옵션을 첫 카드로 고정했다.</div>
+
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">선택가</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">₩900</div>
+                  </div>
+                  <div className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white">기본</div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
+                    바로 주문
+                  </Link>
+                  <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    서랍 저장
+                  </Link>
+                  <Link href="/option-store" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    현재 화면 유지
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
       </div>
     </main>
   );
