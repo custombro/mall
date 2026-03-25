@@ -1,12 +1,6 @@
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_KEYRING_WIDE_20260326_002820";
-
-const materialRows = [
-  { name: "투명 아크릴 3T", state: "기본" },
-  { name: "백색 아크릴 3T", state: "선택" },
-  { name: "유백 아크릴 5T", state: "포인트" }
-];
+const deployMarker = "DEPLOY_KEYRING_SINGLE_20260326_005424";
 
 const partRows = [
   { name: "D고리", value: "1ea" },
@@ -31,13 +25,13 @@ export default function KeyringWorkbenchPage() {
                 KEYRING WORKBENCH
               </p>
               <h1 className="text-[30px] font-semibold tracking-tight">
-                키링 제작은 큰 작업 테이블 기준으로 본다
+                키링은 단일 아크릴 기준으로 바로 작업한다
               </h1>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-sm leading-6 text-neutral-600">
-                  좌우는 얇게, 중앙은 크게. 실제로 배치하고 확인하기 쉬운 작업형 구조로 다시 넓혔다.
+                  키링은 아크릴 자재가 여러 개 보일 필요 없이 하나의 기본 자재만 놓고, 중앙 큰 작업 테이블에서 바로 확인하는 구조로 정리했다.
                 </p>
                 <p className="mt-1 text-xs font-semibold tracking-[0.08em] text-neutral-500">
                   배포 확인 기준: {deployMarker}
@@ -55,37 +49,21 @@ export default function KeyringWorkbenchPage() {
 
         <section className="grid gap-4 xl:grid-cols-[190px_minmax(0,1fr)_260px]">
           <aside className="rounded-[28px] border border-black/10 bg-white p-4 shadow-sm">
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">좌측 · 선택 / 자재</p>
-              <div className="mt-3 space-y-2">
-                {materialRows.map((item, index) => {
-                  const active = index === 0;
-                  return (
-                    <div
-                      key={item.name}
-                      className={[
-                        "rounded-2xl border px-4 py-3",
-                        active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f7f3ed] text-neutral-900"
-                      ].join(" ")}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-semibold">{item.name}</span>
-                        <span className={active ? "text-xs text-white/70" : "text-xs text-neutral-500"}>
-                          {item.state}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+            <p className="text-sm font-semibold text-neutral-900">좌측 · 자재</p>
+
+            <div className="mt-3 rounded-2xl border border-neutral-900 bg-neutral-900 px-4 py-4 text-white">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold">투명 아크릴 3T</span>
+                <span className="text-xs text-white/70">기본 자재</span>
               </div>
             </div>
 
             <div className="mt-4 rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 선택</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">작업 기준</p>
               <div className="mt-3 space-y-2">
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">투명 아크릴 우선</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">백색 대체 선택</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">작업대 즉시 반영</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">아크릴 자재는 1종만 표시</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">중앙에서 형태 확인</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">우측에서 저장·주문</div>
               </div>
             </div>
           </aside>
@@ -95,11 +73,11 @@ export default function KeyringWorkbenchPage() {
               <div>
                 <p className="text-sm font-semibold text-neutral-900">중앙 · 제작 테이블</p>
                 <p className="mt-1 text-sm text-neutral-600">
-                  실제 배치 감각이 살아야 하므로 중앙 작업 테이블을 화면의 주인공으로 키운 상태다.
+                  키링은 단일 자재 기준으로 작업대 위에서 본체와 부자재 위치만 크게 확인할 수 있게 만들었다.
                 </p>
               </div>
               <span className="rounded-full border border-black/10 bg-[#f7f3ed] px-3 py-1 text-xs font-semibold text-neutral-700">
-                넓은 작업대
+                단일 자재 기준
               </span>
             </div>
 
@@ -107,24 +85,25 @@ export default function KeyringWorkbenchPage() {
               <div className="relative min-h-[760px] overflow-hidden rounded-[30px] border border-black/10 bg-[#f7f3ed]">
                 <div className="absolute inset-x-[4%] top-[5%] h-10 rounded-full border border-dashed border-black/10 bg-white/70" />
                 <div className="absolute inset-x-[2.5%] bottom-[5.5%] h-[46%] rounded-[46px] border border-black/10 bg-white shadow-[0_18px_30px_rgba(0,0,0,0.05)]" />
-                <div className="absolute left-[5%] top-[10%] bottom-[12%] w-[21%] rounded-[28px] border border-dashed border-black/10 bg-white/80 p-5">
+
+                <div className="absolute left-[5%] top-[10%] bottom-[12%] w-[18%] rounded-[28px] border border-dashed border-black/10 bg-white/80 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">자재 존</p>
                   <div className="mt-6 flex h-[58%] items-center justify-center rounded-[22px] border border-dashed border-black/10 bg-[#faf8f4] text-lg font-semibold text-neutral-700">
                     투명 아크릴 3T
                   </div>
                 </div>
 
-                <div className="absolute left-[29%] top-[12%] right-[23%] bottom-[17%] rounded-[34px] border border-black/10 bg-white shadow-sm">
-                  <div className="absolute left-[10%] top-[14%] h-12 w-12 rounded-full border border-black/15 bg-[#f8f4ec]" />
-                  <div className="absolute left-[22%] top-[40%] h-28 w-28 rounded-full bg-neutral-900" />
-                  <div className="absolute left-[38%] top-[40%] h-24 w-24 rounded-full bg-neutral-900" />
-                  <div className="absolute left-[52%] top-[38%] h-30 w-30 rounded-full bg-neutral-900" />
-                  <div className="absolute inset-x-0 bottom-[10%] text-center text-[36px] font-semibold tracking-tight text-neutral-800">
+                <div className="absolute left-[26%] right-[20%] bottom-[15%] h-[56%] rounded-[34px] border border-black/10 bg-white shadow-sm">
+                  <div className="absolute left-[13%] top-[14%] h-12 w-12 rounded-full border border-black/15 bg-[#f8f4ec]" />
+                  <div className="absolute left-[24%] top-[38%] h-28 w-28 rounded-full bg-neutral-900" />
+                  <div className="absolute left-[40%] top-[38%] h-24 w-24 rounded-full bg-neutral-900" />
+                  <div className="absolute left-[54%] top-[36%] h-32 w-32 rounded-full bg-neutral-900" />
+                  <div className="absolute inset-x-0 bottom-[8%] text-center text-[38px] font-semibold tracking-tight text-neutral-800">
                     키링
                   </div>
                 </div>
 
-                <div className="absolute right-[5%] top-[14%] bottom-[24%] w-[17%] rounded-[28px] border border-dashed border-black/10 bg-white/80 p-5">
+                <div className="absolute right-[5%] top-[14%] bottom-[24%] w-[15%] rounded-[28px] border border-dashed border-black/10 bg-white/80 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">부자재 존</p>
                   <div className="mt-6 flex h-[42%] items-center justify-center rounded-[22px] border border-dashed border-black/10 bg-[#faf8f4] text-lg font-semibold text-neutral-700">
                     D고리 / 1ea
