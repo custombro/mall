@@ -253,33 +253,18 @@ export default function KeyringWorkbenchPage() {
 
       <div className="mx-auto w-full max-w-[1480px] px-4 py-5 md:px-6">
         <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] p-4 md:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">KEYRING / 3-ZONE</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] md:text-5xl">작업대</h1>
-              <p className="mt-3 text-sm text-white/58 md:text-base">좌측 자재/두께 · 중앙 작업대 · 우측 주문</p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-xs md:text-sm">
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                <p className="text-white/55">자동저장</p>
-                <p className="mt-1 font-semibold text-white">{formatStamp(lastAutosaveAt)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                <p className="text-white/55">서랍</p>
-                <p className="mt-1 font-semibold text-white">{formatStamp(lastDrawerAt)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
-                <p className="text-white/55">주문큐</p>
-                <p className="mt-1 font-semibold text-white">{formatStamp(lastOrderAt)}</p>
-              </div>
-            </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">KEYRING / 3-ZONE</p>
+            <h1 className="text-3xl font-bold tracking-[-0.03em] md:text-5xl">작업대</h1>
+            <p className="text-sm text-white/56 md:text-base">좌측 자재/두께 · 중앙 작업대 · 우측 주문</p>
+          </div>
           </div>
         </section>
 
-        <section className="mt-5 grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <section className="mt-5 grid gap-5 xl:grid-cols-[220px_minmax(0,1.55fr)_260px]">
           <aside className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300/80">재료</p>
-            <h2 className="mt-2 text-2xl font-bold">왼쪽 서랍</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300/80">자재/두께</p>
+            <h2 className="mt-2 text-2xl font-bold">자재 선택</h2>
 
             <div className="mt-5 space-y-4">
               <div>
@@ -376,7 +361,7 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="mt-5 rounded-[26px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_40%),rgba(0,0,0,0.18)] p-5">
-              <div className="flex min-h-[420px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-black/10">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-black/10">
                 <div className="relative flex items-center justify-center">
                   <div
                     className={cn(
@@ -396,9 +381,9 @@ export default function KeyringWorkbenchPage() {
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
                     <p className="text-lg font-bold text-white md:text-xl">{fileName}</p>
-                    <p className="mt-2 text-sm text-white/58">{selectedSize.label} · {selectedMaterial.label} · {selectedThickness.label}</p>
+                    <p className="mt-2 text-sm text-white/56">{selectedSize.label} · {selectedMaterial.label} · {selectedThickness.label}</p>
                   </div>
-                  <div className="absolute -right-8 top-8 flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-sm font-semibold text-white/75">
+                  <div className="absolute -right-8 top-8 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-sm font-semibold text-white/75">
                     {selectedRing.label}
                   </div>
                 </div>
@@ -412,7 +397,7 @@ export default function KeyringWorkbenchPage() {
 
             <div className="mt-5 space-y-4">
               <div>
-                <p className="mb-2 text-sm font-semibold text-white/85">부자재</p>
+                <p className="mb-2 text-sm font-semibold text-white/85">주문</p>
                 <div className="grid gap-2">
                   {RINGS.map((item) => (
                     <button
