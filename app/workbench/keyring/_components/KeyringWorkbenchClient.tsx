@@ -1,420 +1,324 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  acrylicOptions,
-  estimateUnitPrice,
-  finishOptions,
-  keyringAddons,
-  keyringPresets,
-  materialCards,
-  printSideOptions,
-  ringOptions,
-  shapeOptions,
-  type AcrylicThickness,
-  type FinishOption,
-  type KeyringShape,
-  type PrintSide,
-  type RingOption,
-} from "./keyring-config";
+import { useMemo, useState } from 'react';
 
-function toggleValue(list: string[], value: string) {
-  return list.includes(value)
-    ? list.filter((item) => item !== value)
-    : [...list, value];
+type Face = '단면' | '양면';
+type Finish = '유광' | '무광';
+type RingPosition = '상단 중앙' | '좌측 상단' | '우측 상단';
+type ActiveZone = 'front' | 'back' | 'ring';
+
+const faces: Face[] = ['단면', '양면'];
+const finishes: Finish[] = ['유광', '무광'];
+const ringPositions: RingPosition[] = ['상단 중앙', '좌측 상단', '우측 상단'];
+
+function formatWon(value: number): string {
+  return new Intl.NumberFormat('ko-KR').format(value);
 }
 
-function getFinishClass(finish: FinishOption, active: boolean) {
-  if (!active) {
-    return "border-white/10 bg-slate-950/70 text-slate-200 hover:bg-white/10";
-  }
-
-  switch (finish) {
-    case "에폭시":
-      return "border-cyan-300/30 bg-cyan-300/15 text-cyan-100";
-    case "글리터":
-      return "border-violet-300/30 bg-violet-300/15 text-violet-100";
-    case "형광 포인트":
-      return "border-emerald-300/30 bg-emerald-300/15 text-emerald-100";
-    default:
-      return "border-white/15 bg-white/10 text-white";
-  }
-}
-
-function getMaterialClass(materialId: string, active: boolean) {
-  if (!active) {
-    return "border-white/10 bg-slate-950/70 text-slate-200 hover:bg-white/10";
-  }
-
-  switch (materialId) {
-    case "mat-clear":
-      return "border-cyan-300/30 bg-cyan-300/15 text-cyan-100";
-    case "mat-frost":
-      return "border-slate-300/20 bg-slate-300/10 text-slate-100";
-    case "mat-fluo":
-      return "border-emerald-300/30 bg-emerald-300/15 text-emerald-100";
-    default:
-      return "border-white/15 bg-white/10 text-white";
-  }
-}
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
+function PillButton(props: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const { active, label, onClick } = props;
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'rounded-2xl border px-3 py-2 text-sm transition',
+        active
+          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
+          : 'border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10'
+      ].join(' ')}
+    >
+      {label}
+    </button>
   );
 }
 
 export default function KeyringWorkbenchClient() {
-  const initialPreset = keyringPresets[0];
-  const initialMaterial = materialCards[0];
-
-  const [presetId, setPresetId] = useState(initialPreset?.id ?? "");
-  const [materialId, setMaterialId] = useState(initialMaterial?.id ?? "");
-  const [shape, setShape] = useState<KeyringShape>(initialPreset?.shape ?? "싱글");
-  const [thickness, setThickness] = useState<AcrylicThickness>(initialPreset?.thickness ?? "3T");
-  const [printSide, setPrintSide] = useState<PrintSide>(initialPreset?.printSide ?? "양면");
-  const [ring, setRing] = useState<RingOption>(initialPreset?.ring ?? "실버 링");
-  const [finish, setFinish] = useState<FinishOption>(initialPreset?.finish ?? "기본");
-  const [quantity, setQuantity] = useState<number>(initialPreset?.minQty ?? 10);
-  const [addons, setAddons] = useState<string[]>([]);
-  const [memo, setMemo] = useState("");
-
-  const preset = useMemo(
-    () => keyringPresets.find((item) => item.id === presetId) ?? initialPreset,
-    [initialPreset, presetId],
-  );
-
-  const selectedMaterial = useMemo(
-    () => materialCards.find((item) => item.id === materialId) ?? initialMaterial,
-    [initialMaterial, materialId],
-  );
-
-  const selectedAddonObjects = useMemo(
-    () => keyringAddons.filter((item) => addons.includes(item.id)),
-    [addons],
-  );
+  const [face, setFace] = useState<Face>('양면');
+  const [finish, setFinish] = useState<Finish>('유광');
+  const [ringPosition, setRingPosition] = useState<RingPosition>('상단 중앙');
+  const [quantity, setQuantity] = useState<number>(10);
+  const [activeZone, setActiveZone] = useState<ActiveZone>('front');
+  const [saveState, setSaveState] = useState<'미저장' | '저장됨'>('미저장');
 
   const unitPrice = useMemo(() => {
-    return estimateUnitPrice({
-      thickness,
-      printSide,
-      finish,
-      addonCount: addons.length,
-    });
-  }, [addons.length, finish, printSide, thickness]);
+    let base = 2900;
+    if (face === '양면') base += 500;
+    if (finish === '무광') base += 300;
+    return base;
+  }, [face, finish]);
 
-  const totalPrice = useMemo(() => unitPrice * quantity, [quantity, unitPrice]);
-
-  function applyPreset(nextPresetId: string) {
-    const nextPreset =
-      keyringPresets.find((item) => item.id === nextPresetId) ?? initialPreset;
-
-    if (!nextPreset) return;
-
-    setPresetId(nextPreset.id);
-    setShape(nextPreset.shape);
-    setThickness(nextPreset.thickness);
-    setPrintSide(nextPreset.printSide);
-    setRing(nextPreset.ring);
-    setFinish(nextPreset.finish);
-    setQuantity(nextPreset.minQty);
-    setAddons([]);
-  }
+  const totalPrice = unitPrice * quantity;
+  const boardTitle =
+    activeZone === 'front'
+      ? '앞면 배치 확인 중'
+      : activeZone === 'back'
+        ? '뒷면 메모 확인 중'
+        : '고리 위치 확인 중';
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">프리셋</p>
-          <div className="space-y-2">
-            {keyringPresets.map((item) => {
-              const active = item.id === presetId;
+    <main className="min-h-screen bg-neutral-950 text-neutral-50">
+      <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-6 md:py-8">
+        <section className="mb-5 flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.28em] text-cyan-300">KEYRING / SIMPLIFY / KEYRING_SIMPLIFY_20260326_020952</div>
+            <h1 className="mt-2 text-2xl font-semibold md:text-3xl">키링 제작</h1>
+            <p className="mt-2 text-sm text-neutral-300">
+              좌측에서 옵션 선택, 중앙에서 작업테이블 확인, 우측에서 수량·가격·저장·주문까지 바로 처리합니다.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+            라이브 확인 마커
+            <div className="mt-1 font-mono text-xs text-cyan-200">KEYRING_SIMPLIFY_20260326_020952</div>
+          </div>
+        </section>
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => applyPreset(item.id)}
-                  className={
-                    active
-                      ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
-                      : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-white/10"
-                  }
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-white">{item.title}</span>
-                    <span className="text-[11px] text-slate-300">{item.thickness}</span>
+        <section className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <aside className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">좌측 / 선택</div>
+              <h2 className="mt-2 text-lg font-semibold">옵션</h2>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">자재</div>
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-3 text-sm text-emerald-100">
+                  단일 기준 자재
+                  <div className="mt-1 text-base font-semibold">투명 아크릴 3T</div>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">인쇄 면수</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {faces.map((item) => (
+                    <PillButton
+                      key={item}
+                      active={face === item}
+                      label={item}
+                      onClick={() => {
+                        setFace(item);
+                        setSaveState('미저장');
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">표면 마감</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {finishes.map((item) => (
+                    <PillButton
+                      key={item}
+                      active={finish === item}
+                      label={item}
+                      onClick={() => {
+                        setFinish(item);
+                        setSaveState('미저장');
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">고리 위치</div>
+                <div className="grid gap-2">
+                  {ringPositions.map((item) => (
+                    <PillButton
+                      key={item}
+                      active={ringPosition === item}
+                      label={item}
+                      onClick={() => {
+                        setRingPosition(item);
+                        setActiveZone('ring');
+                        setSaveState('미저장');
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">중앙 / 작업</div>
+                <h2 className="mt-2 text-lg font-semibold">작업테이블</h2>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-300">
+                {boardTitle}
+              </div>
+            </div>
+
+            <div className="rounded-[32px] border border-white/10 bg-neutral-900/70 p-4 md:p-6">
+              <div className="mb-4 grid gap-2 md:grid-cols-3">
+                <PillButton active={activeZone === 'front'} label="앞면" onClick={() => setActiveZone('front')} />
+                <PillButton active={activeZone === 'back'} label="뒷면" onClick={() => setActiveZone('back')} />
+                <PillButton active={activeZone === 'ring'} label="고리 위치" onClick={() => setActiveZone('ring')} />
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveZone('front');
+                      setSaveState('미저장');
+                    }}
+                    className={[
+                      'min-h-[240px] rounded-[28px] border p-5 text-left transition',
+                      activeZone === 'front'
+                        ? 'border-cyan-400 bg-cyan-400/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    ].join(' ')}
+                  >
+                    <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">Front</div>
+                    <div className="mt-3 text-xl font-semibold">앞면 핵심 배치</div>
+                    <div className="mt-2 text-sm text-neutral-300">
+                      업로드 영역과 메인 이미지 위치를 중심에 두고 작업합니다.
+                    </div>
+                    <div className="mt-6 rounded-3xl border border-dashed border-white/15 bg-black/20 px-4 py-10 text-center text-sm text-neutral-400">
+                      대표 이미지 놓는 자리
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveZone('back');
+                      setSaveState('미저장');
+                    }}
+                    className={[
+                      'min-h-[240px] rounded-[28px] border p-5 text-left transition',
+                      activeZone === 'back'
+                        ? 'border-cyan-400 bg-cyan-400/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    ].join(' ')}
+                  >
+                    <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">Back</div>
+                    <div className="mt-3 text-xl font-semibold">뒷면 메모 영역</div>
+                    <div className="mt-2 text-sm text-neutral-300">
+                      후면 인쇄 여부와 간단한 메모 방향만 바로 확인합니다.
+                    </div>
+                    <div className="mt-6 rounded-3xl border border-dashed border-white/15 bg-black/20 px-4 py-10 text-center text-sm text-neutral-400">
+                      뒷면 안내 / 메모 자리
+                    </div>
+                  </button>
+                </div>
+
+                <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">Preview</div>
+                  <div className="mt-3 flex min-h-[240px] items-center justify-center rounded-[28px] border border-dashed border-cyan-400/30 bg-gradient-to-b from-cyan-400/10 to-white/5 p-6">
+                    <div className="relative flex h-56 w-44 items-center justify-center rounded-[36px] border border-white/20 bg-white/10 shadow-2xl">
+                      <div
+                        className={[
+                          'absolute h-5 w-5 rounded-full border-2 border-cyan-300 bg-cyan-300/20',
+                          ringPosition === '상단 중앙'
+                            ? 'left-1/2 top-2 -translate-x-1/2'
+                            : ringPosition === '좌측 상단'
+                              ? 'left-3 top-3'
+                              : 'right-3 top-3'
+                        ].join(' ')}
+                      />
+                      <div className="text-center">
+                        <div className="text-sm text-neutral-300">작업 요약</div>
+                        <div className="mt-2 text-lg font-semibold">{face} / {finish}</div>
+                        <div className="mt-1 text-sm text-cyan-200">{ringPosition}</div>
+                      </div>
+                    </div>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{item.note}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
 
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">소재</p>
-          <div className="grid gap-2">
-            {materialCards.map((item) => {
-              const active = item.id === materialId;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setMaterialId(item.id)}
-                  className={`w-full rounded-2xl border p-3 text-left transition ${getMaterialClass(item.id, active)}`}
-                >
-                  <p className="text-sm font-semibold">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-300">{item.summary}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">추가 옵션</p>
-          <div className="grid gap-2">
-            {keyringAddons.map((item) => {
-              const active = addons.includes(item.id);
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setAddons((prev) => toggleValue(prev, item.id))}
-                  className={
-                    active
-                      ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
-                      : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-white/10"
-                  }
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-white">{item.label}</span>
-                    <span className="text-xs text-cyan-100">+{item.priceDelta.toLocaleString()}원</span>
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-neutral-300">
+                    현재 포커스: <span className="font-semibold text-white">{boardTitle}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{item.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      </aside>
+                </div>
+              </div>
+            </div>
+          </section>
 
-      <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-                CENTER / 작업
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
-                {preset?.title ?? "키링 작업"}
-              </h2>
+          <aside className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">우측 / 요약</div>
+              <h2 className="mt-2 text-lg font-semibold">수량 · 가격 · 저장 · 주문</h2>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 소재</p>
-              <p className="mt-1 font-semibold text-white">{selectedMaterial?.title ?? "-"}</p>
-            </div>
-          </div>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="text-sm text-neutral-400">수량</div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((prev) => Math.max(1, prev - 1));
+                      setSaveState('미저장');
+                    }}
+                    className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 text-lg"
+                  >
+                    -
+                  </button>
+                  <div className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-lg font-semibold">
+                    {quantity}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((prev) => Math.min(500, prev + 1));
+                      setSaveState('미저장');
+                    }}
+                    className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <SummaryChip label="형태" value={shape} />
-            <SummaryChip label="두께" value={thickness} />
-            <SummaryChip label="인쇄" value={printSide} />
-            <SummaryChip label="체결" value={ring} />
-            <SummaryChip label="마감" value={finish} />
-            <SummaryChip label="옵션 수" value={`${selectedAddonObjects.length}개`} />
-          </div>
-        </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-400">단가</span>
+                  <span className="font-semibold text-white">{formatWon(unitPrice)}원</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-neutral-400">합계</span>
+                  <span className="text-xl font-semibold text-cyan-200">{formatWon(totalPrice)}원</span>
+                </div>
+              </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">형태</span>
-            <select
-              value={shape}
-              onChange={(e) => setShape(e.target.value as KeyringShape)}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-            >
-              {shapeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-neutral-300">
+                <div>자재: <span className="font-semibold text-white">투명 아크릴 3T</span></div>
+                <div className="mt-2">면수: <span className="font-semibold text-white">{face}</span></div>
+                <div className="mt-2">마감: <span className="font-semibold text-white">{finish}</span></div>
+                <div className="mt-2">고리 위치: <span className="font-semibold text-white">{ringPosition}</span></div>
+                <div className="mt-2">저장 상태: <span className="font-semibold text-cyan-200">{saveState}</span></div>
+              </div>
 
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">아크릴 두께</span>
-            <select
-              value={thickness}
-              onChange={(e) => setThickness(e.target.value as AcrylicThickness)}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-            >
-              {acrylicOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">인쇄면</span>
-            <select
-              value={printSide}
-              onChange={(e) => setPrintSide(e.target.value as PrintSide)}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-            >
-              {printSideOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">링 / 체결</span>
-            <select
-              value={ring}
-              onChange={(e) => setRing(e.target.value as RingOption)}
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
-            >
-              {ringOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <span className="mb-3 block text-sm text-slate-300">마감</span>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {finishOptions.map((option) => {
-              const active = option === finish;
-
-              return (
+              <div className="grid gap-2">
                 <button
-                  key={option}
                   type="button"
-                  onClick={() => setFinish(option)}
-                  className={`rounded-2xl border px-3 py-3 text-sm font-medium transition ${getFinishClass(option, active)}`}
+                  onClick={() => setSaveState('저장됨')}
+                  className="rounded-2xl border border-white/10 bg-white px-4 py-3 font-semibold text-black transition hover:opacity-90"
                 >
-                  {option}
+                  보관함 저장
                 </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <label className="block space-y-2 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <span className="text-sm font-semibold text-white">작업 메모</span>
-          <textarea
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            rows={5}
-            placeholder="색상, 타공 위치, 포장 요청"
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-          />
-        </label>
-      </section>
-
-      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-            RIGHT / 수량 · 가격 · 저장 · 주문
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-white">주문 카드</h2>
-        </div>
-
-        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-slate-300">수량</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-              >
-                -
-              </button>
-              <input
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                className="h-9 w-20 rounded-xl border border-white/10 bg-slate-900 px-3 text-center text-sm text-white outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setQuantity((prev) => prev + 1)}
-                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-              >
-                +
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveState('미저장')}
+                  className="rounded-2xl border border-cyan-400/40 bg-cyan-400/15 px-4 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-400/25"
+                >
+                  바로 주문 진행
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">예상 단가</span>
-              <span className="font-semibold text-cyan-100">{unitPrice.toLocaleString()}원</span>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">예상 합계</span>
-              <span className="text-lg font-semibold text-white">{totalPrice.toLocaleString()}원</span>
-            </div>
-          </div>
+          </aside>
         </section>
-
-        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">선택 요약</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-              {selectedMaterial?.title ?? "-"}
-            </span>
-            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-              {shape} / {thickness}
-            </span>
-            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-              {printSide} / {finish}
-            </span>
-            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-              {ring}
-            </span>
-            {selectedAddonObjects.map((item) => (
-              <span
-                key={item.id}
-                className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200"
-              >
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <div className="grid gap-3">
-          <Link
-            href="/storage"
-            className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-          >
-            서랍 저장
-          </Link>
-          <Link
-            href="/orders"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            주문으로
-          </Link>
-        </div>
-      </aside>
-    </div>
+      </div>
+    </main>
   );
 }

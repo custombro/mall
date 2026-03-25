@@ -1,467 +1,350 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  getZoneLabel,
-  popLayers,
-  popMaterialCards,
-  popPresets,
-  popZones,
-  type PopLayer,
-} from "./pop-config";
+import { useMemo, useState } from 'react';
 
-type PlacementMap = Record<string, string>;
+type Mode = 'single' | 'multi';
+type SlotId = 1 | 2 | 3 | 4;
+type MaterialName = '투명 3T' | '백색 3T' | '홀로그램' | '미러';
 
-function getKindClass(kind: PopLayer["kind"], active: boolean) {
-  if (!active) {
-    return "border-white/10 bg-slate-950/70 text-slate-200 hover:bg-white/10";
-  }
+const allSlots: SlotId[] = [1, 2, 3, 4];
+const materialOptions: MaterialName[] = ['투명 3T', '백색 3T', '홀로그램', '미러'];
 
-  switch (kind) {
-    case "base":
-      return "border-emerald-300/30 bg-emerald-300/15 text-emerald-100";
-    case "panel":
-      return "border-cyan-300/30 bg-cyan-300/15 text-cyan-100";
-    case "holder":
-      return "border-violet-300/30 bg-violet-300/15 text-violet-100";
-    default:
-      return "border-amber-300/30 bg-amber-300/15 text-amber-100";
-  }
+function formatWon(value: number): string {
+  return new Intl.NumberFormat('ko-KR').format(value);
 }
 
-function getZoneCardClass(active: boolean, snapReady: boolean) {
-  if (active && snapReady) {
-    return "border-cyan-300/35 bg-cyan-300/10";
-  }
-  if (active && !snapReady) {
-    return "border-amber-300/30 bg-amber-300/10";
-  }
-  return "border-white/10 bg-slate-900/70 hover:bg-white/10";
-}
-
-function SummaryChip({ label, value }: { label: string; value: string }) {
+function PillButton(props: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const { active, label, onClick } = props;
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'rounded-2xl border px-3 py-2 text-sm transition',
+        active
+          ? 'border-fuchsia-400 bg-fuchsia-400/20 text-fuchsia-100'
+          : 'border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10'
+      ].join(' ')}
+    >
+      {label}
+    </button>
   );
 }
 
 export default function PopStudioClient() {
-  const initialPreset = popPresets[0];
-  const initialLayer = popLayers[0];
-  const initialMaterial = popMaterialCards[0];
+  const [mode, setMode] = useState<Mode>('single');
+  const [multiCount, setMultiCount] = useState<2 | 3 | 4>(2);
+  const [activeSlot, setActiveSlot] = useState<SlotId>(1);
+  const [quantity, setQuantity] = useState<number>(5);
+  const [saveState, setSaveState] = useState<'미저장' | '저장됨'>('미저장');
+  const [slotMaterials, setSlotMaterials] = useState<Record<SlotId, MaterialName>>({
+    1: '투명 3T',
+    2: '백색 3T',
+    3: '홀로그램',
+    4: '미러'
+  });
 
-  const [presetId, setPresetId] = useState(initialPreset?.id ?? "");
-  const [materialId, setMaterialId] = useState(initialMaterial?.id ?? "");
-  const [selectedLayerId, setSelectedLayerId] = useState(initialLayer?.id ?? "");
-  const [previewZoneId, setPreviewZoneId] = useState(
-    initialLayer?.recommendedZoneId ?? "zone-middle-center",
-  );
-  const [placements, setPlacements] = useState<PlacementMap>({});
-  const [quantity, setQuantity] = useState(1);
-  const [memo, setMemo] = useState("");
+  const enabledSlots = useMemo<SlotId[]>(() => {
+    return mode === 'single' ? [1] : allSlots.slice(0, multiCount);
+  }, [mode, multiCount]);
 
-  const preset = useMemo(
-    () => popPresets.find((item) => item.id === presetId) ?? initialPreset,
-    [initialPreset, presetId],
-  );
+  const activeUnitPrice = useMemo(() => {
+    let base = 9800;
+    base += enabledSlots.length * 2200;
+    if (mode === 'multi') base += 1800;
+    return base;
+  }, [enabledSlots.length, mode]);
 
-  const selectedLayer = useMemo(
-    () => popLayers.find((item) => item.id === selectedLayerId) ?? initialLayer,
-    [initialLayer, selectedLayerId],
-  );
-
-  const activeMaterial = useMemo(
-    () => popMaterialCards.find((item) => item.id === materialId) ?? initialMaterial,
-    [initialMaterial, materialId],
-  );
-
-  const compatibleZoneIds = selectedLayer?.compatibleZoneIds ?? [];
-  const snapReady = compatibleZoneIds.includes(previewZoneId);
-
-  const placedCount = useMemo(() => {
-    return popLayers.filter((layer) => Boolean(placements[layer.id])).length;
-  }, [placements]);
-
-  const progressPercent = useMemo(() => {
-    return Math.round((placedCount / Math.max(1, popLayers.length)) * 100);
-  }, [placedCount]);
-
-  const unitPrice = useMemo(() => {
-    let price = 6900;
-    if (presetId === "preset-perfume") price += 2400;
-    if (presetId === "preset-collectible") price += 1200;
-    if (materialId === "mat-white") price += 600;
-    if (materialId === "mat-thick") price += 1200;
-    price += placedCount * 350;
-    return price;
-  }, [materialId, placedCount, presetId]);
-
-  const totalPrice = useMemo(() => unitPrice * quantity, [quantity, unitPrice]);
-
-  const placedSummary = useMemo(() => {
-    return popLayers.map((layer) => ({
-      id: layer.id,
-      label: layer.label,
-      zoneLabel: placements[layer.id]
-        ? getZoneLabel(placements[layer.id] as string)
-        : "미배치",
-    }));
-  }, [placements]);
-
-  function selectLayer(layerId: string) {
-    const nextLayer = popLayers.find((item) => item.id === layerId) ?? initialLayer;
-    if (!nextLayer) return;
-
-    setSelectedLayerId(nextLayer.id);
-    setPreviewZoneId(nextLayer.recommendedZoneId);
-  }
-
-  function placeSelectedLayer() {
-    if (!selectedLayer) return;
-
-    setPlacements((prev) => ({
-      ...prev,
-      [selectedLayer.id]: previewZoneId,
-    }));
-  }
-
-  function removeSelectedLayer() {
-    if (!selectedLayer) return;
-
-    setPlacements((prev) => {
-      const next = { ...prev };
-      delete next[selectedLayer.id];
-      return next;
-    });
-  }
+  const totalPrice = activeUnitPrice * quantity;
+  const activeMaterial = slotMaterials[activeSlot];
+  const enabledSlotCount = enabledSlots.length;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-white">프리셋</p>
-            <span className="text-xs text-slate-400">{preset?.useCase ?? "-"}</span>
+    <main className="min-h-screen bg-neutral-950 text-neutral-50">
+      <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-6 md:py-8">
+        <section className="mb-5 flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.28em] text-fuchsia-300">POP / SIMPLIFY / POP_SIMPLIFY_20260326_020952</div>
+            <h1 className="mt-2 text-2xl font-semibold md:text-3xl">POP 제작</h1>
+            <p className="mt-2 text-sm text-neutral-300">
+              좌측에서 소재 구성을 선택하고 중앙 작업테이블에서 패널 상태를 확인한 뒤 우측에서 수량·가격·저장·주문을 처리합니다.
+            </p>
           </div>
-
-          <div className="space-y-2">
-            {popPresets.map((item) => {
-              const active = item.id === presetId;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setPresetId(item.id)}
-                  className={
-                    active
-                      ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
-                      : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-white/10"
-                  }
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-white">{item.title}</span>
-                    <span className="text-[11px] text-slate-300">{item.baseSize}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400">{item.description}</p>
-                </button>
-              );
-            })}
+          <div className="rounded-2xl border border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-3 text-sm text-fuchsia-100">
+            라이브 확인 마커
+            <div className="mt-1 font-mono text-xs text-fuchsia-200">POP_SIMPLIFY_20260326_020952</div>
           </div>
         </section>
 
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">자재</p>
-          <div className="grid gap-2">
-            {popMaterialCards.map((item) => {
-              const active = item.id === materialId;
-
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setMaterialId(item.id)}
-                  className={
-                    active
-                      ? item.panelClass + " text-left"
-                      : "w-full rounded-3xl border border-white/10 bg-slate-950/70 p-4 text-left transition hover:bg-white/10"
-                  }
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-300">{item.summary}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">조립 파트</p>
-          <div className="grid gap-2">
-            {popLayers.map((layer) => {
-              const active = layer.id === selectedLayerId;
-
-              return (
-                <button
-                  key={layer.id}
-                  type="button"
-                  onClick={() => selectLayer(layer.id)}
-                  className={`w-full rounded-2xl border p-3 text-left transition ${getKindClass(layer.kind, active)}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold">{layer.label}</span>
-                    <span className="text-[11px] uppercase">{layer.kind}</span>
-                  </div>
-                  <p className="mt-1 text-xs opacity-90">{layer.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      </aside>
-
-      <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-                CENTER / 스냅 작업대
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
-                {preset?.title ?? "POP 작업대"}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                선택 파트를 중앙 작업대에 붙여 보면서 배치 흐름을 먼저 정리합니다.
-              </p>
+        <section className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
+          <aside className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">좌측 / 선택</div>
+              <h2 className="mt-2 text-lg font-semibold">소재 구성</h2>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 자재</p>
-              <p className="mt-1 font-semibold text-white">{activeMaterial?.title ?? "-"}</p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <SummaryChip label="프리셋" value={preset?.title ?? "-"} />
-            <SummaryChip label="선택 파트" value={selectedLayer?.label ?? "-"} />
-            <SummaryChip label="배치 진행" value={`${progressPercent}%`} />
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">배치 존</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {popZones.map((zone) => {
-              const occupants = popLayers.filter((layer) => placements[layer.id] === zone.id);
-              const active = zone.id === previewZoneId;
-
-              return (
-                <button
-                  key={zone.id}
-                  type="button"
-                  onClick={() => setPreviewZoneId(zone.id)}
-                  className={`rounded-2xl border p-3 text-left transition ${getZoneCardClass(active, compatibleZoneIds.includes(zone.id))}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-white">{zone.label}</span>
-                    <span className="text-[11px] text-slate-300">{occupants.length}개</span>
-                  </div>
-                  <p className="mt-1 text-xs leading-5 text-slate-300">{zone.description}</p>
-
-                  {occupants.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {occupants.map((layer) => (
-                        <span
-                          key={layer.id}
-                          className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] text-white"
-                        >
-                          {layer.label}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-white">선택 파트 상세</p>
-              <span
-                className={
-                  snapReady
-                    ? "rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100"
-                    : "rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-xs text-amber-100"
-                }
-              >
-                {snapReady ? "붙일 수 있음" : "추천 위치 아님"}
-              </span>
-            </div>
-
-            <div className="mt-3 grid gap-3">
-              <SummaryChip label="현재 위치" value={getZoneLabel(previewZoneId)} />
-              <SummaryChip
-                label="접착 여부"
-                value={selectedLayer?.adhesive ? "접착 파트" : "비접착 파트"}
-              />
-            </div>
-
-            <div className="mt-4">
-              <h3 className="text-xl font-semibold text-white">{selectedLayer?.label ?? "-"}</h3>
-              <p className="mt-2 text-sm leading-7 text-slate-300">
-                {selectedLayer?.description ?? "-"}
-              </p>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={placeSelectedLayer}
-                className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-              >
-                현재 위치에 배치
-              </button>
-              <button
-                type="button"
-                onClick={removeSelectedLayer}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                선택 파트 해제
-              </button>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-            <p className="text-sm font-semibold text-white">배치 현황</p>
-            <div className="mt-3 h-2 rounded-full bg-white/10">
-              <div
-                className="h-2 rounded-full bg-emerald-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <div className="mt-3 space-y-2">
-              {placedSummary.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
-                >
-                  <span className="text-slate-200">{item.label}</span>
-                  <span className="text-slate-400">{item.zoneLabel}</span>
+            <div className="space-y-5">
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">구성 방식</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <PillButton
+                    active={mode === 'single'}
+                    label="단일 소재"
+                    onClick={() => {
+                      setMode('single');
+                      setActiveSlot(1);
+                      setSaveState('미저장');
+                    }}
+                  />
+                  <PillButton
+                    active={mode === 'multi'}
+                    label="여러 소재"
+                    onClick={() => {
+                      setMode('multi');
+                      setActiveSlot(1);
+                      setSaveState('미저장');
+                    }}
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        <label className="block space-y-2 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <span className="text-sm font-semibold text-white">작업 메모</span>
-          <textarea
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            rows={5}
-            placeholder="받침 보강, 접착 순서, 문구 위치 등"
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-          />
-        </label>
-      </section>
+              {mode === 'multi' ? (
+                <div>
+                  <div className="mb-2 text-sm font-medium text-neutral-200">사용 패널 수</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[2, 3, 4].map((countValue) => (
+                      <PillButton
+                        key={countValue}
+                        active={multiCount === countValue}
+                        label={`${countValue}패널`}
+                        onClick={() => {
+                          setMultiCount(countValue as 2 | 3 | 4);
+                          if (activeSlot > countValue) setActiveSlot(countValue as SlotId);
+                          setSaveState('미저장');
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
-      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-            RIGHT / 수량 · 가격 · 저장 · 주문
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-white">주문 카드</h2>
-        </div>
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">패널 선택</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {allSlots.map((slot) => {
+                    const enabled = enabledSlots.includes(slot);
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={!enabled}
+                        onClick={() => {
+                          if (!enabled) return;
+                          setActiveSlot(slot);
+                          setSaveState('미저장');
+                        }}
+                        className={[
+                          'rounded-2xl border px-3 py-2 text-sm transition',
+                          activeSlot === slot && enabled
+                            ? 'border-fuchsia-400 bg-fuchsia-400/20 text-fuchsia-100'
+                            : enabled
+                              ? 'border-white/10 bg-white/5 text-neutral-300 hover:border-white/20 hover:bg-white/10'
+                              : 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-600'
+                        ].join(' ')}
+                      >
+                        {slot}번 소재
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-slate-300">수량</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-              >
-                -
-              </button>
-              <input
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                className="h-9 w-20 rounded-xl border border-white/10 bg-slate-900 px-3 text-center text-sm text-white outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => setQuantity((prev) => prev + 1)}
-                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-              >
-                +
-              </button>
+              <div>
+                <div className="mb-2 text-sm font-medium text-neutral-200">선택 패널 소재</div>
+                <div className="grid gap-2">
+                  {materialOptions.map((material) => (
+                    <PillButton
+                      key={material}
+                      active={activeMaterial === material}
+                      label={material}
+                      onClick={() => {
+                        setSlotMaterials((prev) => ({ ...prev, [activeSlot]: material }));
+                        setSaveState('미저장');
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          </aside>
 
-          <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">예상 단가</span>
-              <span className="font-semibold text-cyan-100">{unitPrice.toLocaleString()}원</span>
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">중앙 / 작업</div>
+                <h2 className="mt-2 text-lg font-semibold">POP 작업테이블</h2>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-300">
+                활성 패널 {enabledSlotCount}개 / 현재 {activeSlot}번 선택
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-slate-400">예상 합계</span>
-              <span className="text-lg font-semibold text-white">{totalPrice.toLocaleString()}원</span>
+
+            <div className="rounded-[32px] border border-white/10 bg-neutral-900/70 p-4 md:p-6">
+              <div className="grid gap-4 xl:grid-cols-[1.35fr_0.85fr]">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {allSlots.map((slot) => {
+                    const enabled = enabledSlots.includes(slot);
+                    const selected = activeSlot === slot && enabled;
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={!enabled}
+                        onClick={() => {
+                          if (!enabled) return;
+                          setActiveSlot(slot);
+                          setSaveState('미저장');
+                        }}
+                        className={[
+                          'min-h-[220px] rounded-[28px] border p-5 text-left transition',
+                          selected
+                            ? 'border-fuchsia-400 bg-fuchsia-400/10'
+                            : enabled
+                              ? 'border-white/10 bg-white/5 hover:border-white/20'
+                              : 'cursor-not-allowed border-white/5 bg-black/20 opacity-40'
+                        ].join(' ')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">Panel {slot}</div>
+                          <div className="rounded-full border border-white/10 px-2 py-1 text-xs text-neutral-300">
+                            {enabled ? '활성' : '비활성'}
+                          </div>
+                        </div>
+                        <div className="mt-4 text-xl font-semibold">{slot}번 소재 패널</div>
+                        <div className="mt-2 text-sm text-neutral-300">
+                          {enabled ? `현재 소재: ${slotMaterials[slot]}` : '현재 구성에서는 사용하지 않는 패널입니다.'}
+                        </div>
+                        <div className="mt-6 rounded-3xl border border-dashed border-white/15 bg-black/20 px-4 py-10 text-center text-sm text-neutral-400">
+                          {enabled ? `작업물 배치 영역 / ${slotMaterials[slot]}` : '대기'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-[28px] border border-white/10 bg-white/5 p-5">
+                  <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">Summary</div>
+                  <div className="mt-4 space-y-3 rounded-3xl border border-white/10 bg-black/20 p-4 text-sm text-neutral-300">
+                    <div className="flex items-center justify-between">
+                      <span>구성 방식</span>
+                      <span className="font-semibold text-white">{mode === 'single' ? '단일 소재' : '여러 소재'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>활성 패널 수</span>
+                      <span className="font-semibold text-white">{enabledSlotCount}개</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>현재 패널</span>
+                      <span className="font-semibold text-fuchsia-200">{activeSlot}번</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>현재 소재</span>
+                      <span className="font-semibold text-white">{activeMaterial}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>저장 상태</span>
+                      <span className="font-semibold text-fuchsia-200">{saveState}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-3xl border border-dashed border-fuchsia-400/30 bg-fuchsia-400/10 px-4 py-10 text-center">
+                    <div className="text-sm text-neutral-300">현재 작업 확인</div>
+                    <div className="mt-2 text-xl font-semibold">{activeSlot}번 소재 / {activeMaterial}</div>
+                    <div className="mt-2 text-sm text-fuchsia-100">POP_SIMPLIFY_20260326_020952</div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
+
+          <aside className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <div className="mb-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-neutral-400">우측 / 요약</div>
+              <h2 className="mt-2 text-lg font-semibold">수량 · 가격 · 저장 · 주문</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="text-sm text-neutral-400">수량</div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((prev) => Math.max(1, prev - 1));
+                      setSaveState('미저장');
+                    }}
+                    className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 text-lg"
+                  >
+                    -
+                  </button>
+                  <div className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-lg font-semibold">
+                    {quantity}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuantity((prev) => Math.min(500, prev + 1));
+                      setSaveState('미저장');
+                    }}
+                    className="h-11 w-11 rounded-2xl border border-white/10 bg-white/5 text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-400">단가</span>
+                  <span className="font-semibold text-white">{formatWon(activeUnitPrice)}원</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-neutral-400">합계</span>
+                  <span className="text-xl font-semibold text-fuchsia-200">{formatWon(totalPrice)}원</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-neutral-300">
+                <div>구성: <span className="font-semibold text-white">{mode === 'single' ? '단일 소재' : `여러 소재 ${enabledSlotCount}패널`}</span></div>
+                <div className="mt-2">현재 패널: <span className="font-semibold text-white">{activeSlot}번</span></div>
+                <div className="mt-2">현재 소재: <span className="font-semibold text-white">{activeMaterial}</span></div>
+                <div className="mt-2">저장 상태: <span className="font-semibold text-fuchsia-200">{saveState}</span></div>
+              </div>
+
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSaveState('저장됨')}
+                  className="rounded-2xl border border-white/10 bg-white px-4 py-3 font-semibold text-black transition hover:opacity-90"
+                >
+                  보관함 저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSaveState('미저장')}
+                  className="rounded-2xl border border-fuchsia-400/40 bg-fuchsia-400/15 px-4 py-3 font-semibold text-fuchsia-100 transition hover:bg-fuchsia-400/25"
+                >
+                  바로 주문 진행
+                </button>
+              </div>
+            </div>
+          </aside>
         </section>
-
-        <section className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-4">
-          <p className="text-sm font-semibold text-emerald-50">조립 진행</p>
-          <div className="mt-3 h-2 rounded-full bg-white/10">
-            <div
-              className="h-2 rounded-full bg-emerald-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="mt-3 space-y-2 text-sm text-emerald-100/90">
-            <div className="flex items-center justify-between gap-3">
-              <span>배치 완료 파트</span>
-              <span>
-                {placedCount} / {popLayers.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span>선택 자재</span>
-              <span>{activeMaterial?.title ?? "-"}</span>
-            </div>
-          </div>
-        </section>
-
-        <div className="grid gap-3">
-          <Link
-            href="/storage"
-            className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-          >
-            서랍 저장
-          </Link>
-          <Link
-            href="/orders"
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            주문으로
-          </Link>
-        </div>
-
-        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">메모 미리보기</p>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
-            {memo.trim().length === 0 ? "아직 작업 메모가 없습니다." : memo}
-          </p>
-        </section>
-      </aside>
-    </div>
+      </div>
+    </main>
   );
 }
