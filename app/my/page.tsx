@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_MY_20260326_000331";
+const deployMarker = "DEPLOY_MY_20260326_000754";
 
 const myGroups = [
   { name: "내 주문", hint: "상태와 재주문 확인" },
