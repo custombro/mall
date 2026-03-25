@@ -24,11 +24,11 @@ type DisplayItem = {
   draft?: DrawerEntry["draft"];
 };
 
-const TABS: { key: DrawerTab; title: string; description: string }[] = [
-  { key: "recent", title: "최근 작업", description: "방금 하던 작업을 즉시 이어서 여는 구간" },
-  { key: "saved", title: "저장 스펙", description: "반복 주문용 조합을 바로 다시 여는 구간" },
-  { key: "completed", title: "제작완료", description: "완료품 기준으로 재주문/복제하는 구간" },
-  { key: "vip", title: "VIP / 대량", description: "프로젝트 단위 재주문과 빠른 견적 구간" },
+const TABS: { key: DrawerTab; title: string; summary: string }[] = [
+  { key: "recent", title: "최근 작업", summary: "방금 저장한 항목 다시 열기" },
+  { key: "saved", title: "저장 스펙", summary: "반복 주문용 조합 관리" },
+  { key: "completed", title: "제작완료", summary: "완료품 기준 재주문" },
+  { key: "vip", title: "VIP / 대량", summary: "프로젝트 단위 빠른 호출" },
 ];
 
 const COMPLETED_ITEMS: DisplayItem[] = [
@@ -57,59 +57,67 @@ const VIP_ITEMS: DisplayItem[] = [
   },
 ];
 
-function DrawerCard({
+function DrawerListCard({
   item,
   active,
-  onSelect,
+  onClick,
 }: {
   item: DisplayItem;
   active: boolean;
-  onSelect: (id: string) => void;
+  onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(item.id)}
-      className={[
-        "w-full rounded-[24px] border p-4 text-left transition",
+      onClick={onClick}
+      className={
         active
-          ? "border-cyan-400/30 bg-cyan-400/10"
-          : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]",
-      ].join(" ")}
+          ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-4 text-left"
+          : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-left transition hover:bg-white/10"
+      }
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-white">{item.title}</p>
-          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-cyan-300/80">{item.tag}</p>
+          <p className="mt-1 text-xs text-slate-400">{item.product}</p>
         </div>
-        <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-white/60">
-          {item.qty}개
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-200">
+          {item.tag}
         </span>
       </div>
 
-      <div className="mt-4 space-y-2 text-sm text-white/70">
-        <p>{item.product}</p>
-        <p>{item.spec}</p>
-        <p className="text-xs text-white/45">마지막 사용: {item.lastUsed}</p>
-      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-300">{item.spec}</p>
 
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-xs leading-6 text-white/60">
-        {item.note}
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-400">
+        <span>{item.qty}개</span>
+        <span>{item.lastUsed}</span>
       </div>
     </button>
   );
 }
 
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
 export default function StoragePage() {
   const router = useRouter();
+
   const [tab, setTab] = useState<DrawerTab>("recent");
   const [entries, setEntries] = useState<DrawerEntry[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [selectedId, setSelectedId] = useState("");
 
   useEffect(() => {
     const loaded = loadDrawerEntries();
     setEntries(loaded);
-    if (loaded[0]) setSelectedId(loaded[0].id);
+    if (loaded[0]) {
+      setSelectedId(loaded[0].id);
+    }
   }, []);
 
   const dynamicItems = useMemo<DisplayItem[]>(() => {
@@ -126,21 +134,35 @@ export default function StoragePage() {
     }));
   }, [entries]);
 
-  const items = useMemo(() => {
-    if (tab === "recent") return dynamicItems;
-    if (tab === "saved") return dynamicItems;
-    if (tab === "completed") return COMPLETED_ITEMS;
+  const items = useMemo<DisplayItem[]>(() => {
+    if (tab === "recent" || tab === "saved") {
+      return dynamicItems;
+    }
+    if (tab === "completed") {
+      return COMPLETED_ITEMS;
+    }
     return VIP_ITEMS;
-  }, [tab, dynamicItems]);
+  }, [dynamicItems, tab]);
 
   useEffect(() => {
-    if (!items.length) return;
+    if (!items.length) {
+      setSelectedId("");
+      return;
+    }
+
     if (!items.find((item) => item.id === selectedId)) {
       setSelectedId(items[0].id);
     }
   }, [items, selectedId]);
 
-  const selected = items.find((item) => item.id === selectedId) ?? items[0];
+  const selected = useMemo(() => {
+    return items.find((item) => item.id === selectedId) ?? items[0] ?? null;
+  }, [items, selectedId]);
+
+  const realSavedCount = entries.length.toString();
+  const reorderReadyCount = useMemo(() => {
+    return (entries.filter((entry) => entry.qty > 0).length || 0).toString();
+  }, [entries]);
 
   const handleOpen = () => {
     if (selected?.draft) {
@@ -157,130 +179,209 @@ export default function StoragePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#090b10] text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
-        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO DRAWER CONSOLE</p>
-              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                서랍은 저장소가 아니라
-                <br />
-                다시 여는 실행 콘솔이다
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                이제 작업대에서 저장한 실제 항목이 이 화면에 들어옵니다.
-                서랍에서 작업대로 다시 열거나 주문으로 바로 넘기는 흐름이 동작합니다.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/workbench/keyring" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-                  작업대로 이동
-                </Link>
-                <Link href="/orders" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                  주문 허브 보기
-                </Link>
-              </div>
-            </div>
-
-            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">서랍 요약</p>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">실제 저장 항목</p>
-                  <p className="mt-2 text-2xl font-bold text-white">{entries.length}</p>
-                </div>
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">핵심</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">저장 후 다시 여는 속도를 높인다</p>
-                </div>
-              </div>
-            </div>
+    <main className="min-h-screen bg-[#0a0f18] text-white">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-2 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/70">
+              STORAGE / DRAWER
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+              서랍
+            </h1>
           </div>
-        </section>
+          <p className="max-w-xl text-sm text-slate-300">
+            저장된 작업을 고르고, 상세를 확인한 뒤, 다시 작업대로 열거나 주문으로 넘기는 단순 화면입니다.
+          </p>
+        </div>
 
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-          <div className="grid gap-3 lg:grid-cols-4">
-            {TABS.map((item) => {
-              const active = item.key === tab;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setTab(item.key)}
-                  className={[
-                    "rounded-[22px] border p-4 text-left transition",
-                    active
-                      ? "border-cyan-400/30 bg-cyan-400/12"
-                      : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]",
-                  ].join(" ")}
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-xs leading-6 text-white/60">{item.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">서랍 구분</p>
+              <div className="space-y-2">
+                {TABS.map((item) => {
+                  const active = item.key === tab;
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_360px]">
-          <section className="space-y-4">
-            {items.length === 0 ? (
-              <div className="rounded-[24px] border border-white/10 bg-black/20 p-6 text-sm text-white/65">
-                아직 실제 저장된 서랍 항목이 없다. 키링 작업대에서 먼저 저장하면 여기에 바로 나타난다.
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setTab(item.key)}
+                      className={
+                        active
+                          ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
+                          : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-white/10"
+                      }
+                    >
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="mt-1 text-xs text-slate-400">{item.summary}</p>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              items.map((item) => (
-                <DrawerCard
-                  key={item.id}
-                  item={item}
-                  active={selected?.id === item.id}
-                  onSelect={setSelectedId}
+            </section>
+
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">항목 목록</p>
+
+              {items.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-sm leading-6 text-slate-400">
+                  아직 저장된 항목이 없다. 작업대에서 먼저 저장하면 여기에 바로 나타난다.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <DrawerListCard
+                      key={item.id}
+                      item={item}
+                      active={item.id === selected?.id}
+                      onClick={() => setSelectedId(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </aside>
+
+          <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                    CENTER / 상세
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">
+                    {selected?.title ?? "선택된 항목 없음"}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    {selected?.note ?? "좌측에서 저장 항목을 선택하면 상세 정보가 표시됩니다."}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 구분</p>
+                  <p className="mt-1 font-semibold text-white">
+                    {TABS.find((item) => item.key === tab)?.title ?? "-"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <SummaryChip label="제품" value={selected?.product ?? "-"} />
+                <SummaryChip label="사양" value={selected?.spec ?? "-"} />
+                <SummaryChip label="수량" value={selected ? `${selected.qty}개` : "-"} />
+                <SummaryChip label="최근 사용" value={selected?.lastUsed ?? "-"} />
+                <SummaryChip label="태그" value={selected?.tag ?? "-"} />
+                <SummaryChip
+                  label="작업 연결"
+                  value={selected?.draft ? "실제 draft 연결됨" : "샘플 / 참고 항목"}
                 />
-              ))
-            )}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">상세 메모</p>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                {selected?.note ?? "선택된 항목이 없습니다."}
+              </p>
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">이동 흐름</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link
+                  href="/workbench/keyring"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  키링 작업대
+                </Link>
+                <Link
+                  href="/orders"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  주문 허브
+                </Link>
+                <Link
+                  href="/"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  홈
+                </Link>
+              </div>
+            </div>
           </section>
 
-          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            {selected ? (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">선택된 항목</p>
-                <div className="mt-4 rounded-[24px] border border-white/10 bg-black/20 p-4">
-                  <p className="text-lg font-bold text-white">{selected.title}</p>
-                  <p className="mt-2 text-sm text-white/70">{selected.product}</p>
-                  <p className="mt-3 text-sm leading-7 text-white/65">{selected.spec}</p>
+          <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+              <div className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                  RIGHT / 상태 · 실행
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">실행 카드</h2>
 
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/45">수량</p>
-                      <p className="mt-2 font-semibold text-white">{selected.qty}개</p>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-400">실제 저장 항목</span>
+                      <span className="font-semibold text-white">{realSavedCount}</span>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-white/45">최근 사용</p>
-                      <p className="mt-2 font-semibold text-white">{selected.lastUsed}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-400">재호출 가능</span>
+                      <span className="font-semibold text-cyan-100">{reorderReadyCount}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-white">선택 요약</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+                        {selected?.product ?? "-"}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+                        {selected?.qty ? `${selected.qty}개` : "-"}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+                        {selected?.tag ?? "-"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3">
+                <div className="mt-4 grid gap-3">
                   <button
                     type="button"
                     onClick={handleOpen}
-                    className="rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                    className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!selected}
                   >
                     작업대로 열기
                   </button>
+
                   <button
                     type="button"
                     onClick={handleReorder}
-                    className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white"
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!selected}
                   >
                     재주문
                   </button>
                 </div>
-              </>
-            ) : null}
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-emerald-400/20 bg-emerald-400/10 p-4">
+              <p className="text-sm font-semibold text-emerald-50">현재 상태</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-emerald-100/90">
+                <li>• 저장 항목을 선택하면 중앙 상세가 바로 바뀝니다.</li>
+                <li>• draft가 있는 항목은 작업대/주문 흐름으로 그대로 이어집니다.</li>
+                <li>• 샘플 항목도 동일 구조로 먼저 검토할 수 있습니다.</li>
+              </ul>
+            </section>
           </aside>
-        </section>
+        </div>
       </div>
     </main>
   );
