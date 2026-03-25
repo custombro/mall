@@ -59,6 +59,15 @@ function getMaterialClass(materialId: string, active: boolean) {
   }
 }
 
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
 export default function KeyringWorkbenchClient() {
   const initialPreset = keyringPresets[0];
   const initialMaterial = materialCards[0];
@@ -100,50 +109,11 @@ export default function KeyringWorkbenchClient() {
 
   const totalPrice = useMemo(() => unitPrice * quantity, [quantity, unitPrice]);
 
-  const summaryRows = useMemo(
-    () => [
-      ["프리셋", preset?.title ?? "-"],
-      ["소재", selectedMaterial?.title ?? "-"],
-      ["형태", shape],
-      ["두께", thickness],
-      ["인쇄", printSide],
-      ["체결", ring],
-      ["마감", finish],
-    ],
-    [finish, preset, printSide, ring, selectedMaterial, shape, thickness],
-  );
-
-  const productionHints = useMemo(() => {
-    const hints: string[] = [];
-
-    if (thickness === "5T") {
-      hints.push("5T 두께라서 전시용·판매용 느낌이 강합니다.");
-    } else if (thickness === "2.7T") {
-      hints.push("2.7T 두께라서 대량 주문과 행사 배포에 유리합니다.");
-    } else {
-      hints.push("3T 두께라서 가장 무난한 반복 주문형 구성입니다.");
-    }
-
-    if (printSide === "양면") {
-      hints.push("양면 인쇄라서 배면 정렬과 화이트 체크를 같이 보는 편이 안전합니다.");
-    } else {
-      hints.push("단면 인쇄라서 단가와 제작 난도가 더 가볍습니다.");
-    }
-
-    if (selectedAddonObjects.some((item) => item.id === "addon-package")) {
-      hints.push("개별 포장이 포함되어 출고 준비 시간이 조금 더 필요합니다.");
-    }
-
-    return hints.slice(0, 2);
-  }, [printSide, selectedAddonObjects, thickness]);
-
   function applyPreset(nextPresetId: string) {
     const nextPreset =
       keyringPresets.find((item) => item.id === nextPresetId) ?? initialPreset;
 
-    if (!nextPreset) {
-      return;
-    }
+    if (!nextPreset) return;
 
     setPresetId(nextPreset.id);
     setShape(nextPreset.shape);
@@ -159,11 +129,7 @@ export default function KeyringWorkbenchClient() {
     <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
       <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
         <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-white">프리셋</p>
-            <span className="text-xs text-slate-400">{preset?.useCase ?? "-"}</span>
-          </div>
-
+          <p className="text-sm font-semibold text-white">프리셋</p>
           <div className="space-y-2">
             {keyringPresets.map((item) => {
               const active = item.id === presetId;
@@ -191,7 +157,7 @@ export default function KeyringWorkbenchClient() {
         </section>
 
         <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <p className="text-sm font-semibold text-white">소재 선택</p>
+          <p className="text-sm font-semibold text-white">소재</p>
           <div className="grid gap-2">
             {materialCards.map((item) => {
               const active = item.id === materialId;
@@ -250,10 +216,8 @@ export default function KeyringWorkbenchClient() {
               <h2 className="mt-2 text-2xl font-semibold text-white">
                 {preset?.title ?? "키링 작업"}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                좌측에서 소재와 옵션을 고르고, 여기서 핵심 사양만 맞춘 뒤 우측에서 저장·주문까지 마무리합니다.
-              </p>
             </div>
+
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 소재</p>
               <p className="mt-1 font-semibold text-white">{selectedMaterial?.title ?? "-"}</p>
@@ -261,12 +225,12 @@ export default function KeyringWorkbenchClient() {
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {summaryRows.map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
-                <p className="mt-2 text-sm font-semibold text-white">{value}</p>
-              </div>
-            ))}
+            <SummaryChip label="형태" value={shape} />
+            <SummaryChip label="두께" value={thickness} />
+            <SummaryChip label="인쇄" value={printSide} />
+            <SummaryChip label="체결" value={ring} />
+            <SummaryChip label="마감" value={finish} />
+            <SummaryChip label="옵션 수" value={`${selectedAddonObjects.length}개`} />
           </div>
         </div>
 
@@ -333,7 +297,7 @@ export default function KeyringWorkbenchClient() {
         </div>
 
         <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <span className="mb-3 block text-sm text-slate-300">마감 선택</span>
+          <span className="mb-3 block text-sm text-slate-300">마감</span>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {finishOptions.map((option) => {
               const active = option === finish;
@@ -357,113 +321,99 @@ export default function KeyringWorkbenchClient() {
           <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            rows={6}
-            placeholder="색상 확인, 타공 위치, 포장 요청 등"
+            rows={5}
+            placeholder="색상, 타공 위치, 포장 요청"
             className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
           />
         </label>
       </section>
 
-      <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-          <div className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-              RIGHT / 수량 · 가격 · 저장 · 주문
-            </p>
-            <h2 className="mt-2 text-xl font-semibold text-white">주문 카드</h2>
+      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+            RIGHT / 수량 · 가격 · 저장 · 주문
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-white">주문 카드</h2>
+        </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3">
-              <span className="text-sm text-slate-300">수량</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                  className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                >
-                  -
-                </button>
-                <input
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                  className="h-9 w-20 rounded-xl border border-white/10 bg-slate-900 px-3 text-center text-sm text-white outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => setQuantity((prev) => prev + 1)}
-                  className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">예상 단가</span>
-                <span className="font-semibold text-cyan-100">{unitPrice.toLocaleString()}원</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">예상 합계</span>
-                <span className="text-lg font-semibold text-white">{totalPrice.toLocaleString()}원</span>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-semibold text-white">선택 요약</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-                  {selectedMaterial?.title ?? "-"}
-                </span>
-                <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-                  {shape} / {thickness}
-                </span>
-                <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-                  {printSide} / {finish}
-                </span>
-                <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
-                  {ring}
-                </span>
-                {selectedAddonObjects.map((item) => (
-                  <span
-                    key={item.id}
-                    className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200"
-                  >
-                    {item.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              <Link
-                href="/storage"
-                className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-slate-300">수량</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
               >
-                서랍 저장
-              </Link>
-              <Link
-                href="/orders"
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+                -
+              </button>
+              <input
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                className="h-9 w-20 rounded-xl border border-white/10 bg-slate-900 px-3 text-center text-sm text-white outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setQuantity((prev) => prev + 1)}
+                className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
               >
-                주문으로
-              </Link>
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">예상 단가</span>
+              <span className="font-semibold text-cyan-100">{unitPrice.toLocaleString()}원</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-slate-400">예상 합계</span>
+              <span className="text-lg font-semibold text-white">{totalPrice.toLocaleString()}원</span>
             </div>
           </div>
         </section>
 
-        <section className="rounded-[28px] border border-emerald-400/20 bg-emerald-400/10 p-4">
-          <p className="text-sm font-semibold text-emerald-50">진행 체크</p>
-          <ul className="mt-3 space-y-2 text-sm leading-6 text-emerald-100/90">
-            {productionHints.map((hint) => (
-              <li key={hint}>• {hint}</li>
+        <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <p className="text-sm font-semibold text-white">선택 요약</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+              {selectedMaterial?.title ?? "-"}
+            </span>
+            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+              {shape} / {thickness}
+            </span>
+            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+              {printSide} / {finish}
+            </span>
+            <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200">
+              {ring}
+            </span>
+            {selectedAddonObjects.map((item) => (
+              <span
+                key={item.id}
+                className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-xs text-slate-200"
+              >
+                {item.label}
+              </span>
             ))}
-          </ul>
-          <p className="mt-3 text-xs leading-5 text-emerald-100/80">
-            {memo.trim().length === 0
-              ? "메모가 비어 있으면 기본 사양 기준으로 저장됩니다."
-              : "현재 메모가 저장 카드에 함께 반영될 준비 상태입니다."}
-          </p>
+          </div>
         </section>
+
+        <div className="grid gap-3">
+          <Link
+            href="/storage"
+            className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+          >
+            서랍 저장
+          </Link>
+          <Link
+            href="/orders"
+            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+          >
+            주문으로
+          </Link>
+        </div>
       </aside>
     </div>
   );
