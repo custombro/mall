@@ -13,7 +13,11 @@ import {
 
 type PlacementMap = Record<string, string>;
 
-function getKindClass(kind: PopLayer["kind"]) {
+function getKindClass(kind: PopLayer["kind"], active: boolean) {
+  if (!active) {
+    return "border-white/10 bg-slate-950/70 text-slate-200 hover:bg-white/10";
+  }
+
   switch (kind) {
     case "base":
       return "border-emerald-300/30 bg-emerald-300/15 text-emerald-100";
@@ -24,6 +28,25 @@ function getKindClass(kind: PopLayer["kind"]) {
     default:
       return "border-amber-300/30 bg-amber-300/15 text-amber-100";
   }
+}
+
+function getZoneCardClass(active: boolean, snapReady: boolean) {
+  if (active && snapReady) {
+    return "border-cyan-300/35 bg-cyan-300/10";
+  }
+  if (active && !snapReady) {
+    return "border-amber-300/30 bg-amber-300/10";
+  }
+  return "border-white/10 bg-slate-900/70 hover:bg-white/10";
+}
+
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
 }
 
 export default function PopStudioClient() {
@@ -51,6 +74,11 @@ export default function PopStudioClient() {
     [initialLayer, selectedLayerId],
   );
 
+  const activeMaterial = useMemo(
+    () => popMaterialCards.find((item) => item.id === materialId) ?? initialMaterial,
+    [initialMaterial, materialId],
+  );
+
   const compatibleZoneIds = selectedLayer?.compatibleZoneIds ?? [];
   const snapReady = compatibleZoneIds.includes(previewZoneId);
 
@@ -64,15 +92,11 @@ export default function PopStudioClient() {
 
   const unitPrice = useMemo(() => {
     let price = 6900;
-
     if (presetId === "preset-perfume") price += 2400;
     if (presetId === "preset-collectible") price += 1200;
-
     if (materialId === "mat-white") price += 600;
     if (materialId === "mat-thick") price += 1200;
-
     price += placedCount * 350;
-
     return price;
   }, [materialId, placedCount, presetId]);
 
@@ -88,26 +112,16 @@ export default function PopStudioClient() {
     }));
   }, [placements]);
 
-  const activeMaterial = useMemo(
-    () => popMaterialCards.find((item) => item.id === materialId) ?? initialMaterial,
-    [initialMaterial, materialId],
-  );
-
   function selectLayer(layerId: string) {
     const nextLayer = popLayers.find((item) => item.id === layerId) ?? initialLayer;
-
-    if (!nextLayer) {
-      return;
-    }
+    if (!nextLayer) return;
 
     setSelectedLayerId(nextLayer.id);
     setPreviewZoneId(nextLayer.recommendedZoneId);
   }
 
   function placeSelectedLayer() {
-    if (!selectedLayer) {
-      return;
-    }
+    if (!selectedLayer) return;
 
     setPlacements((prev) => ({
       ...prev,
@@ -116,9 +130,7 @@ export default function PopStudioClient() {
   }
 
   function removeSelectedLayer() {
-    if (!selectedLayer) {
-      return;
-    }
+    if (!selectedLayer) return;
 
     setPlacements((prev) => {
       const next = { ...prev };
@@ -128,16 +140,9 @@ export default function PopStudioClient() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
+    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
       <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-            LEFT / 자재 · 옵션
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-white">자재 / 옵션</h2>
-        </div>
-
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-white">프리셋</p>
             <span className="text-xs text-slate-400">{preset?.useCase ?? "-"}</span>
@@ -155,7 +160,7 @@ export default function PopStudioClient() {
                   className={
                     active
                       ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
-                      : "w-full rounded-2xl border border-white/10 bg-slate-950/60 p-3 text-left transition hover:bg-white/10"
+                      : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-white/10"
                   }
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -169,9 +174,9 @@ export default function PopStudioClient() {
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
           <p className="text-sm font-semibold text-white">자재</p>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             {popMaterialCards.map((item) => {
               const active = item.id === materialId;
 
@@ -180,7 +185,11 @@ export default function PopStudioClient() {
                   key={item.id}
                   type="button"
                   onClick={() => setMaterialId(item.id)}
-                  className={active ? item.panelClass : "w-full rounded-3xl border border-white/10 bg-slate-950/60 p-4 text-left transition hover:bg-white/10"}
+                  className={
+                    active
+                      ? item.panelClass + " text-left"
+                      : "w-full rounded-3xl border border-white/10 bg-slate-950/70 p-4 text-left transition hover:bg-white/10"
+                  }
                 >
                   <p className="text-sm font-semibold text-white">{item.title}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-300">{item.summary}</p>
@@ -190,9 +199,9 @@ export default function PopStudioClient() {
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
           <p className="text-sm font-semibold text-white">조립 파트</p>
-          <div className="space-y-2">
+          <div className="grid gap-2">
             {popLayers.map((layer) => {
               const active = layer.id === selectedLayerId;
 
@@ -201,17 +210,13 @@ export default function PopStudioClient() {
                   key={layer.id}
                   type="button"
                   onClick={() => selectLayer(layer.id)}
-                  className={
-                    active
-                      ? `w-full rounded-2xl border p-3 text-left ${getKindClass(layer.kind)}`
-                      : "w-full rounded-2xl border border-white/10 bg-slate-950/60 p-3 text-left transition hover:bg-white/10"
-                  }
+                  className={`w-full rounded-2xl border p-3 text-left transition ${getKindClass(layer.kind, active)}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold">{layer.label}</span>
-                    <span className="text-[11px]">{layer.kind}</span>
+                    <span className="text-[11px] uppercase">{layer.kind}</span>
                   </div>
-                  <p className="mt-1 text-xs opacity-80">{layer.description}</p>
+                  <p className="mt-1 text-xs opacity-90">{layer.description}</p>
                 </button>
               );
             })}
@@ -220,30 +225,36 @@ export default function PopStudioClient() {
       </aside>
 
       <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-            CENTER / 작업대
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-white">스냅 작업대</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            선택한 파트를 중앙 작업대에 붙여보며 배치 흐름을 먼저 정리합니다.
-          </p>
+        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                CENTER / 스냅 작업대
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">
+                {preset?.title ?? "POP 작업대"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                선택 파트를 중앙 작업대에 붙여 보면서 배치 흐름을 먼저 정리합니다.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 자재</p>
+              <p className="mt-1 font-semibold text-white">{activeMaterial?.title ?? "-"}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <SummaryChip label="프리셋" value={preset?.title ?? "-"} />
+            <SummaryChip label="선택 파트" value={selectedLayer?.label ?? "-"} />
+            <SummaryChip label="배치 진행" value={`${progressPercent}%`} />
+          </div>
         </div>
 
         <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              {preset?.title ?? "-"}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              {activeMaterial?.title ?? "-"}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              {selectedLayer?.label ?? "-"}
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <p className="text-sm font-semibold text-white">배치 존</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {popZones.map((zone) => {
               const occupants = popLayers.filter((layer) => placements[layer.id] === zone.id);
               const active = zone.id === previewZoneId;
@@ -253,23 +264,20 @@ export default function PopStudioClient() {
                   key={zone.id}
                   type="button"
                   onClick={() => setPreviewZoneId(zone.id)}
-                  className={
-                    active
-                      ? "rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-3 text-left"
-                      : "rounded-2xl border border-white/10 bg-slate-900/70 p-3 text-left transition hover:bg-white/10"
-                  }
+                  className={`rounded-2xl border p-3 text-left transition ${getZoneCardClass(active, compatibleZoneIds.includes(zone.id))}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-white">{zone.label}</span>
                     <span className="text-[11px] text-slate-300">{occupants.length}개</span>
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-slate-400">{zone.description}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">{zone.description}</p>
+
                   {occupants.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {occupants.map((layer) => (
                         <span
                           key={layer.id}
-                          className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-slate-200"
+                          className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] text-white"
                         >
                           {layer.label}
                         </span>
@@ -282,77 +290,78 @@ export default function PopStudioClient() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-white">선택 파트</p>
+              <p className="text-sm font-semibold text-white">선택 파트 상세</p>
               <span
                 className={
                   snapReady
-                    ? "rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-100"
-                    : "rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs text-amber-100"
+                    ? "rounded-full border border-cyan-300/35 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100"
+                    : "rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-xs text-amber-100"
                 }
               >
                 {snapReady ? "붙일 수 있음" : "추천 위치 아님"}
               </span>
             </div>
 
-            <p className="mt-3 text-lg font-semibold text-white">{selectedLayer?.label ?? "-"}</p>
-            <p className="mt-1 text-sm text-slate-300">{selectedLayer?.description ?? "-"}</p>
+            <div className="mt-3 grid gap-3">
+              <SummaryChip label="현재 위치" value={getZoneLabel(previewZoneId)} />
+              <SummaryChip
+                label="접착 여부"
+                value={selectedLayer?.adhesive ? "접착 파트" : "비접착 파트"}
+              />
+            </div>
 
-            <div className="mt-4 space-y-2 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">현재 위치</span>
-                <span className="text-slate-100">{getZoneLabel(previewZoneId)}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">접착 여부</span>
-                <span className="text-slate-100">
-                  {selectedLayer?.adhesive ? "접착 파트" : "비접착 파트"}
-                </span>
-              </div>
+            <div className="mt-4">
+              <h3 className="text-xl font-semibold text-white">{selectedLayer?.label ?? "-"}</h3>
+              <p className="mt-2 text-sm leading-7 text-slate-300">
+                {selectedLayer?.description ?? "-"}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={placeSelectedLayer}
+                className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              >
+                현재 위치에 배치
+              </button>
+              <button
+                type="button"
+                onClick={removeSelectedLayer}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                선택 파트 해제
+              </button>
             </div>
           </div>
 
-          <div className="grid gap-3">
-            <button
-              type="button"
-              onClick={placeSelectedLayer}
-              className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-            >
-              현재 위치에 배치
-            </button>
-            <button
-              type="button"
-              onClick={removeSelectedLayer}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              선택 파트 해제
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
             <p className="text-sm font-semibold text-white">배치 현황</p>
-            <span className="text-sm text-cyan-100">{progressPercent}%</span>
-          </div>
-
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {placedSummary.map((item) => (
+            <div className="mt-3 h-2 rounded-full bg-white/10">
               <div
-                key={item.id}
-                className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200"
-              >
-                <div className="font-medium text-white">{item.label}</div>
-                <div className="mt-1 text-xs text-slate-400">{item.zoneLabel}</div>
-              </div>
-            ))}
+                className="h-2 rounded-full bg-emerald-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="mt-3 space-y-2">
+              {placedSummary.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-200">{item.label}</span>
+                  <span className="text-slate-400">{item.zoneLabel}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <label className="block space-y-2">
-          <span className="text-sm text-slate-300">작업 메모</span>
+        <label className="block space-y-2 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <span className="text-sm font-semibold text-white">작업 메모</span>
           <textarea
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
@@ -397,14 +406,14 @@ export default function PopStudioClient() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-3 text-sm">
+          <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-400">예상 단가</span>
-              <span className="text-cyan-100">{unitPrice.toLocaleString()}원</span>
+              <span className="font-semibold text-cyan-100">{unitPrice.toLocaleString()}원</span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-400">예상 합계</span>
-              <span className="text-cyan-100">{totalPrice.toLocaleString()}원</span>
+              <span className="text-lg font-semibold text-white">{totalPrice.toLocaleString()}원</span>
             </div>
           </div>
         </section>
@@ -420,7 +429,9 @@ export default function PopStudioClient() {
           <div className="mt-3 space-y-2 text-sm text-emerald-100/90">
             <div className="flex items-center justify-between gap-3">
               <span>배치 완료 파트</span>
-              <span>{placedCount} / {popLayers.length}</span>
+              <span>
+                {placedCount} / {popLayers.length}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>선택 자재</span>
