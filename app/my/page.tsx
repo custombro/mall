@@ -9,68 +9,65 @@ type AccountMode = "일반" | "VIP";
 const ACCOUNT_MODES = [
   {
     key: "일반",
-    title: "일반 계정 모드",
-    description: "최근 작업, 재주문, 주문확인 중심의 빠른 접근",
+    title: "일반 계정",
+    description: "최근 작업, 재주문, 주문확인 중심",
   },
   {
     key: "VIP",
-    title: "VIP / 프로젝트 모드",
-    description: "프로젝트 단위 재주문, 빠른 견적, 대량 주문 우선",
+    title: "VIP / 프로젝트",
+    description: "프로젝트 단위 재사용과 대량 주문 중심",
   },
 ] as const;
 
 const QUICK_LINKS = [
   {
-    title: "최근 작업 이어하기",
-    description: "서랍에서 마지막 작업을 열고 수량만 바꿔 재주문",
+    title: "서랍 열기",
+    description: "최근 저장 작업 다시 열기",
     href: "/storage",
   },
   {
     title: "주문확인 보기",
-    description: "고객 진행 / 제작 진행 상태를 이벤트 근거로 확인",
+    description: "고객 진행 / 제작 진행 바로 확인",
     href: "/order-check",
   },
   {
     title: "주문 정리 보기",
-    description: "작업대와 서랍에서 넘어온 주문을 생산 전달 전 정리",
+    description: "작업대와 서랍에서 넘어온 주문 정리",
     href: "/orders",
   },
   {
     title: "작업대로 이동",
-    description: "키링 작업대에서 자재/부자재 조합 다시 시작",
+    description: "키링 작업부터 바로 시작",
     href: "/workbench/keyring",
   },
 ] as const;
 
 const ACCOUNT_SECTIONS = [
   {
-    title: "재주문 빠른 경로",
-    items: [
-      "지난번과 동일 열기",
-      "완료품 기준 복제 후 재주문",
-      "수량만 바꿔 바로 주문",
-    ],
+    title: "재주문",
+    items: ["지난번과 동일 열기", "완료품 기준 복제", "수량만 바꿔 주문"],
   },
   {
-    title: "주문 흐름 확인",
-    items: [
-      "접수 / 제작대기 확인",
-      "출력중 / 가공중 / 조립중 / 검수 / 출고완료 읽기",
-      "근거 이벤트와 송장번호 확인",
-    ],
+    title: "주문 흐름",
+    items: ["접수 / 제작대기 확인", "출력중 / 가공중 / 조립중 확인", "검수 / 출고완료 확인"],
   },
   {
     title: "VIP 관리",
-    items: [
-      "프로젝트 단위 저장 스펙",
-      "대량 주문 빠른 견적",
-      "담당자 요청과 납기 관리 확장 준비",
-    ],
+    items: ["프로젝트 단위 저장", "대량 주문 빠른 견적", "담당자 요청과 납기 관리"],
   },
 ] as const;
 
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
 export default function MyPage() {
-  const [mode, setMode] = useState<(typeof ACCOUNT_MODES)[number]["key"]>("일반");
+  const [mode, setMode] = useState<AccountMode>("일반");
   const [drawerCount, setDrawerCount] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [draftCode, setDraftCode] = useState("아직 없음");
@@ -85,121 +82,123 @@ export default function MyPage() {
     return mode === "일반"
       ? {
           title: "최근 작업과 재주문을 가장 빠르게 꺼내는 계정 허브",
-          note: "내정보는 설정 화면보다 작업 속도를 먼저 챙긴다.",
+          note: "설정보다 재사용 속도를 먼저 보여주는 구조입니다.",
         }
       : {
           title: "VIP 프로젝트와 대량 주문을 바로 처리하는 계정 허브",
-          note: "VIP는 일반 고객보다 빠른 재사용과 프로젝트 단위 관리가 중요하다.",
+          note: "VIP는 프로젝트 단위 저장과 반복 발주가 먼저 보여야 합니다.",
         };
   }, [mode]);
 
-  const profileCards = [
-    { label: "실제 주문", value: `${orderCount}건`, note: "로컬 주문 큐 기준" },
-    { label: "실제 서랍", value: `${drawerCount}개`, note: "로컬 저장 항목 기준" },
-    { label: "최근 초안", value: draftCode, note: "최근 작업대 자동 저장" },
-    { label: "VIP 프로젝트", value: mode === "VIP" ? "활성" : "대기", note: "프로젝트 단위 확장 준비" },
-  ];
+  const profileCards = useMemo(
+    () => [
+      { label: "실제 주문", value: `${orderCount}건` },
+      { label: "실제 서랍", value: `${drawerCount}개` },
+      { label: "최근 초안", value: draftCode },
+      { label: "VIP 상태", value: mode === "VIP" ? "활성" : "대기" },
+    ],
+    [drawerCount, draftCode, mode, orderCount],
+  );
 
   return (
-    <main className="min-h-screen bg-[#090b10] text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-8 md:px-8">
-        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO MY HUB</p>
-              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                내정보는 설정창이 아니라
-                <br />
-                다시 작업하기 위한 계정 허브다
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                최근 작업, 저장 스펙, 진행중 주문, VIP 프로젝트를 빠르게 여는 계정 허브입니다.
-                이제 실제 서랍/주문/초안 상태를 바로 읽어와 가장 많이 다시 찾는 동선을 먼저 보여줍니다.
-              </p>
+    <main className="min-h-screen bg-[#0a0f18] text-white">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-2 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/70">
+              MY / HUB
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+              내정보
+            </h1>
+          </div>
+          <p className="max-w-xl text-sm text-slate-300">
+            설정 설명보다, 최근 작업과 재주문을 바로 꺼내는 계정 허브로 정리한 화면입니다.
+          </p>
+        </div>
 
-              <div className="flex flex-wrap gap-3">
+        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">계정 모드</p>
+              <div className="space-y-2">
                 {ACCOUNT_MODES.map((item) => {
                   const active = item.key === mode;
+
                   return (
                     <button
                       key={item.key}
                       type="button"
                       onClick={() => setMode(item.key)}
-                      className={[
-                        "rounded-full border px-5 py-3 text-sm font-semibold transition",
+                      className={
                         active
-                          ? "border-cyan-400 bg-cyan-400/15 text-cyan-50"
-                          : "border-white/15 text-white/75 hover:border-white/30 hover:bg-white/[0.05] hover:text-white",
-                      ].join(" ")}
+                          ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-4 text-left"
+                          : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-left transition hover:bg-white/10"
+                      }
                     >
-                      {item.title}
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="mt-1 text-xs text-slate-400">{item.description}</p>
                     </button>
                   );
                 })}
-                <Link href="/storage" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-                  서랍 열기
-                </Link>
               </div>
-            </div>
+            </section>
 
-            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 모드</p>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">요약</p>
-                  <p className="mt-2 text-lg font-bold text-white">{summary.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/60">{summary.note}</p>
-                </div>
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">핵심</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">설정보다 재사용 속도를 먼저 보여준다.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-4">
-          {profileCards.map((card) => (
-            <div key={card.label} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">{card.label}</p>
-              <p className="mt-3 break-all text-3xl font-bold text-white">{card.value}</p>
-              <p className="mt-2 text-sm text-white/55">{card.note}</p>
-            </div>
-          ))}
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_360px]">
-          <section className="space-y-4">
-            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">빠른 접근</p>
-              <h2 className="mt-2 text-2xl font-bold text-white">다시 자주 들어가는 곳을 가장 먼저 배치</h2>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">빠른 경로</p>
+              <div className="grid gap-2">
                 {QUICK_LINKS.map((item) => (
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="rounded-[24px] border border-white/10 bg-black/20 p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 transition hover:bg-white/10"
                   >
                     <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="mt-2 text-xs leading-6 text-white/60">{item.description}</p>
+                    <p className="mt-1 text-xs text-slate-400">{item.description}</p>
                   </Link>
+                ))}
+              </div>
+            </section>
+          </aside>
+
+          <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                    CENTER / 계정 허브
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">{summary.title}</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{summary.note}</p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 모드</p>
+                  <p className="mt-1 font-semibold text-white">{mode}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {profileCards.map((card) => (
+                  <SummaryChip key={card.label} label={card.label} value={card.value} />
                 ))}
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               {ACCOUNT_SECTIONS.map((section) => (
-                <div key={section.title} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                <div
+                  key={section.title}
+                  className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4"
+                >
                   <p className="text-sm font-semibold text-white">{section.title}</p>
-                  <div className="mt-4 space-y-3">
-                    {section.items.map((item, index) => (
-                      <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-xs font-semibold text-cyan-200">
-                          {index + 1}
-                        </span>
-                        <p className="text-sm leading-6 text-white/70">{item}</p>
+                  <div className="mt-3 space-y-2">
+                    {section.items.map((item) => (
+                      <div
+                        key={item}
+                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200"
+                      >
+                        {item}
                       </div>
                     ))}
                   </div>
@@ -208,24 +207,60 @@ export default function MyPage() {
             </div>
           </section>
 
-          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">즉시 이동</p>
-            <div className="mt-4 grid gap-3">
-              <Link href="/storage" className="rounded-2xl bg-cyan-400 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-                최근 작업 / 서랍 열기
+          <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                RIGHT / 상태 요약
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-white">실행 카드</h2>
+            </div>
+
+            <section className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">현재 상태</p>
+              <div className="mt-3 grid gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-400">최근 초안</span>
+                    <span className="font-semibold text-white">{draftCode}</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-400">서랍 저장</span>
+                    <span className="font-semibold text-white">{drawerCount}개</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-400">주문 진행</span>
+                    <span className="font-semibold text-cyan-100">{orderCount}건</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="grid gap-3">
+              <Link
+                href="/storage"
+                className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              >
+                서랍 열기
               </Link>
-              <Link href="/orders" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                주문 정리 보기
-              </Link>
-              <Link href="/order-check" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
+              <Link
+                href="/order-check"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+              >
                 주문확인 보기
               </Link>
-              <Link href="/workbench" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                제작 허브로 이동
+              <Link
+                href="/workbench/keyring"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                작업대로 이동
               </Link>
             </div>
           </aside>
-        </section>
+        </div>
       </div>
     </main>
   );
