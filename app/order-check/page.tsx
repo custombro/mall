@@ -50,10 +50,6 @@ function formatDate(value?: string | null) {
   }
 }
 
-function toDate(dateText: string) {
-  return new Date(`${dateText}T00:00:00+09:00`);
-}
-
 function formatDateOnly(date: Date) {
   const y = date.getFullYear();
   const m = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -114,16 +110,7 @@ function getFallbackOrders(): DisplayOrder[] {
 
 function getMakerStage(order: DisplayOrder): MakerStepKey {
   if (order.invoiceNumber) return "shipped";
-
-  const now = new Date("2026-03-23T14:00:00+09:00");
-  const expected = toDate(order.expectedShipDate);
-
-  if (order.cutDownloadedAt) {
-    const diffDays = Math.ceil((expected.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 1) return "checking";
-    return "assembling";
-  }
-
+  if (order.cutDownloadedAt) return "assembling";
   if (order.printDownloadedAt) return "printing";
   return "printing";
 }
@@ -145,30 +132,35 @@ function StepCard({
   status: StepStatus;
   evidence?: string;
 }) {
+  const className =
+    status === "done"
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-100"
+      : status === "current"
+        ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-100"
+        : "border-white/10 bg-white/[0.04] text-slate-300";
+
+  const label =
+    status === "done" ? "done" : status === "current" ? "now" : "next";
+
   return (
-    <div
-      className={[
-        "rounded-[22px] border p-4 transition",
-        status === "done" ? "border-emerald-400/25 bg-emerald-400/10" : "",
-        status === "current" ? "border-cyan-400/30 bg-cyan-400/12" : "",
-        status === "upcoming" ? "border-white/10 bg-black/20" : "",
-      ].join(" ")}
-    >
+    <div className={`rounded-2xl border p-4 ${className}`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-white">{title}</p>
-        <span
-          className={[
-            "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
-            status === "done" ? "bg-emerald-400/15 text-emerald-200" : "",
-            status === "current" ? "bg-cyan-400/15 text-cyan-100" : "",
-            status === "upcoming" ? "bg-white/10 text-white/45" : "",
-          ].join(" ")}
-        >
-          {status === "done" ? "done" : status === "current" ? "now" : "next"}
+        <p className="text-sm font-semibold">{title}</p>
+        <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] uppercase">
+          {label}
         </span>
       </div>
-      <p className="mt-2 text-sm leading-6 text-white/65">{description}</p>
-      {evidence ? <p className="mt-3 text-xs leading-5 text-cyan-200/75">{evidence}</p> : null}
+      <p className="mt-2 text-xs leading-5 opacity-90">{description}</p>
+      {evidence ? <p className="mt-3 text-xs leading-5 opacity-80">{evidence}</p> : null}
+    </div>
+  );
+}
+
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -184,7 +176,10 @@ export default function OrderCheckPage() {
     setSelectedId(mapped[0]?.id ?? "");
   }, []);
 
-  const selected = orders.find((item) => item.id === selectedId) ?? orders[0];
+  const selected = useMemo(() => {
+    return orders.find((item) => item.id === selectedId) ?? orders[0] ?? null;
+  }, [orders, selectedId]);
+
   const currentMakerStage = selected ? getMakerStage(selected) : "printing";
   const makerIndex = MAKER_STEPS.findIndex((step) => step.key === currentMakerStage);
 
@@ -200,200 +195,193 @@ export default function OrderCheckPage() {
   }, [selected]);
 
   return (
-    <main className="min-h-screen bg-[#090b10] text-white">
-      <div className="mx-auto flex w-full max-w-[1900px] flex-col gap-6 px-5 py-8 md:px-8">
-        <section className="rounded-[30px] border border-white/10 bg-white/[0.03] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.35)] md:p-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">CUSTOMBRO ORDER CHECK</p>
-              <h1 className="text-3xl font-bold leading-tight md:text-5xl">
-                실제 주문 큐를 선택해
-                <br />
-                고객 진행과 제작자 진행을 함께 읽는다
-              </h1>
-              <p className="max-w-2xl text-sm leading-7 text-white/70 md:text-base">
-                이제 주문확인은 샘플 시나리오 버튼이 아니라 실제 주문 큐를 기준으로 움직입니다.
-                왼쪽에서 주문을 선택하면, 오른쪽에서 고객 진행 / 제작자 진행 / 근거 이벤트를 바로 읽을 수 있습니다.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/orders" className="rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
-                  주문 허브 보기
-                </Link>
-                <Link href="/workbench/keyring" className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                  작업대로 이동
-                </Link>
-              </div>
-            </div>
+    <main className="min-h-screen bg-[#0a0f18] text-white">
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-5 flex flex-col gap-2 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/70">
+              ORDER CHECK / TRACK
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+              주문확인
+            </h1>
+          </div>
+          <p className="max-w-xl text-sm text-slate-300">
+            실제 주문 큐를 선택하고, 고객 단계와 제작 단계를 한 화면에서 바로 읽는 단순 화면입니다.
+          </p>
+        </div>
 
-            <div className="w-full max-w-sm rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">현재 선택 주문</p>
-              <div className="mt-4 space-y-3 text-sm text-white/80">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">주문번호</p>
-                  <p className="mt-2 break-all text-base font-semibold text-white">{selected?.id ?? "아직 없음"}</p>
+        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+          <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">현재 선택 주문</p>
+              <div className="space-y-2">
+                <SummaryChip label="주문번호" value={selected?.id ?? "아직 없음"} />
+                <SummaryChip label="상품" value={selected?.product ?? "아직 없음"} />
+                <SummaryChip label="수량" value={selected ? `${selected.qty}개` : "아직 없음"} />
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">실제 주문 목록</p>
+
+              {orders.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-sm leading-6 text-slate-400">
+                  아직 주문 항목이 없습니다.
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">스펙</p>
-                  <p className="mt-2 text-sm leading-6 text-white">{selected?.spec ?? "아직 없음"}</p>
+              ) : (
+                <div className="space-y-2">
+                  {orders.map((item) => {
+                    const active = item.id === selected?.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSelectedId(item.id)}
+                        className={
+                          active
+                            ? "w-full rounded-2xl border border-cyan-400/30 bg-cyan-400/10 p-4 text-left"
+                            : "w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]"
+                        }
+                      >
+                        <p className="text-sm font-semibold text-white">{item.title}</p>
+                        <p className="mt-1 text-xs text-slate-400">{item.source}</p>
+                        <p className="mt-3 text-xs leading-5 text-slate-300">{item.spec}</p>
+                        <p className="mt-3 text-xs text-slate-400">{formatDate(item.updatedAt)}</p>
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">상품</p>
-                    <p className="mt-2 font-semibold text-white">{selected?.product ?? "아직 없음"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">수량</p>
-                    <p className="mt-2 font-semibold text-white">{selected ? `${selected.qty}개` : "아직 없음"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">총액</p>
-                    <p className="mt-2 font-semibold text-white">{selected ? formatMoney(selected.total) : "아직 없음"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/45">출처</p>
-                    <p className="mt-2 font-semibold text-white">{selected?.source ?? "아직 없음"}</p>
-                  </div>
+              )}
+            </section>
+          </aside>
+
+          <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                    CENTER / 진행 상태
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">
+                    {selected?.title ?? "선택된 주문 없음"}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    {selected?.spec ?? "좌측에서 주문을 선택하면 진행 상태를 바로 볼 수 있습니다."}
+                  </p>
                 </div>
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/70">현재 제작 단계</p>
-                  <p className="mt-2 text-sm font-medium text-cyan-50">
-                    {MAKER_STEPS.find((step) => step.key === currentMakerStage)?.title}
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 제작 단계</p>
+                  <p className="mt-1 font-semibold text-white">
+                    {MAKER_STEPS.find((step) => step.key === currentMakerStage)?.title ?? "-"}
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="grid gap-6 xl:grid-cols-[2.05fr_0.85fr]">
-          <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">실제 주문 목록</p>
-            <div className="mt-4 space-y-3">
-              {orders.map((item) => {
-                const active = item.id === selected?.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelectedId(item.id)}
-                    className={[
-                      "w-full rounded-2xl border p-4 text-left transition",
-                      active
-                        ? "border-cyan-400/30 bg-cyan-400/10"
-                        : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.05]",
-                    ].join(" ")}
-                  >
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-cyan-300/80">{item.source}</p>
-                    <p className="mt-3 text-xs leading-5 text-white/60">{item.spec}</p>
-                    <p className="mt-3 text-xs text-white/45">{formatDate(item.updatedAt)}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">고객 진행</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">고객이 끝낸 단계</h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <SummaryChip label="총액" value={selected ? formatMoney(selected.total) : "아직 없음"} />
+                <SummaryChip label="출처" value={selected?.source ?? "아직 없음"} />
+                <SummaryChip label="출고예상일" value={selected?.expectedShipDate ?? "아직 없음"} />
               </div>
-              <span className="rounded-full border border-emerald-400/25 bg-emerald-400/12 px-3 py-1.5 text-xs font-semibold text-emerald-200">
-                완료 기준 고정
-              </span>
             </div>
 
-            <div className="mt-5 space-y-4">
-              {CUSTOMER_STEPS.map((step, index) => (
-                <StepCard
-                  key={step.key}
-                  title={step.title}
-                  description={step.description}
-                  status={getStepStatus(index, 1)}
-                  evidence={
-                    step.key === "received"
-                      ? `주문 생성: ${formatDate(selected?.updatedAt)}`
-                      : "고객 선택/업로드 종료 후 제작 큐 진입"
-                  }
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">제작자 진행</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">제작자의 실제 작업 흐름</h2>
-              </div>
-              <span className="rounded-full border border-cyan-400/25 bg-cyan-400/12 px-3 py-1.5 text-xs font-semibold text-cyan-100">
-                주문 큐 기준
-              </span>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {MAKER_STEPS.map((step, index) => {
-                const evidence =
-                  step.key === "printing"
-                    ? `인쇄 파일 다운로드: ${formatDate(selected?.printDownloadedAt)}`
-                    : step.key === "cutting"
-                    ? `칼선 파일 다운로드: ${formatDate(selected?.cutDownloadedAt)}`
-                    : step.key === "assembling"
-                    ? `가공 이후 조립 / 포장 진행, 출고예상일 ${selected?.expectedShipDate ?? "아직 없음"} 기준`
-                    : step.key === "checking"
-                    ? "출고 직전 최종 검수 단계"
-                    : selected?.invoiceNumber
-                    ? `${selected.courier} · ${selected.invoiceNumber}`
-                    : "송장번호 입력 전";
-
-                return (
-                  <StepCard
-                    key={step.key}
-                    title={step.title}
-                    description={step.description}
-                    status={getStepStatus(index, makerIndex)}
-                    evidence={evidence}
-                  />
-                );
-              })}
-            </div>
-          </section>
-
-          <aside className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">근거 이벤트</p>
-            <div className="mt-4 space-y-3">
-              {timeline.map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/45">{item.label}</p>
-                  <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+                <p className="text-sm font-semibold text-white">고객 진행</p>
+                <div className="mt-3 space-y-3">
+                  {CUSTOMER_STEPS.map((step, index) => (
+                    <StepCard
+                      key={step.key}
+                      title={step.title}
+                      description={step.description}
+                      status={getStepStatus(index, 1)}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">고객이 읽는 문장</p>
-              <div className="mt-4 space-y-3 text-sm leading-7 text-white/70">
-                <p>접수: 주문이 정상 등록되었습니다.</p>
-                <p>제작대기: 제작 대기열에 들어갔습니다.</p>
-                <p>출력중: 인쇄용 파일 확인 후 출력 단계에 들어갔습니다.</p>
-                <p>가공중: 칼선 파일 확인 후 가공 단계에 들어갔습니다.</p>
-                <p>조립중: 파츠 결합과 포장 준비가 진행 중입니다.</p>
-                <p>검수: 출고 전 최종 검수 중입니다.</p>
-                <p>출고완료: 송장 입력이 완료되어 배송이 시작되었습니다.</p>
+              <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+                <p className="text-sm font-semibold text-white">제작자 진행</p>
+                <div className="mt-3 space-y-3">
+                  {MAKER_STEPS.map((step, index) => {
+                    const evidence =
+                      step.key === "printing"
+                        ? `인쇄 파일 다운로드: ${formatDate(selected?.printDownloadedAt)}`
+                        : step.key === "cutting"
+                          ? `칼선 파일 다운로드: ${formatDate(selected?.cutDownloadedAt)}`
+                          : step.key === "assembling"
+                            ? `가공 이후 조립 / 포장 진행, 출고예상일 ${selected?.expectedShipDate ?? "아직 없음"} 기준`
+                            : step.key === "checking"
+                              ? "출고 직전 최종 검수 단계"
+                              : selected?.invoiceNumber
+                                ? `${selected.courier} · ${selected.invoiceNumber}`
+                                : "송장번호 입력 전";
+
+                    return (
+                      <StepCard
+                        key={step.key}
+                        title={step.title}
+                        description={step.description}
+                        status={getStepStatus(index, makerIndex)}
+                        evidence={evidence}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3">
-              <Link href="/orders" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                주문 허브로 이동
-              </Link>
-              <Link href="/workbench/keyring" className="rounded-2xl border border-white/15 px-4 py-3 text-center text-sm font-semibold text-white/75 transition hover:border-white/30 hover:bg-white/[0.05] hover:text-white">
-                작업대로 돌아가기
-              </Link>
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+              <p className="text-sm font-semibold text-white">근거 이벤트</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {timeline.map((item) => (
+                  <SummaryChip key={item.label} label={item.label} value={item.value} />
+                ))}
+              </div>
             </div>
+          </section>
+
+          <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+              <div className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                  RIGHT / 실행 카드
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">빠른 이동</h2>
+
+                <div className="mt-4 grid gap-3">
+                  <Link
+                    href="/orders"
+                    className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+                  >
+                    주문 허브 보기
+                  </Link>
+                  <Link
+                    href="/workbench/keyring"
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+                  >
+                    작업대로 이동
+                  </Link>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-emerald-400/20 bg-emerald-400/10 p-4">
+              <p className="text-sm font-semibold text-emerald-50">고객이 읽는 문장</p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-emerald-100/90">
+                <li>• 접수: 주문이 정상 등록되었습니다.</li>
+                <li>• 제작대기: 제작 대기열에 들어갔습니다.</li>
+                <li>• 출력중: 인쇄용 파일 확인 후 출력 단계에 들어갔습니다.</li>
+                <li>• 가공중: 칼선 파일 확인 후 가공 단계에 들어갔습니다.</li>
+                <li>• 조립중: 파츠 결합과 포장 준비가 진행 중입니다.</li>
+                <li>• 검수: 출고 전 최종 검수 중입니다.</li>
+                <li>• 출고완료: 송장 입력이 완료되어 배송이 시작되었습니다.</li>
+              </ul>
+            </section>
           </aside>
-        </section>
+        </div>
       </div>
     </main>
   );
