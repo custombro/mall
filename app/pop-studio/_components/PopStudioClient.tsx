@@ -74,8 +74,8 @@ export default function PopStudioClient() {
   }, [placements]);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.02fr_1.12fr_0.9fr]">
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+    <div className="grid gap-6 xl:grid-cols-[220px_minmax(0,1.55fr)_260px]">
+      <section className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             POP Presets
@@ -131,7 +131,7 @@ export default function PopStudioClient() {
         </div>
       </section>
 
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+      <section className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             Snap Guide
@@ -256,7 +256,7 @@ export default function PopStudioClient() {
         </div>
       </section>
 
-      <aside className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+      <aside className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             Studio Summary

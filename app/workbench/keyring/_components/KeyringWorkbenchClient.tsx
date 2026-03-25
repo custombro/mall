@@ -102,7 +102,7 @@ export default function KeyringWorkbenchClient() {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_1.1fr_0.9fr]">
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+      <section className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             Preset / Mode
@@ -176,7 +176,7 @@ export default function KeyringWorkbenchClient() {
         </div>
       </section>
 
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+      <section className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             Workbench Controls
@@ -309,7 +309,7 @@ export default function KeyringWorkbenchClient() {
         </label>
       </section>
 
-      <aside className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
+      <aside className="space-y-4 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             Production Summary
