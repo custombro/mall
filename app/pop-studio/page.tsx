@@ -6,7 +6,7 @@ export default function Page() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
         <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="inline-flex flex-wrap items-center gap-2">
               {["POP", "Snap Guide", "Workbench", "Display", "Flow"].map((tag) => (
                 <span

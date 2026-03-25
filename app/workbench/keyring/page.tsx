@@ -257,9 +257,7 @@ export default function KeyringWorkbenchPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">KEYRING / 3-ZONE</p>
             <h1 className="text-3xl font-bold tracking-[-0.03em] md:text-5xl">작업대</h1>
             <p className="text-sm text-white/56 md:text-base">좌측 자재/두께 · 중앙 작업대 · 우측 주문</p>
-          </div>
-          </div>
-        </section>
+          </div>`r`n        </section>
 
         <section className="mt-5 grid gap-5 xl:grid-cols-[220px_minmax(0,1.55fr)_260px]">
           <aside className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5">
