@@ -1,12 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getHomeRouteKindClass,
   homeQuickRoutes,
   type HomeRouteKind,
 } from "./home-hub-config";
+
+const kindOptions: Array<HomeRouteKind | "전체"> = [
+  "전체",
+  "제작",
+  "보관",
+  "자재",
+  "판매운영",
+];
+
+function SummaryChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
 
 export default function HomeHubClient() {
   const [kindFilter, setKindFilter] = useState<HomeRouteKind | "전체">("전체");
@@ -20,13 +37,7 @@ export default function HomeHubClient() {
       const kindMatch = kindFilter === "전체" || route.kind === kindFilter;
       const keywordMatch =
         normalizedKeyword.length === 0 ||
-        [
-          route.title,
-          route.eyebrow,
-          route.summary,
-          route.note,
-          route.kind,
-        ]
+        [route.title, route.eyebrow, route.summary, route.note, route.kind, route.href]
           .join(" ")
           .toLowerCase()
           .includes(normalizedKeyword);
@@ -35,212 +46,221 @@ export default function HomeHubClient() {
     });
   }, [kindFilter, keyword]);
 
-  const selectedRoute = useMemo(
-    () => filteredRoutes.find((route) => route.id === selectedRouteId) ?? filteredRoutes[0] ?? null,
-    [filteredRoutes, selectedRouteId],
-  );
+  useEffect(() => {
+    if (!filteredRoutes.length) {
+      setSelectedRouteId("");
+      return;
+    }
+
+    if (!filteredRoutes.find((route) => route.id === selectedRouteId)) {
+      setSelectedRouteId(filteredRoutes[0].id);
+    }
+  }, [filteredRoutes, selectedRouteId]);
+
+  const selectedRoute = useMemo(() => {
+    return filteredRoutes.find((route) => route.id === selectedRouteId) ?? filteredRoutes[0] ?? null;
+  }, [filteredRoutes, selectedRouteId]);
 
   const kindCounts = useMemo(() => {
-    return homeQuickRoutes.reduce<Record<string, number>>((acc, route) => {
-      acc[route.kind] = (acc[route.kind] ?? 0) + 1;
-      return acc;
-    }, {});
+    return homeQuickRoutes.reduce<Record<HomeRouteKind, number>>(
+      (acc, route) => {
+        acc[route.kind] = (acc[route.kind] ?? 0) + 1;
+        return acc;
+      },
+      {
+        제작: 0,
+        보관: 0,
+        자재: 0,
+        판매운영: 0,
+      },
+    );
   }, []);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.02fr_1.08fr_0.9fr]">
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-            Home Gateway
-          </p>
-          <h2 className="text-2xl font-semibold text-white">홈은 진입 허브만 담당</h2>
-          <p className="text-sm leading-6 text-slate-300">
-            홈에서 모든 기능을 다 보여주지 않고, 지금 필요한 공간으로 보내는 역할만 하도록 정리했습니다.
-          </p>
-        </div>
+    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+      <aside className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <p className="text-sm font-semibold text-white">빠른 선택</p>
 
-        <div className="rounded-[2rem] border border-cyan-300/25 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.92),rgba(99,102,241,0.12))] p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
-            추천 Start
-          </p>
-          <h3 className="mt-3 text-2xl font-semibold text-white">먼저 모드 선택으로 들어가세요</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-200">
-            제작·보관·자재·판매운영을 먼저 분기한 뒤 들어가야 홈이 길게 늘어지지 않고 구조가 유지됩니다.
-          </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <Link
-              href="/mode-select"
-              className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
-            >
-              모드 선택으로 시작
-            </Link>
-            <Link
-              href="/storage"
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              최근 작업 재호출 보기
-            </Link>
-          </div>
-        </div>
-
-        <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm font-semibold text-white">카테고리 분포</p>
           <div className="grid gap-2">
-            {(["제작", "보관", "자재", "판매운영"] as Array<HomeRouteKind>).map((kind) => (
-              <div
-                key={kind}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-3 text-sm"
+            <label className="space-y-2">
+              <span className="text-xs text-slate-400">카테고리</span>
+              <select
+                value={kindFilter}
+                onChange={(e) => setKindFilter(e.target.value as HomeRouteKind | "전체")}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none"
               >
-                <span className="text-slate-100">{kind}</span>
-                <span className={`rounded-full border px-3 py-1 text-xs ${getHomeRouteKindClass(kind)}`}>
-                  {kindCounts[kind] ?? 0}개
-                </span>
-              </div>
-            ))}
+                {kindOptions.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {kind}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs text-slate-400">검색</span>
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                placeholder="공간명, 용도, 경로"
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
+              />
+            </label>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-            Quick Route Selector
-          </p>
-          <h2 className="text-2xl font-semibold text-white">바로 갈 공간 선택</h2>
-          <p className="text-sm leading-6 text-slate-300">
-            홈에서 바로 점프가 필요한 경우만 빠르게 고르고, 나머지는 모드 선택 허브로 넘깁니다.
-          </p>
-        </div>
+        <section className="space-y-3 rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <p className="text-sm font-semibold text-white">공간 목록</p>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">카테고리</span>
-            <select
-              value={kindFilter}
-              onChange={(e) => setKindFilter(e.target.value as HomeRouteKind | "전체")}
-              className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none"
-            >
-              <option value="전체">전체</option>
-              <option value="제작">제작</option>
-              <option value="보관">보관</option>
-              <option value="자재">자재</option>
-              <option value="판매운영">판매운영</option>
-            </select>
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">검색</span>
-            <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="공간명, 용도, 태그"
-              className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500"
-            />
-          </label>
-        </div>
-
-        <div className="grid gap-3">
           {filteredRoutes.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-white/15 bg-white/5 px-5 py-8 text-center text-sm text-slate-300">
+            <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-sm leading-6 text-slate-400">
               현재 조건에 맞는 공간이 없습니다.
             </div>
           ) : (
-            filteredRoutes.map((route) => {
-              const active = selectedRoute?.id === route.id;
+            <div className="space-y-2">
+              {filteredRoutes.map((route) => {
+                const active = selectedRoute?.id === route.id;
 
-              return (
-                <button
-                  key={route.id}
-                  type="button"
-                  onClick={() => setSelectedRouteId(route.id)}
-                  className={
-                    active
-                      ? "rounded-3xl border border-cyan-300/35 bg-cyan-300/10 p-4 text-left"
-                      : "rounded-3xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
-                  }
-                >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`rounded-full border px-3 py-1 text-xs ${getHomeRouteKindClass(route.kind)}`}>
-                          {route.kind}
-                        </span>
-                        <span className="rounded-full border border-white/10 bg-slate-900 px-3 py-1 text-xs text-slate-200">
-                          {route.eyebrow}
-                        </span>
-                      </div>
-                      <div className="text-lg font-semibold text-white">{route.title}</div>
-                      <div className="text-sm text-slate-300">{route.summary}</div>
+                return (
+                  <button
+                    key={route.id}
+                    type="button"
+                    onClick={() => setSelectedRouteId(route.id)}
+                    className={
+                      active
+                        ? "w-full rounded-2xl border border-cyan-300/35 bg-cyan-300/10 p-4 text-left"
+                        : "w-full rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-left transition hover:bg-white/10"
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[11px] ${getHomeRouteKindClass(route.kind)}`}
+                      >
+                        {route.kind}
+                      </span>
+                      <span className="text-[11px] text-slate-400">{route.eyebrow}</span>
                     </div>
 
-                    <div className="text-sm text-cyan-100">{route.note}</div>
-                  </div>
-                </button>
-              );
-            })
+                    <p className="mt-3 text-sm font-semibold text-white">{route.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">{route.summary}</p>
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </div>
-      </section>
+        </section>
+      </aside>
 
-      <aside className="space-y-5 rounded-[2rem] border border-white/10 bg-slate-950/70 p-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-            Selected Route
-          </p>
-          <h2 className="text-2xl font-semibold text-white">현재 진입 판단</h2>
-          <p className="text-sm leading-6 text-slate-300">
-            선택한 공간이 무엇을 해결하는지, 언제 써야 하는지, 바로 어디로 들어가야 하는지 보여줍니다.
-          </p>
-        </div>
-
-        {selectedRoute ? (
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full border px-3 py-1 text-xs ${getHomeRouteKindClass(selectedRoute.kind)}`}>
-                  {selectedRoute.kind}
-                </span>
-                <span className="rounded-full border border-white/10 bg-slate-900 px-3 py-1 text-xs text-slate-200">
-                  {selectedRoute.eyebrow}
-                </span>
-              </div>
-
-              <h3 className="mt-3 text-xl font-semibold text-white">{selectedRoute.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{selectedRoute.summary}</p>
+      <section className="space-y-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                CENTER / 진입 판단
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">
+                {selectedRoute?.title ?? "선택된 공간 없음"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {selectedRoute?.summary ?? "좌측에서 공간을 선택하면 여기서 바로 판단할 수 있습니다."}
+              </p>
             </div>
 
-            <div className="grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 text-sm">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">언제 사용</div>
-                <div className="mt-1 text-slate-100">{selectedRoute.note}</div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">권장 진입</div>
-                <div className="mt-1 text-cyan-100">{selectedRoute.href}</div>
-              </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">선택 분류</p>
+              <p className="mt-1 font-semibold text-white">{selectedRoute?.kind ?? "-"}</p>
             </div>
+          </div>
 
-            <div className="grid gap-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <SummaryChip label="분류" value={selectedRoute?.kind ?? "-"} />
+            <SummaryChip label="표시명" value={selectedRoute?.eyebrow ?? "-"} />
+            <SummaryChip label="경로" value={selectedRoute?.href ?? "-"} />
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <p className="text-sm font-semibold text-white">언제 들어가나</p>
+          <p className="mt-3 text-sm leading-7 text-slate-300">
+            {selectedRoute?.note ?? "선택된 공간이 없습니다."}
+          </p>
+        </div>
+
+        <div className="rounded-[24px] border border-white/10 bg-slate-950/60 p-4">
+          <p className="text-sm font-semibold text-white">바로 이동</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {selectedRoute ? (
               <Link
                 href={selectedRoute.href}
                 className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
               >
                 선택한 공간으로 이동
               </Link>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/15 px-4 py-3 text-center text-sm text-slate-500">
+                선택된 공간 없음
+              </div>
+            )}
+
+            <Link
+              href="/mode-select"
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              모드 선택 허브
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+          <div className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+              RIGHT / 실행 카드
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-white">빠른 진입</h2>
+
+            <div className="mt-4 grid gap-3">
               <Link
                 href="/mode-select"
+                className="rounded-2xl bg-cyan-300 px-4 py-3 text-center text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+              >
+                제작 시작
+              </Link>
+              <Link
+                href="/storage"
                 className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                모드 선택 허브로 이동
+                서랍 열기
+              </Link>
+              <Link
+                href="/orders"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                주문 허브
               </Link>
             </div>
           </div>
-        ) : (
-          <div className="rounded-3xl border border-dashed border-white/15 bg-white/5 px-5 py-8 text-center text-sm text-slate-300">
-            가운데에서 공간을 선택하면 상세가 표시됩니다.
+        </section>
+
+        <section className="rounded-[28px] border border-emerald-400/20 bg-emerald-400/10 p-4">
+          <p className="text-sm font-semibold text-emerald-50">분류 현황</p>
+          <div className="mt-3 grid gap-2">
+            {(["제작", "보관", "자재", "판매운영"] as HomeRouteKind[]).map((kind) => (
+              <div
+                key={kind}
+                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
+              >
+                <span className="text-emerald-100/90">{kind}</span>
+                <span className="font-semibold text-white">{kindCounts[kind]}개</span>
+              </div>
+            ))}
           </div>
-        )}
+          <p className="mt-3 text-xs leading-5 text-emerald-100/80">
+            홈은 설명보다 진입 분기가 먼저 보여야 한다는 원칙으로 압축한 상태입니다.
+          </p>
+        </section>
       </aside>
     </div>
   );
