@@ -1,104 +1,183 @@
-import RouteDock from "../_components/RouteDock";
-import B2BClient from "./_components/B2BClient";
+import Link from "next/link";
 
-const b2bSignals = [
-  { title: "수량", body: "소량 커스텀과 달리 최소 수량, 묶음 수량, 반복 발주 규모를 먼저 봅니다." },
-  { title: "납기", body: "행사일, 오픈일, 제출일처럼 고정 일정이 있는지 먼저 확인합니다." },
-  { title: "자재", body: "두께, 판재 확보, 부자재 수급 가능성을 일반 주문보다 먼저 판정합니다." },
+const deployMarker = "DEPLOY_B2B_20260325_234842";
+
+const b2bGroups = [
+  { name: "대량 문의", hint: "행사 / 기업 주문 시작" },
+  { name: "샘플 확인", hint: "대표 구성 빠른 확인" },
+  { name: "반복 발주", hint: "서랍 기반 재사용" },
+  { name: "상태 연결", hint: "주문 / 주문확인 이동" }
 ];
 
-const b2bRules = [
-  "대량 주문 화면은 예쁜 소개 페이지가 아니라 운영 조건을 먼저 읽는 허브여야 합니다.",
-  "기관, 행사, 브랜드 주문은 일반 소비자 주문과 분리된 상담 흐름으로 다뤄야 합니다.",
-  "같은 디자인 반복 생산 여부를 빨리 판단할 수 있게 텍스트 구조를 정리해야 합니다.",
+const b2bCards = [
+  {
+    title: "가장 빠른 대량 시작",
+    badge: "기본",
+    summary: "복잡한 설명 대신 기업·행사 주문 시작 흐름만 먼저 보이게 정리했다.",
+    bullets: ["대량 주문 시작", "대표 구성 확인", "주문 흐름 바로 연결"]
+  },
+  {
+    title: "샘플과 반복 발주",
+    badge: "반복",
+    summary: "샘플 확인과 저장본 재사용 흐름을 중앙 카드에 모아 판단을 짧게 만들었다.",
+    bullets: ["샘플 기준 확인", "서랍 저장본 재사용", "반복 발주 단순화"]
+  },
+  {
+    title: "상태와 다음 행동",
+    badge: "이동",
+    summary: "문의 후 주문, 주문확인, 작업대로 바로 이어지게 핵심 CTA만 남겼다.",
+    bullets: ["주문으로 이동", "주문확인", "작업대로 이동"]
+  }
 ];
 
-const b2bFlows = [
-  { label: "기관/학교", description: "행사 일정, 예산, 납품 방식이 먼저 정리되는 흐름" },
-  { label: "브랜드/기업", description: "브랜딩 목적과 반복 납품 가능성이 핵심인 흐름" },
-  { label: "행사 대량", description: "짧은 납기와 묶음 생산이 중요한 긴급 운영 흐름" },
+const summaryRows = [
+  { label: "좌측", value: "B2B 범주 선택" },
+  { label: "중앙", value: "핵심 B2B 카드" },
+  { label: "우측", value: "문의 / 주문 / 재사용 CTA" }
 ];
 
-export default function Page() {
+export default function B2BPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 sm:px-8 lg:px-10">
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(15,23,42,0.96),rgba(99,102,241,0.16))] p-7 shadow-2xl shadow-cyan-950/20 sm:p-10">
-          <div className="space-y-5">
-            <div className="inline-flex flex-wrap items-center gap-2">
-              {["대량주문", "벌크", "기관", "납기", "분기"].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-                대량주문 허브
+    <main className="min-h-screen bg-[#f6f3ee] text-neutral-900">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 lg:px-6">
+        <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
+                B2B
               </p>
-              <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                대량 주문 페이지는 수량·납기·자재를 먼저 판정하는 운영 허브여야 합니다.
+              <h1 className="text-2xl font-semibold tracking-tight">
+                B2B도 더 짧고 바로 발주 흐름으로
               </h1>
-              <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                행사, 기관, 브랜드, 반복 거래처 주문을 일반 소비자 흐름과 분리해 운영합니다.
+            </div>
+            <div className="max-w-xl">
+              <p className="text-sm leading-6 text-neutral-600">
+                상단 보조 설명과 중복 요소를 줄이고, 대량 시작 · 샘플 확인 · 반복 발주 흐름만 남긴 단순한 B2B 화면이다.
+              </p>
+              <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
+                배포 확인 기준: {deployMarker}
               </p>
             </div>
           </div>
-        </section>
+        </header>
 
-        <section className="grid gap-4 lg:grid-cols-[1fr,1fr]">
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              대량주문 신호
-            </p>
-            <div className="mt-4 space-y-3">
-              {b2bSignals.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-4"
-                >
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
-                </article>
-              ))}
+        <section className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
+          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-neutral-900">좌측 · 선택 / B2B 범주</p>
+            <div className="mt-3 space-y-2">
+              {b2bGroups.map((item, index) => {
+                const active = index === 0;
+                return (
+                  <div
+                    key={item.name}
+                    className={[
+                      "rounded-2xl border px-4 py-3",
+                      active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f8f4ec] text-neutral-900"
+                    ].join(" ")}
+                  >
+                    <div className="text-sm font-semibold">{item.name}</div>
+                    <div className={active ? "mt-1 text-xs text-white/70" : "mt-1 text-xs text-neutral-500"}>
+                      {item.hint}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
 
-          <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
-              대량주문 규칙
-            </p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
-              {b2bRules.map((item) => (
-                <li
-                  key={item}
-                  className="rounded-2xl border border-cyan-400/15 bg-cyan-500/5 px-4 py-3"
-                >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+            <div className="mt-4 rounded-2xl bg-[#f8f4ec] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 시작</p>
+              <div className="mt-3 space-y-2">
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">대량 주문 시작</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">샘플 기준 확인</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">반복 발주 재사용</div>
+              </div>
+            </div>
+          </aside>
+
+          <section className="flex flex-col gap-4">
+            <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
+              <div className="grid gap-4 xl:grid-cols-3">
+                {b2bCards.map((card) => (
+                  <article key={card.title} className="rounded-2xl border border-black/10 bg-[#fcfbf8] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-semibold tracking-tight">{card.title}</p>
+                        <p className="mt-1 text-sm leading-6 text-neutral-600">{card.summary}</p>
+                      </div>
+                      <span className="rounded-full bg-neutral-900 px-2 py-1 text-[11px] font-semibold text-white">
+                        {card.badge}
+                      </span>
+                    </div>
+
+                    <ul className="mt-4 space-y-2 text-sm text-neutral-800">
+                      {card.bullets.map((item) => (
+                        <li key={item} className="rounded-xl bg-white px-3 py-2">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-neutral-900">중앙 · 바로 이동</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href="/orders" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  주문으로 이동
+                </Link>
+                <Link href="/storage" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  서랍 열기
+                </Link>
+                <Link href="/workbench" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  작업대로 이동
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
+            <div className="sticky top-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">우측 · 상태 요약 / 저장 / 주문</p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  B2B 발주에서도 가장 많이 쓰는 행동만 남겨 바로 다음 단계로 움직이게 정리했다.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-[#f8f4ec] p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">현재 구조</div>
+                <div className="mt-3 space-y-3">
+                  {summaryRows.map((row) => (
+                    <div key={row.label} className="flex items-start justify-between gap-3 text-sm">
+                      <span className="text-neutral-500">{row.label}</span>
+                      <span className="text-right font-medium text-neutral-900">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 행동</div>
+                <div className="mt-2 text-2xl font-semibold tracking-tight">지금 바로 B2B 흐름 시작</div>
+                <div className="mt-1 text-sm text-neutral-600">대량 시작, 저장본 재사용, 주문 관리 흐름만 선명하게 남긴 단순한 허브 구조다.</div>
+
+                <div className="mt-4 space-y-2">
+                  <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
+                    주문으로 이동
+                  </Link>
+                  <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    서랍 저장본 보기
+                  </Link>
+                  <Link href="/order-check" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    주문확인으로 이동
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </aside>
         </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {b2bFlows.map((item) => (
-            <article
-              key={item.label}
-              className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5"
-            >
-              <p className="text-sm font-semibold text-white">{item.label}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{item.description}</p>
-            </article>
-          ))}
-        </section>
-
-        <B2BClient />
-        <RouteDock />
       </div>
     </main>
   );
