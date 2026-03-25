@@ -284,13 +284,13 @@ export default function KeyringWorkbenchPage() {
 
   const handleSaveDrawer = () => {
     const entry = saveDrawerFromDraft(draft);
-    setNotice(`서랍 저장 완료 · ${entry.title} · 뒤쪽 서랍으로 이동합니다.`);
+    setNotice(`서랍 저장 상태 완료 · ${entry.title} · 뒤쪽 서랍으로 이동합니다.`);
     router.push("/storage");
   };
 
   const handlePushOrder = () => {
     const entry = saveOrderFromDraft(draft, "workbench");
-    setNotice(`주문 큐 등록 완료 · ${entry.title} · 주문 화면으로 이동합니다.`);
+    setNotice(`주문 큐 상태 등록 완료 · ${entry.title} · 주문 화면으로 이동합니다.`);
     router.push("/orders");
   };
 
@@ -478,7 +478,7 @@ export default function KeyringWorkbenchPage() {
                 </div>
               </div>
               <div className="rounded-[24px] border border-cyan-300/28 bg-cyan-300/12 p-4 shadow-[0_16px_40px_rgba(34,211,238,0.14)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-100/90">실시간 주문 요약</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-100/90">실시간 주문 요약 / 다음 단계</p>
                 <div className="mt-4 space-y-3 text-sm text-cyan-50">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-3.5 shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
                     <p className="text-xs uppercase tracking-[0.22em] text-cyan-100/80">제품 코드</p>
