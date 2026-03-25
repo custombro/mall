@@ -255,7 +255,7 @@ export default function KeyringWorkbenchPage() {
         <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5 md:p-7">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">CUSTOMBRO KEYRING WORKBENCH</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300/80">KEYRING / 3-ZONE</p>
               <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] md:text-5xl">심플한 공방형 키링 작업대</h1>
               <p className="mt-3 text-sm text-white/65 md:text-base">설명 패널을 줄이고, 재료·작업대·주문 카드만 남긴 구조입니다.</p>
             </div>
