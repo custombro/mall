@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const deployMarker = "DEPLOY_PARTS_ROOM_20260325_222719";
+
 const partGroups = [
   { name: "링 / 체인", hint: "기본 연결 부자재" },
   { name: "고리 / 집게", hint: "걸이형 선택" },
@@ -50,9 +52,14 @@ export default function PartsRoomPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">PARTS ROOM</p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재 선택도 더 짧고 바로 이해되게</h1>
             </div>
-            <p className="max-w-xl text-sm leading-6 text-neutral-600">
-              중복 설명과 장식성 박스를 줄이고, 선택 · 비교 · 저장 · 주문 흐름만 남긴 단순한 부자재실 화면이다.
-            </p>
+            <div className="max-w-xl">
+              <p className="text-sm leading-6 text-neutral-600">
+                중복 설명과 장식성 박스를 줄이고, 선택 · 비교 · 저장 · 주문 흐름만 남긴 단순한 부자재실 화면이다.
+              </p>
+              <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
+                배포 확인 기준: {deployMarker}
+              </p>
+            </div>
           </div>
         </header>
 
