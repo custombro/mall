@@ -26,7 +26,8 @@ type AccessoryItem = {
   price: number;
 };
 
-const SESSION_MARKER = "POP_HANDOFF_PREVIEW_20260326_201121";
+const SESSION_MARKER = "POP_ROUTE_PAYLOAD_PREVIEW_20260326_202024";
+const PUBLIC_BASE_URL = "https://mall.custombro.org";
 
 const SLOT_ORDER: SlotKey[] = ["p1", "p2", "p3", "p4"];
 const REQUIRED_SLOTS: SlotKey[] = ["p1", "p2", "p3"];
@@ -84,7 +85,8 @@ export default function PopStudioClient() {
   const [activeAccessoryIds, setActiveAccessoryIds] = useState<string[]>(["stand-basic", "package-opp"]);
   const [quantity, setQuantity] = useState<number>(10);
   const [memo, setMemo] = useState<string>("");
-  const [lastAction, setLastAction] = useState<string>("우측 handoff preview는 현재 작업대 상태를 실제 라우트 쿼리로 보여줍니다.");
+  const [lastAction, setLastAction] = useState<string>("우측 route payload preview는 현재 작업대 상태를 실제 URL / query / payload로 보여줍니다.");
+  const [copiedKey, setCopiedKey] = useState<string>("");
 
   const materialMap = useMemo(() => new Map(MATERIALS.map((item) => [item.id, item])), []);
   const accessoryMap = useMemo(() => new Map(ACCESSORIES.map((item) => [item.id, item])), []);
@@ -151,21 +153,35 @@ export default function PopStudioClient() {
     }
   ]), [drawerReady, orderReady, checkReady, requiredMissing]);
 
+  const payloadBase = useMemo(() => ({
+    source: "pop-studio",
+    marker: SESSION_MARKER,
+    qty: String(quantity),
+    unitPrice: String(unitPrice),
+    totalPrice: String(totalPrice),
+    p1: activeMaterials.p1 ?? "",
+    p2: activeMaterials.p2 ?? "",
+    p3: activeMaterials.p3 ?? "",
+    p4: activeMaterials.p4 ?? "",
+    accessories: activeAccessoryIds.join(","),
+    memo: memo.trim()
+  }), [quantity, unitPrice, totalPrice, activeMaterials, activeAccessoryIds, memo]);
+
   const buildQuery = (mode: "drawer" | "order" | "check") => {
     const params = new URLSearchParams();
-    params.set("source", "pop-studio");
+    params.set("source", payloadBase.source);
     params.set("mode", mode);
-    params.set("qty", String(quantity));
-    params.set("marker", SESSION_MARKER);
-    params.set("unitPrice", String(unitPrice));
-    params.set("totalPrice", String(totalPrice));
-    params.set("p1", activeMaterials.p1 ?? "");
-    params.set("p2", activeMaterials.p2 ?? "");
-    params.set("p3", activeMaterials.p3 ?? "");
-    params.set("p4", activeMaterials.p4 ?? "");
-    params.set("accessories", activeAccessoryIds.join(","));
-    if(memo.trim()){
-      params.set("memo", memo.trim());
+    params.set("qty", payloadBase.qty);
+    params.set("marker", payloadBase.marker);
+    params.set("unitPrice", payloadBase.unitPrice);
+    params.set("totalPrice", payloadBase.totalPrice);
+    params.set("p1", payloadBase.p1);
+    params.set("p2", payloadBase.p2);
+    params.set("p3", payloadBase.p3);
+    params.set("p4", payloadBase.p4);
+    params.set("accessories", payloadBase.accessories);
+    if(payloadBase.memo){
+      params.set("memo", payloadBase.memo);
     }
     return params.toString();
   };
@@ -174,7 +190,18 @@ export default function PopStudioClient() {
     { mode: "drawer" as const, label: "/storage", ready: drawerReady, query: buildQuery("drawer") },
     { mode: "order" as const, label: "/orders", ready: orderReady, query: buildQuery("order") },
     { mode: "check" as const, label: "/order-check", ready: checkReady, query: buildQuery("check") }
-  ]), [drawerReady, orderReady, checkReady, quantity, unitPrice, totalPrice, activeMaterials, activeAccessoryIds, memo]);
+  ]), [drawerReady, orderReady, checkReady, payloadBase]);
+
+  const copyText = async (key: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(key);
+      setLastAction(`복사 완료: ${key}`);
+      window.setTimeout(() => setCopiedKey(""), 1500);
+    } catch {
+      setLastAction("브라우저 복사 권한이 없어 복사에 실패했습니다.");
+    }
+  };
 
   const toggleMaterial = (item: MaterialItem) => {
     setActiveMaterials((current) => {
@@ -266,14 +293,14 @@ export default function PopStudioClient() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1780px] flex-col gap-4 px-4 py-6 lg:px-6">
         <header className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP HANDOFF PREVIEW</p>
-              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 작업대 상태 + handoff preview 연결</h1>
+              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP ROUTE PAYLOAD PREVIEW</p>
+              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 작업대 상태 + route payload preview</h1>
               <p className="mt-2 text-sm text-neutral-300">
-                현재 작업대 선택 상태가 어떤 쿼리로 /storage, /orders, /order-check 로 넘어가는지 우측 패널에서 바로 확인할 수 있게 정리했습니다.
+                우측에서 각 대상 경로의 전체 URL, query string, 전달 payload를 미리 보고 복사한 뒤 바로 이동할 수 있게 정리했습니다.
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-right">
@@ -283,11 +310,11 @@ export default function PopStudioClient() {
           </div>
         </header>
 
-        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_380px]">
+        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_420px]">
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">좌측 자재 랙</h2>
-              <p className="mt-1 text-sm text-neutral-400">P1~P4 슬롯을 개별로 채우고, 아래 프리셋으로 빠르게 흐름을 시험할 수 있습니다.</p>
+              <p className="mt-1 text-sm text-neutral-400">P1~P4 슬롯과 프리셋을 조정하면 우측 payload preview가 즉시 바뀝니다.</p>
             </div>
 
             <div className="mb-4 grid gap-2">
@@ -314,9 +341,7 @@ export default function PopStudioClient() {
                         <div className="text-xs uppercase tracking-[0.18em] text-neutral-500">{meta.label}</div>
                         <div className="text-sm font-semibold">{meta.title}</div>
                       </div>
-                      <div className="text-[11px] text-neutral-500">
-                        {currentId ? "작업대 위" : "비어있음"}
-                      </div>
+                      <div className="text-[11px] text-neutral-500">{currentId ? "작업대 위" : "비어있음"}</div>
                     </div>
 
                     <div className="space-y-2">
@@ -327,19 +352,11 @@ export default function PopStudioClient() {
                           : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.06]";
 
                         return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            aria-pressed={active}
-                            onClick={() => toggleMaterial(item)}
-                            className={buttonClass}
-                          >
+                          <button key={item.id} type="button" aria-pressed={active} onClick={() => toggleMaterial(item)} className={buttonClass}>
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <div className="text-sm font-medium">{item.name}</div>
-                                <div className="mt-1 text-xs text-neutral-400">
-                                  {item.code} · {TONE_LABEL[item.tone]} · {item.thickness}
-                                </div>
+                                <div className="mt-1 text-xs text-neutral-400">{item.code} · {TONE_LABEL[item.tone]} · {item.thickness}</div>
                               </div>
                               <div className="text-xs font-semibold text-neutral-300">{formatPrice(item.price)}원</div>
                             </div>
@@ -390,12 +407,8 @@ export default function PopStudioClient() {
                     <div key={state.slot} className={cardClass}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-                            {state.meta.label} · {state.meta.title}
-                          </div>
-                          <div className="mt-2 text-base font-semibold">
-                            {state.filled && state.item ? state.item.name : "아직 비어 있는 슬롯"}
-                          </div>
+                          <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">{state.meta.label} · {state.meta.title}</div>
+                          <div className="mt-2 text-base font-semibold">{state.filled && state.item ? state.item.name : "아직 비어 있는 슬롯"}</div>
                         </div>
                         <div className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-neutral-300">
                           {state.meta.requirement === "required" ? "필수" : "선택"}
@@ -422,9 +435,7 @@ export default function PopStudioClient() {
                   <div key={row.key} className="rounded-2xl border border-white/10 bg-black/20 p-3">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">{row.label}</div>
-                      <div className={row.ready ? "text-xs text-emerald-300" : "text-xs text-amber-300"}>
-                        {row.ready ? "가능" : "대기"}
-                      </div>
+                      <div className={row.ready ? "text-xs text-emerald-300" : "text-xs text-amber-300"}>{row.ready ? "가능" : "대기"}</div>
                     </div>
                     <div className="mt-2 text-xs text-neutral-400">{row.reason}</div>
                   </div>
@@ -435,8 +446,8 @@ export default function PopStudioClient() {
 
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">우측 부자재 + handoff preview</h2>
-              <p className="mt-1 text-sm text-neutral-400">현재 상태가 어떤 쿼리 문자열로 넘어가는지 바로 보고, 필요한 CTA만 실행할 수 있습니다.</p>
+              <h2 className="text-lg font-semibold">우측 route payload preview</h2>
+              <p className="mt-1 text-sm text-neutral-400">전체 URL, raw query, 전달 payload를 보고 복사하거나 바로 이동할 수 있습니다.</p>
             </div>
 
             <div className="space-y-2">
@@ -447,13 +458,7 @@ export default function PopStudioClient() {
                   : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.06]";
 
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleAccessory(item)}
-                    className={buttonClass}
-                  >
+                  <button key={item.id} type="button" aria-pressed={active} onClick={() => toggleAccessory(item)} className={buttonClass}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="text-sm font-medium">{item.name}</div>
@@ -489,7 +494,7 @@ export default function PopStudioClient() {
               <textarea
                 value={memo}
                 onChange={(event) => setMemo(event.target.value)}
-                placeholder="작업 메모를 적으면 handoff query에 함께 포함됩니다."
+                placeholder="작업 메모를 적으면 route payload에 함께 포함됩니다."
                 className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500"
               />
 
@@ -509,52 +514,81 @@ export default function PopStudioClient() {
               </div>
 
               <div className="mt-4 space-y-2">
-                <button
-                  type="button"
-                  onClick={() => routeTo("drawer")}
-                  disabled={!drawerReady}
-                  className={drawerReady
-                    ? "w-full rounded-2xl border border-cyan-300 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-white"
-                    : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}
-                >
+                <button type="button" onClick={() => routeTo("drawer")} disabled={!drawerReady} className={drawerReady ? "w-full rounded-2xl border border-cyan-300 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>
                   서랍 저장으로 이동
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => routeTo("order")}
-                  disabled={!orderReady}
-                  className={orderReady
-                    ? "w-full rounded-2xl border border-emerald-300 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-white"
-                    : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}
-                >
+                <button type="button" onClick={() => routeTo("order")} disabled={!orderReady} className={orderReady ? "w-full rounded-2xl border border-emerald-300 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>
                   주문 진행으로 이동
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => routeTo("check")}
-                  disabled={!checkReady}
-                  className={checkReady
-                    ? "w-full rounded-2xl border border-violet-300 bg-violet-400/15 px-4 py-3 text-sm font-semibold text-white"
-                    : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}
-                >
+                <button type="button" onClick={() => routeTo("check")} disabled={!checkReady} className={checkReady ? "w-full rounded-2xl border border-violet-300 bg-violet-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>
                   주문확인으로 이동
                 </button>
               </div>
 
               <div className="mt-4 space-y-3">
-                {handoffTargets.map((target) => (
-                  <div key={target.mode} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-semibold">{target.label}</div>
-                      <div className={target.ready ? "text-xs text-emerald-300" : "text-xs text-amber-300"}>
-                        {target.ready ? "ready" : "locked"}
+                {handoffTargets.map((target) => {
+                  const fullUrl = `${PUBLIC_BASE_URL}${target.label}?${target.query}`;
+                  const payloadRows = [
+                    `mode=${target.mode}`,
+                    `qty=${payloadBase.qty}`,
+                    `p1=${payloadBase.p1 || "-"}`,
+                    `p2=${payloadBase.p2 || "-"}`,
+                    `p3=${payloadBase.p3 || "-"}`,
+                    `p4=${payloadBase.p4 || "-"}`,
+                    `accessories=${payloadBase.accessories || "-"}`,
+                    `memo=${payloadBase.memo || "-"}`
+                  ];
+
+                  return (
+                    <div key={target.mode} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">{target.label}</div>
+                          <div className={target.ready ? "mt-1 text-xs text-emerald-300" : "mt-1 text-xs text-amber-300"}>
+                            {target.ready ? "ready" : "locked"}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copyText(`${target.mode}-query`, target.query)}
+                            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-neutral-200"
+                          >
+                            {copiedKey === `${target.mode}-query` ? "query 복사됨" : "query 복사"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyText(`${target.mode}-url`, fullUrl)}
+                            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-neutral-200"
+                          >
+                            {copiedKey === `${target.mode}-url` ? "URL 복사됨" : "URL 복사"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Full URL</div>
+                        <div className="mt-2 break-all text-[11px] text-neutral-300">{fullUrl}</div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Raw Query</div>
+                        <div className="mt-2 break-all text-[11px] text-neutral-300">{target.query}</div>
+                      </div>
+
+                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Payload Preview</div>
+                        <div className="mt-2 grid gap-1 text-[11px] text-neutral-300">
+                          {payloadRows.map((row) => (
+                            <div key={row}>{row}</div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-2 text-[11px] text-neutral-400 break-all">{target.label}?{target.query}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-neutral-300">

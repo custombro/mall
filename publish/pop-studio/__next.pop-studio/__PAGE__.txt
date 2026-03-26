@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
-2:I[8063,["491","static/chunks/app/pop-studio/page-39005503743fa92c.js"],"default"]
+2:I[8063,["491","static/chunks/app/pop-studio/page-2fad96d797861417.js"],"default"]
 3:I[484,[],"OutletBoundary"]
 4:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"8wBvKXcqe-oV7hCbSyGnC"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"qDW6J1L24yuE7W_NrqJt6"}
 5:null
