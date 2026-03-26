@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -442,7 +442,7 @@ export default function PopStudioClient() {
                                 <div className="text-sm font-medium">{item.name}</div>
                                 <div className="mt-1 text-xs text-neutral-400">{item.code} · {TONE_LABEL[item.tone]} · {item.thickness}</div>
                               </div>
-                              <div className="text-xs font-semibold text-neutral-300">{formatPrice(item.price)}원</div>
+                              <div className="text-[11px] font-semibold text-cyan-200/90">작업 선택</div>
                             </div>
                             <div className="mt-2 text-xs text-neutral-400">{item.memo}</div>
                           </button>
@@ -529,7 +529,7 @@ export default function PopStudioClient() {
                         <div className="text-sm font-medium">{item.name}</div>
                         <div className="mt-1 text-xs text-neutral-400">{item.code} · {item.memo}</div>
                       </div>
-                      <div className="text-xs font-semibold text-neutral-300">{formatPrice(item.price)}원</div>
+                      <div className="text-[11px] font-semibold text-cyan-200/90">{item.kind === "package" ? "기본 포함 · 자동 반영" : "구성 선택"}</div>
                     </div>
                   </button>
                 );
@@ -607,10 +607,10 @@ export default function PopStudioClient() {
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
-                <div className="flex items-center justify-between"><span className="text-neutral-400">구성 단가</span><span>{formatPrice(unitPrice)}원</span></div>
-                <div className="flex items-center justify-between"><span className="text-neutral-400">수량</span><span>{formatPrice(quantity)}개</span></div>
-                <div className="flex items-center justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>예상 합계</span><span>{formatPrice(totalPrice)}원</span></div>
+                            <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
+                <div className="flex items-center justify-between"><span className="text-neutral-400">가격 안내</span><span>주문 단계에서 최종 금액 확인</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">포장</span><span>기본 포함 · 자동 반영</span></div>
+                <div className="flex items-center justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>작업 상태</span><span>{quantity}개 구성 준비</span></div>
               </div>
 
               <div className="mt-4 space-y-2">
