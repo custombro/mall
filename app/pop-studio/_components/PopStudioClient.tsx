@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type SlotKey = "p1" | "p2" | "p3" | "p4";
@@ -26,8 +26,19 @@ type AccessoryItem = {
   price: number;
 };
 
-const SESSION_MARKER = "POP_ROUTE_JSON_COPY_20260326_202925";
+type PresetRecord = {
+  id: string;
+  name: string;
+  createdAt: string;
+  activeMaterials: Record<SlotKey, string | null>;
+  activeAccessoryIds: string[];
+  quantity: number;
+  memo: string;
+};
+
+const SESSION_MARKER = "POP_LOCAL_PRESET_20260326_205044";
 const PUBLIC_BASE_URL = "https://mall.custombro.org";
+const PRESET_STORAGE_KEY = "cb-pop-studio-presets-v1";
 
 const SLOT_ORDER: SlotKey[] = ["p1", "p2", "p3", "p4"];
 const REQUIRED_SLOTS: SlotKey[] = ["p1", "p2", "p3"];
@@ -85,11 +96,34 @@ export default function PopStudioClient() {
   const [activeAccessoryIds, setActiveAccessoryIds] = useState<string[]>(["stand-basic", "package-opp"]);
   const [quantity, setQuantity] = useState<number>(10);
   const [memo, setMemo] = useState<string>("");
-  const [lastAction, setLastAction] = useState<string>("우측 route preview는 URL/query/payload JSON 복사까지 제공합니다.");
+  const [presetName, setPresetName] = useState<string>("");
+  const [savedPresets, setSavedPresets] = useState<PresetRecord[]>([]);
+  const [lastAction, setLastAction] = useState<string>("현재 조합을 브라우저 프리셋으로 저장/불러오기/삭제할 수 있습니다.");
   const [copiedKey, setCopiedKey] = useState<string>("");
 
   const materialMap = useMemo(() => new Map(MATERIALS.map((item) => [item.id, item])), []);
   const accessoryMap = useMemo(() => new Map(ACCESSORIES.map((item) => [item.id, item])), []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PRESET_STORAGE_KEY);
+      if(!raw){
+        setSavedPresets([]);
+        return;
+      }
+      const parsed = JSON.parse(raw) as PresetRecord[];
+      if(Array.isArray(parsed)){
+        setSavedPresets(parsed);
+      }
+    } catch {
+      setSavedPresets([]);
+    }
+  }, []);
+
+  const persistPresets = (next: PresetRecord[]) => {
+    setSavedPresets(next);
+    window.localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(next));
+  };
 
   const selectedMaterials = SLOT_ORDER
     .map((slot) => {
@@ -211,6 +245,43 @@ export default function PopStudioClient() {
     setLastAction("작업대를 비운 상태로 초기화했습니다.");
   };
 
+  const saveCurrentPreset = () => {
+    const name = presetName.trim();
+    if(!name){
+      setLastAction("프리셋 이름을 먼저 입력해야 저장할 수 있습니다.");
+      return;
+    }
+
+    const record: PresetRecord = {
+      id: `${Date.now()}`,
+      name,
+      createdAt: new Date().toISOString(),
+      activeMaterials,
+      activeAccessoryIds,
+      quantity,
+      memo
+    };
+
+    const next = [record, ...savedPresets].slice(0, 8);
+    persistPresets(next);
+    setPresetName("");
+    setLastAction(`프리셋 저장 완료: ${name}`);
+  };
+
+  const loadPreset = (preset: PresetRecord) => {
+    setActiveMaterials(preset.activeMaterials);
+    setActiveAccessoryIds(preset.activeAccessoryIds);
+    setQuantity(preset.quantity);
+    setMemo(preset.memo);
+    setLastAction(`프리셋 불러오기 완료: ${preset.name}`);
+  };
+
+  const deletePreset = (id: string) => {
+    const next = savedPresets.filter((item) => item.id !== id);
+    persistPresets(next);
+    setLastAction("프리셋을 삭제했습니다.");
+  };
+
   const routeTo = (mode: "drawer" | "order" | "check") => {
     if(mode === "drawer" && !drawerReady){
       setLastAction("P1, P2, P3 필수 슬롯이 채워져야 서랍 저장이 가능합니다.");
@@ -240,10 +311,10 @@ export default function PopStudioClient() {
         <header className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP ROUTE JSON COPY</p>
-              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 작업대 상태 + route payload JSON copy</h1>
+              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP LOCAL PRESET</p>
+              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 작업대 상태 + 로컬 프리셋 저장</h1>
               <p className="mt-2 text-sm text-neutral-300">
-                각 목적지 경로별 전체 URL, raw query, payload JSON을 따로 복사할 수 있게 정리했습니다.
+                현재 조합을 브라우저 로컬 프리셋으로 저장하고, 다시 불러오거나 삭제할 수 있게 정리했습니다.
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-right">
@@ -257,7 +328,7 @@ export default function PopStudioClient() {
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">좌측 자재 랙</h2>
-              <p className="mt-1 text-sm text-neutral-400">프리셋과 슬롯 선택을 바꾸면 우측 JSON payload도 즉시 바뀝니다.</p>
+              <p className="mt-1 text-sm text-neutral-400">슬롯 조합을 만든 뒤 우측에서 프리셋으로 저장할 수 있습니다.</p>
             </div>
 
             <div className="mb-4 grid gap-2">
@@ -279,6 +350,7 @@ export default function PopStudioClient() {
                       </div>
                       <div className="text-[11px] text-neutral-500">{currentId ? "작업대 위" : "비어있음"}</div>
                     </div>
+
                     <div className="space-y-2">
                       {MATERIALS.filter((item) => item.slot === slot).map((item) => {
                         const active = currentId === item.id;
@@ -309,7 +381,7 @@ export default function PopStudioClient() {
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">중앙 POP 작업대</h2>
-                <p className="mt-1 text-sm text-neutral-300">필수 슬롯 P1~P3와 선택 슬롯 P4 상태를 작업대에서 바로 확인합니다.</p>
+                <p className="mt-1 text-sm text-neutral-300">현재 조합 상태를 유지한 채 프리셋 저장과 라우트 이동을 같이 사용할 수 있습니다.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-neutral-200">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">Flow Status</div>
@@ -362,8 +434,8 @@ export default function PopStudioClient() {
 
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">우측 route JSON copy</h2>
-              <p className="mt-1 text-sm text-neutral-400">각 목적지별 URL / query / payload JSON을 따로 복사하고 바로 이동할 수 있습니다.</p>
+              <h2 className="text-lg font-semibold">우측 프리셋 + route preview</h2>
+              <p className="mt-1 text-sm text-neutral-400">현재 조합을 저장하고, 저장된 프리셋을 다시 불러온 뒤 route preview를 확인할 수 있습니다.</p>
             </div>
 
             <div className="space-y-2">
@@ -401,7 +473,43 @@ export default function PopStudioClient() {
                 <button type="button" onClick={() => setSafeQuantity(quantity + 1)} className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg">+</button>
               </div>
 
-              <textarea value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="작업 메모를 적으면 payload JSON에 함께 포함됩니다." className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
+              <textarea value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="작업 메모를 적으면 프리셋과 라우트 preview에 함께 포함됩니다." className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
+
+              <div className="mt-4 flex gap-2">
+                <input value={presetName} onChange={(event) => setPresetName(event.target.value)} placeholder="프리셋 이름 입력" className="h-11 flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
+                <button type="button" onClick={saveCurrentPreset} className="rounded-2xl border border-cyan-300 bg-cyan-400/15 px-4 text-sm font-semibold text-white">
+                  프리셋 저장
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="mb-2 text-sm font-semibold">저장된 프리셋</div>
+                <div className="space-y-2">
+                  {savedPresets.length > 0 ? (
+                    savedPresets.map((preset) => (
+                      <div key={preset.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="text-sm font-medium">{preset.name}</div>
+                            <div className="mt-1 text-[11px] text-neutral-500">{preset.createdAt}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => loadPreset(preset)} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-neutral-200">불러오기</button>
+                            <button type="button" onClick={() => deletePreset(preset.id)} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-neutral-200">삭제</button>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-[11px] text-neutral-400">
+                          qty={preset.quantity} / p1={preset.activeMaterials.p1 ?? "-"} / p2={preset.activeMaterials.p2 ?? "-"} / p3={preset.activeMaterials.p3 ?? "-"} / p4={preset.activeMaterials.p4 ?? "-"}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/15 bg-black/20 px-3 py-5 text-sm text-neutral-500">
+                      아직 저장된 프리셋이 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
                 <div className="flex items-center justify-between"><span className="text-neutral-400">구성 단가</span><span>{formatPrice(unitPrice)}원</span></div>
@@ -418,10 +526,7 @@ export default function PopStudioClient() {
               <div className="mt-4 space-y-3">
                 {handoffTargets.map((target) => {
                   const fullUrl = `${PUBLIC_BASE_URL}${target.label}?${target.query}`;
-                  const payloadJson = JSON.stringify({
-                    mode: target.mode,
-                    ...payloadBase
-                  }, null, 2);
+                  const payloadJson = JSON.stringify({ mode: target.mode, ...payloadBase }, null, 2);
 
                   return (
                     <div key={target.mode} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
