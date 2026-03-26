@@ -377,6 +377,13 @@ export default function PopStudioClient() {
   };
 
   return (
+    <>
+
+      <div data-cb-pop-pack-rules="POP_PACK_RULES_V3_20260326" className="mb-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/80">
+        <p className="font-semibold text-white">기본 포장 포함</p>
+        <p>수량/규격에 따라 자동 반영</p>
+        <p>운영 규칙 적용</p>
+      </div>
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto flex w-full max-w-[1780px] flex-col gap-4 px-4 py-6 lg:px-6">
         <header className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
@@ -656,5 +663,7 @@ export default function PopStudioClient() {
         </div>
       </div>
     </main>
+    </>
+
   );
 }
