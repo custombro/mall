@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -608,7 +608,7 @@ export default function PopStudioClient() {
               </div>
 
                             <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
-                <div className="flex items-center justify-between"><span className="text-neutral-400">가격 안내</span><span>주문 단계에서 최종 금액 확인</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">가격 안내</span><span>구매 등급: 기본 적용<br />판매 가능 상태: 구매 이용 가능<br />작업실 상태: 기본 작업실<br />주문 단계에서 최종 금액 확인</span></div>
                 <div className="flex items-center justify-between"><span className="text-neutral-400">포장</span><span>기본 포함 · 자동 반영</span></div>
                 <div className="flex items-center justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>작업 상태</span><span>{quantity}개 구성 준비</span></div>
               </div>
