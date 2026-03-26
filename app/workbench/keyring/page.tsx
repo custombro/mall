@@ -10,6 +10,7 @@ const HOLE_RADIUS = 9;
 const CLEARANCE_MM = 2.5;
 const MM_TO_PX = 6;
 const CLEARANCE_RADIUS = HOLE_RADIUS + CLEARANCE_MM * MM_TO_PX;
+const SNAP_DISTANCE = 18;
 const UNIT_PRICE_SINGLE = 2900;
 const UNIT_PRICE_DOUBLE = 3400;
 const FOCUS_LABEL = "현재 포커스: 고리 위치 조정";
@@ -29,6 +30,23 @@ function clampHole(position: HolePosition): HolePosition {
     x: clamp(position.x, CLEARANCE_RADIUS + 8, BOARD.width - CLEARANCE_RADIUS - 8),
     y: clamp(position.y, CLEARANCE_RADIUS + 8, BOARD.height - CLEARANCE_RADIUS - 8),
   };
+}
+
+function findSnapPreset(position: HolePosition): Preset | null {
+  const matched = PRESETS.find((preset) => {
+    const distance = Math.hypot(preset.x - position.x, preset.y - position.y);
+    return distance <= SNAP_DISTANCE;
+  });
+  return matched ?? null;
+}
+
+function resolveHole(position: HolePosition): HolePosition {
+  const clamped = clampHole(position);
+  const snapPreset = findSnapPreset(clamped);
+  if (snapPreset) {
+    return { x: snapPreset.x, y: snapPreset.y };
+  }
+  return clamped;
 }
 
 function nearestPreset(position: HolePosition): Preset {
@@ -52,12 +70,14 @@ export default function KeyringWorkbenchPage() {
   const [quantity, setQuantity] = useState(10);
   const [dragging, setDragging] = useState(false);
   const [holePosition, setHolePosition] = useState<HolePosition>(
-    clampHole({ x: BOARD.width / 2, y: 28 }),
+    resolveHole({ x: BOARD.width / 2, y: 28 }),
   );
 
   const unitPrice = printSide === "양면" ? UNIT_PRICE_DOUBLE : UNIT_PRICE_SINGLE;
   const totalPrice = unitPrice * quantity;
   const presetLabel = useMemo(() => nearestPreset(holePosition).label, [holePosition]);
+  const snapPreset = useMemo(() => findSnapPreset(holePosition), [holePosition]);
+  const snapText = snapPreset ? `${snapPreset.label} 가이드 맞춤` : "자유 배치";
   const holeSummary =
     presetLabel === "상단 중앙"
       ? "고리 위치: 상단 중앙 / 드래그 미세 조정"
@@ -66,7 +86,7 @@ export default function KeyringWorkbenchPage() {
   const moveHoleFromPoint = (clientX: number, clientY: number) => {
     if (!previewRef.current) return;
     const rect = previewRef.current.getBoundingClientRect();
-    const next = clampHole({
+    const next = resolveHole({
       x: clientX - rect.left,
       y: clientY - rect.top,
     });
@@ -98,7 +118,7 @@ export default function KeyringWorkbenchPage() {
       <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-4">
         <section className="rounded-[28px] border border-cyan-500/20 bg-[#0d1017] px-8 py-7 shadow-[0_0_0_1px_rgba(125,211,252,0.05)]">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.38em] text-cyan-300">
-            Keyring / Drag Hole / Hole Cutline
+            Keyring / Drag Hole / Hole Cutline / Snap Guide
           </div>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -107,7 +127,8 @@ export default function KeyringWorkbenchPage() {
               </h1>
               <p className="mt-4 text-sm text-slate-300">
                 구멍 위치는 프리뷰에서 바로 드래그로 미세 조정하고, 홀 내경 칼선과
-                2.5mm 여백선을 함께 확인합니다.
+                2.5mm 여백선을 함께 확인합니다. 기준 위치 근처에서는 스냅 가이드가
+                자동으로 맞춰집니다.
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-right">
@@ -116,6 +137,7 @@ export default function KeyringWorkbenchPage() {
               </div>
               <div className="mt-2 text-sm font-semibold text-white">현재 단계: 고리 위치 조정</div>
               <div className="mt-1 text-xs text-cyan-100/80">안내 방식: 요청 시 상세 안내</div>
+              <div className="mt-1 text-xs text-cyan-100/80">스냅 상태: {snapText}</div>
             </div>
           </div>
         </section>
@@ -178,7 +200,7 @@ export default function KeyringWorkbenchPage() {
                   {PRESETS.map((preset) => (
                     <button
                       key={preset.id}
-                      onClick={() => setHolePosition(clampHole({ x: preset.x, y: preset.y }))}
+                      onClick={() => setHolePosition(resolveHole({ x: preset.x, y: preset.y }))}
                       className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold ${
                         presetLabel === preset.label
                           ? "border-cyan-400 bg-cyan-500/15 text-cyan-100"
@@ -189,10 +211,22 @@ export default function KeyringWorkbenchPage() {
                     </button>
                   ))}
                 </div>
+
+                <div className="mt-3 grid gap-2">
+                  <button
+                    onClick={() => setHolePosition(resolveHole({ x: PRESETS[0]!.x, y: PRESETS[0]!.y }))}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-slate-200"
+                  >
+                    위치 재설정
+                  </button>
+                </div>
+
                 <div className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-xs leading-6 text-amber-100">
                   드래그로 고리 위치 미세 조정
                   <br />
                   홀 칼선(내부) + 외곽 여백선(+2.5mm)
+                  <br />
+                  스냅 가이드: 기준 위치 근처 자동 맞춤
                 </div>
               </div>
             </div>
@@ -240,6 +274,27 @@ export default function KeyringWorkbenchPage() {
                 >
                   <div className="absolute inset-[12px] rounded-[28px] border border-dashed border-cyan-300/15" />
 
+                  {PRESETS.map((preset) => {
+                    const active = snapPreset?.id === preset.id;
+                    return (
+                      <div
+                        key={preset.id}
+                        className={`absolute rounded-full border border-dashed ${
+                          active
+                            ? "border-cyan-200/90 bg-cyan-300/10"
+                            : "border-white/20 bg-white/[0.02]"
+                        }`}
+                        style={{
+                          width: CLEARANCE_RADIUS * 2,
+                          height: CLEARANCE_RADIUS * 2,
+                          left: preset.x - CLEARANCE_RADIUS,
+                          top: preset.y - CLEARANCE_RADIUS,
+                        }}
+                        title={`스냅 가이드: ${preset.label}`}
+                      />
+                    );
+                  })}
+
                   <div
                     className="absolute rounded-full border border-dashed border-amber-300/85 bg-amber-300/10 cursor-grab active:cursor-grabbing"
                     style={{
@@ -281,6 +336,10 @@ export default function KeyringWorkbenchPage() {
                   <div className="flex items-center justify-between">
                     <span>외곽 여백선(+2.5mm)</span>
                     <span>{CLEARANCE_MM.toFixed(1)}mm</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>스냅 상태</span>
+                    <span>{snapText}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>현재 위치</span>
@@ -334,6 +393,7 @@ export default function KeyringWorkbenchPage() {
               <div>면수: {printSide}</div>
               <div>마감: {finish}</div>
               <div>{holeSummary}</div>
+              <div>스냅 상태: {snapText}</div>
               <div>홀 기준: 내경 칼선 + {CLEARANCE_MM.toFixed(1)}mm 여백선</div>
             </div>
 

@@ -6,7 +6,7 @@
   <title>키링 제작 - 드래그 홀 프리뷰</title>
   <style>
     :root{
-      --bg:#05080f; --panel:#111318; --text:#ffffff; --cyan:#7dd3fc; --amber:#fde68a; --emerald:#6ee7b7;
+      --bg:#05080f; --panel:#111318; --text:#ffffff; --cyan:#7dd3fc; --amber:#fde68a;
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Apple SD Gothic Neo,sans-serif}
@@ -45,6 +45,8 @@
     .preview-tag{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#94a3b8}
     .preview-shell{position:relative;margin:16px auto 0;width:208px;height:260px;border-radius:34px;border:1px solid rgba(125,211,252,.25);background:radial-gradient(circle at top,rgba(125,211,252,.12),transparent 55%),linear-gradient(180deg,#515963 0%,#2a2f36 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
     .preview-shell::after{content:"";position:absolute;inset:12px;border-radius:28px;border:1px dashed rgba(125,211,252,.18)}
+    .guide-ring{position:absolute;border-radius:999px;border:1px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.02)}
+    .guide-ring.active{border-color:rgba(125,211,252,.95);background:rgba(125,211,252,.10)}
     .ring-clear{position:absolute;border-radius:999px;border:1px dashed rgba(253,230,138,.90);background:rgba(253,230,138,.10);cursor:grab}
     .ring-hole{position:absolute;border-radius:999px;border:2px solid rgba(125,211,252,.95);background:rgba(11,21,32,.55);cursor:grab}
     .ring-core{position:absolute;border-radius:999px;background:#bae6fd;box-shadow:0 0 16px rgba(125,211,252,.55)}
@@ -52,9 +54,10 @@
     .meta-line{display:flex;justify-content:space-between;gap:8px;margin:7px 0}
     .qty-box,.price-box,.summary-box{margin-top:16px;border-radius:24px;border:1px solid rgba(255,255,255,.1);background:#0b0d12;padding:16px}
     .qty-grid{display:grid;grid-template-columns:44px 1fr 44px;gap:12px;align-items:center}
-    .qty-btn,.primary,.secondary{border-radius:18px;cursor:pointer;font-weight:700}
+    .qty-btn,.primary,.secondary,.reset-btn{border-radius:18px;cursor:pointer;font-weight:700}
     .qty-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#fff;padding:12px 0;font-size:20px}
     .qty-value{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);padding:12px 0;border-radius:18px;text-align:center;font-size:28px;font-weight:700}
+    .reset-btn{margin-top:8px;width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#e2e8f0}
     .line{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:#cbd5e1}
     .total{margin-top:12px;display:flex;justify-content:space-between;gap:12px;font-size:30px;font-weight:700;color:#bae6fd}
     .summary-box{font-size:14px;line-height:1.9;color:#cbd5e1}
@@ -67,16 +70,17 @@
 <body>
   <div class="wrap">
     <section class="hero">
-      <div class="hero-tag">Keyring / Drag Hole / Hole Cutline</div>
+      <div class="hero-tag">Keyring / Drag Hole / Hole Cutline / Snap Guide</div>
       <div class="hero-top">
         <div>
           <h1>키링 제작</h1>
-          <p>구멍 위치는 프리뷰에서 바로 드래그로 미세 조정하고, 홀 내경 칼선과 2.5mm 여백선을 함께 확인합니다.</p>
+          <p>구멍 위치는 프리뷰에서 바로 드래그로 미세 조정하고, 홀 내경 칼선과 2.5mm 여백선을 함께 확인합니다. 기준 위치 근처에서는 스냅 가이드가 자동으로 맞춰집니다.</p>
         </div>
         <div class="status-card">
           <div class="s1">상태창</div>
           <div class="s2">현재 단계: 고리 위치 조정</div>
           <div class="s3">안내 방식: 요청 시 상세 안내</div>
+          <div class="s3" id="snapStatusTop">스냅 상태: 상단 중앙 가이드 맞춤</div>
         </div>
       </div>
     </section>
@@ -113,11 +117,12 @@
         <div class="section">
           <div class="label">고리 위치</div>
           <div class="btn-stack">
-            <button class="btn active preset" data-x="104" data-y="28">상단 중앙</button>
-            <button class="btn preset" data-x="48" data-y="34">좌측 상단</button>
-            <button class="btn preset" data-x="160" data-y="34">우측 상단</button>
+            <button class="btn active preset" data-id="top-center" data-x="104" data-y="28">상단 중앙</button>
+            <button class="btn preset" data-id="top-left" data-x="48" data-y="34">좌측 상단</button>
+            <button class="btn preset" data-id="top-right" data-x="160" data-y="34">우측 상단</button>
           </div>
-          <div class="note">드래그로 고리 위치 미세 조정<br>홀 칼선(내부) + 외곽 여백선(+2.5mm)</div>
+          <button class="reset-btn" id="resetBtn">위치 재설정</button>
+          <div class="note">드래그로 고리 위치 미세 조정<br>홀 칼선(내부) + 외곽 여백선(+2.5mm)<br>스냅 가이드: 기준 위치 근처 자동 맞춤</div>
         </div>
       </aside>
 
@@ -146,6 +151,9 @@
           <div class="card preview-panel">
             <div class="preview-tag">Preview</div>
             <div class="preview-shell" id="previewShell">
+              <div class="guide-ring" id="guide_top-center"></div>
+              <div class="guide-ring" id="guide_top-left"></div>
+              <div class="guide-ring" id="guide_top-right"></div>
               <div class="ring-clear" id="ringClear"></div>
               <div class="ring-hole" id="ringHole"></div>
               <div class="ring-core" id="ringCore"></div>
@@ -154,6 +162,7 @@
             <div class="preview-meta">
               <div class="meta-line"><span>홀 칼선(내부)</span><span>18px 기준 프리뷰</span></div>
               <div class="meta-line"><span>외곽 여백선(+2.5mm)</span><span>2.5mm</span></div>
+              <div class="meta-line"><span>스냅 상태</span><span id="snapStatusMeta">상단 중앙 가이드 맞춤</span></div>
               <div class="meta-line"><span>현재 위치</span><span id="positionText">X 104 / Y 28</span></div>
             </div>
           </div>
@@ -183,6 +192,7 @@
           <div id="printSideText">면수: 양면</div>
           <div id="finishText">마감: 유광</div>
           <div id="holeLabelText">고리 위치: 상단 중앙 / 드래그 미세 조정</div>
+          <div id="snapStatusRight">스냅 상태: 상단 중앙 가이드 맞춤</div>
           <div>홀 기준: 내경 칼선 + 2.5mm 여백선</div>
         </div>
 
@@ -201,6 +211,7 @@
       const CLEARANCE_MM = 2.5;
       const MM_TO_PX = 6;
       const CLEARANCE_RADIUS = HOLE_RADIUS + CLEARANCE_MM * MM_TO_PX;
+      const SNAP_DISTANCE = 18;
       const FOCUS_LABEL = "현재 포커스: 고리 위치 조정";
 
       const previewShell = document.getElementById("previewShell");
@@ -215,9 +226,13 @@
       const totalPrice = document.getElementById("totalPrice");
       const minusBtn = document.getElementById("minusBtn");
       const plusBtn = document.getElementById("plusBtn");
+      const resetBtn = document.getElementById("resetBtn");
       const sideButtons = Array.from(document.querySelectorAll("[data-side]"));
       const finishButtons = Array.from(document.querySelectorAll("[data-finish]"));
       const presetButtons = Array.from(document.querySelectorAll(".preset"));
+      const snapStatusTop = document.getElementById("snapStatusTop");
+      const snapStatusMeta = document.getElementById("snapStatusMeta");
+      const snapStatusRight = document.getElementById("snapStatusRight");
 
       let quantity = 10;
       let side = "양면";
@@ -226,9 +241,9 @@
       let hole = { x: 104, y: 28 };
 
       const presets = [
-        { label: "상단 중앙", x: 104, y: 28 },
-        { label: "좌측 상단", x: 48, y: 34 },
-        { label: "우측 상단", x: 160, y: 34 }
+        { id: "top-center", label: "상단 중앙", x: 104, y: 28 },
+        { id: "top-left", label: "좌측 상단", x: 48, y: 34 },
+        { id: "top-right", label: "우측 상단", x: 160, y: 34 }
       ];
 
       function clamp(value, min, max){
@@ -242,6 +257,17 @@
         };
       }
 
+      function findSnapPreset(pos){
+        return presets.find((preset) => Math.hypot(preset.x - pos.x, preset.y - pos.y) <= SNAP_DISTANCE) || null;
+      }
+
+      function resolveHole(pos){
+        const clamped = clampHole(pos);
+        const snapPreset = findSnapPreset(clamped);
+        if(snapPreset){ return { x: snapPreset.x, y: snapPreset.y }; }
+        return clamped;
+      }
+
       function nearestPreset(pos){
         return presets.reduce((best, current) => {
           const bestDistance = Math.hypot(best.x - pos.x, best.y - pos.y);
@@ -250,8 +276,24 @@
         }, presets[0]);
       }
 
+      function renderGuides(activePreset){
+        presets.forEach((preset) => {
+          const el = document.getElementById("guide_" + preset.id);
+          el.style.width = (CLEARANCE_RADIUS * 2) + "px";
+          el.style.height = (CLEARANCE_RADIUS * 2) + "px";
+          el.style.left = (preset.x - CLEARANCE_RADIUS) + "px";
+          el.style.top = (preset.y - CLEARANCE_RADIUS) + "px";
+          el.classList.toggle("active", !!activePreset && activePreset.id === preset.id);
+        });
+      }
+
       function render(){
-        const preset = nearestPreset(hole);
+        const snapPreset = findSnapPreset(hole);
+        const nearest = nearestPreset(hole);
+        const snapText = snapPreset ? (snapPreset.label + " 가이드 맞춤") : "자유 배치";
+
+        renderGuides(snapPreset);
+
         ringClear.style.width = (CLEARANCE_RADIUS * 2) + "px";
         ringClear.style.height = (CLEARANCE_RADIUS * 2) + "px";
         ringClear.style.left = (hole.x - CLEARANCE_RADIUS) + "px";
@@ -269,13 +311,16 @@
 
         positionText.textContent = "X " + Math.round(hole.x) + " / Y " + Math.round(hole.y);
         focusPill.textContent = FOCUS_LABEL;
+        snapStatusTop.textContent = "스냅 상태: " + snapText;
+        snapStatusMeta.textContent = snapText;
+        snapStatusRight.textContent = "스냅 상태: " + snapText;
         holeLabelText.textContent =
-          preset.label === "상단 중앙"
+          nearest.label === "상단 중앙"
             ? "고리 위치: 상단 중앙 / 드래그 미세 조정"
-            : "고리 위치: " + preset.label + " / 드래그 미세 조정";
+            : "고리 위치: " + nearest.label + " / 드래그 미세 조정";
 
         presetButtons.forEach((button) => {
-          button.classList.toggle("active", button.textContent.trim() === preset.label);
+          button.classList.toggle("active", button.textContent.trim() === nearest.label);
         });
 
         sideButtons.forEach((button) => button.classList.toggle("active", button.dataset.side === side));
@@ -292,7 +337,7 @@
 
       function moveFromClient(clientX, clientY){
         const rect = previewShell.getBoundingClientRect();
-        hole = clampHole({ x: clientX - rect.left, y: clientY - rect.top });
+        hole = resolveHole({ x: clientX - rect.left, y: clientY - rect.top });
         render();
       }
 
@@ -312,9 +357,14 @@
 
       presetButtons.forEach((button) => {
         button.addEventListener("click", function(){
-          hole = clampHole({ x: Number(button.dataset.x), y: Number(button.dataset.y) });
+          hole = resolveHole({ x: Number(button.dataset.x), y: Number(button.dataset.y) });
           render();
         });
+      });
+
+      resetBtn.addEventListener("click", function(){
+        hole = resolveHole({ x: 104, y: 28 });
+        render();
       });
 
       sideButtons.forEach((button) => {
@@ -341,6 +391,7 @@
         render();
       });
 
+      hole = resolveHole(hole);
       render();
     })();
   </script>
