@@ -26,7 +26,7 @@ type AccessoryItem = {
   price: number;
 };
 
-const SESSION_MARKER = "POP_SLOT_FLOW_CONNECT_20260326_195900";
+const SESSION_MARKER = "POP_HANDOFF_PREVIEW_20260326_201121";
 
 const SLOT_ORDER: SlotKey[] = ["p1", "p2", "p3", "p4"];
 const REQUIRED_SLOTS: SlotKey[] = ["p1", "p2", "p3"];
@@ -84,7 +84,7 @@ export default function PopStudioClient() {
   const [activeAccessoryIds, setActiveAccessoryIds] = useState<string[]>(["stand-basic", "package-opp"]);
   const [quantity, setQuantity] = useState<number>(10);
   const [memo, setMemo] = useState<string>("");
-  const [lastAction, setLastAction] = useState<string>("우측 CTA는 현재 작업대 상태에 따라 실제 라우트로 이동합니다.");
+  const [lastAction, setLastAction] = useState<string>("우측 handoff preview는 현재 작업대 상태를 실제 라우트 쿼리로 보여줍니다.");
 
   const materialMap = useMemo(() => new Map(MATERIALS.map((item) => [item.id, item])), []);
   const accessoryMap = useMemo(() => new Map(ACCESSORIES.map((item) => [item.id, item])), []);
@@ -113,12 +113,6 @@ export default function PopStudioClient() {
   const orderReady = requiredMissing.length === 0 && quantity > 0;
   const checkReady = selectedMaterials.length > 0;
 
-  const flowLabel = useMemo(() => {
-    if(orderReady){ return "주문 진행 가능"; }
-    if(drawerReady){ return "서랍 저장 가능"; }
-    return "필수 슬롯 보완 필요";
-  }, [drawerReady, orderReady]);
-
   const slotStates = SLOT_ORDER.map((slot) => {
     const id = activeMaterials[slot];
     const item = id ? materialMap.get(id) ?? null : null;
@@ -129,6 +123,58 @@ export default function PopStudioClient() {
       filled: item !== null
     };
   });
+
+  const flowLabel = useMemo(() => {
+    if(orderReady){ return "주문 진행 가능"; }
+    if(drawerReady){ return "서랍 저장 가능"; }
+    return "필수 슬롯 보완 필요";
+  }, [drawerReady, orderReady]);
+
+  const readinessRows = useMemo(() => ([
+    {
+      key: "drawer",
+      label: "서랍 저장",
+      ready: drawerReady,
+      reason: drawerReady ? "P1~P3 필수 슬롯 준비 완료" : `누락 슬롯: ${requiredMissing.map((slot) => SLOT_META[slot].label).join(", ")}`
+    },
+    {
+      key: "order",
+      label: "주문 진행",
+      ready: orderReady,
+      reason: orderReady ? "필수 슬롯 + 수량 준비 완료" : "필수 슬롯 또는 수량 조건 미충족"
+    },
+    {
+      key: "check",
+      label: "주문확인",
+      ready: checkReady,
+      reason: checkReady ? "현재 작업대 상태 확인 가능" : "선택된 파츠 없음"
+    }
+  ]), [drawerReady, orderReady, checkReady, requiredMissing]);
+
+  const buildQuery = (mode: "drawer" | "order" | "check") => {
+    const params = new URLSearchParams();
+    params.set("source", "pop-studio");
+    params.set("mode", mode);
+    params.set("qty", String(quantity));
+    params.set("marker", SESSION_MARKER);
+    params.set("unitPrice", String(unitPrice));
+    params.set("totalPrice", String(totalPrice));
+    params.set("p1", activeMaterials.p1 ?? "");
+    params.set("p2", activeMaterials.p2 ?? "");
+    params.set("p3", activeMaterials.p3 ?? "");
+    params.set("p4", activeMaterials.p4 ?? "");
+    params.set("accessories", activeAccessoryIds.join(","));
+    if(memo.trim()){
+      params.set("memo", memo.trim());
+    }
+    return params.toString();
+  };
+
+  const handoffTargets = useMemo(() => ([
+    { mode: "drawer" as const, label: "/storage", ready: drawerReady, query: buildQuery("drawer") },
+    { mode: "order" as const, label: "/orders", ready: orderReady, query: buildQuery("order") },
+    { mode: "check" as const, label: "/order-check", ready: checkReady, query: buildQuery("check") }
+  ]), [drawerReady, orderReady, checkReady, quantity, unitPrice, totalPrice, activeMaterials, activeAccessoryIds, memo]);
 
   const toggleMaterial = (item: MaterialItem) => {
     setActiveMaterials((current) => {
@@ -154,23 +200,39 @@ export default function PopStudioClient() {
     setQuantity(safe);
   };
 
-  const buildQuery = (mode: "drawer" | "order" | "check") => {
-    const params = new URLSearchParams();
-    params.set("source", "pop-studio");
-    params.set("mode", mode);
-    params.set("qty", String(quantity));
-    params.set("marker", SESSION_MARKER);
-    params.set("unitPrice", String(unitPrice));
-    params.set("totalPrice", String(totalPrice));
-    params.set("p1", activeMaterials.p1 ?? "");
-    params.set("p2", activeMaterials.p2 ?? "");
-    params.set("p3", activeMaterials.p3 ?? "");
-    params.set("p4", activeMaterials.p4 ?? "");
-    params.set("accessories", activeAccessoryIds.join(","));
-    if(memo.trim()){
-      params.set("memo", memo.trim());
+  const applyPreset = (preset: "basic" | "clear" | "accent") => {
+    if(preset === "basic"){
+      setActiveMaterials({
+        p1: "front-clear-3t",
+        p2: "back-clear-3t",
+        p3: "base-black-5t",
+        p4: null
+      });
+      setActiveAccessoryIds(["stand-basic", "package-opp"]);
+      setLastAction("기본 POP 구성으로 되돌렸습니다.");
+      return;
     }
-    return params.toString();
+
+    if(preset === "accent"){
+      setActiveMaterials({
+        p1: "front-white-3t",
+        p2: "back-frosted-3t",
+        p3: "base-clear-5t",
+        p4: "accent-holo-3t"
+      });
+      setActiveAccessoryIds(["stand-wide", "package-box"]);
+      setLastAction("포인트 강조 프리셋을 적용했습니다.");
+      return;
+    }
+
+    setActiveMaterials({
+      p1: null,
+      p2: null,
+      p3: null,
+      p4: null
+    });
+    setActiveAccessoryIds([]);
+    setLastAction("작업대를 비운 상태로 초기화했습니다.");
   };
 
   const routeTo = (mode: "drawer" | "order" | "check") => {
@@ -204,14 +266,14 @@ export default function PopStudioClient() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto flex w-full max-w-[1720px] flex-col gap-4 px-4 py-6 lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-4 px-4 py-6 lg:px-6">
         <header className="rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP SLOT FLOW</p>
-              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 1~4 슬롯 상태 연결 + 우측 CTA 흐름 연결</h1>
+              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">POP HANDOFF PREVIEW</p>
+              <h1 className="mt-2 text-2xl font-semibold lg:text-3xl">POP 작업대 상태 + handoff preview 연결</h1>
               <p className="mt-2 text-sm text-neutral-300">
-                P1~P4가 비어 있는지, 작업대 위에 올라왔는지, 그리고 현재 상태에서 서랍/주문/주문확인으로 넘길 수 있는지를 한 화면에서 보이도록 정리했습니다.
+                현재 작업대 선택 상태가 어떤 쿼리로 /storage, /orders, /order-check 로 넘어가는지 우측 패널에서 바로 확인할 수 있게 정리했습니다.
               </p>
             </div>
             <div className="rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-right">
@@ -221,11 +283,23 @@ export default function PopStudioClient() {
           </div>
         </header>
 
-        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_340px]">
+        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_380px]">
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold">좌측 자재 랙</h2>
-              <p className="mt-1 text-sm text-neutral-400">P1~P4를 개별 슬롯 단위로 고르면 중앙 작업대에 즉시 반영됩니다.</p>
+              <p className="mt-1 text-sm text-neutral-400">P1~P4 슬롯을 개별로 채우고, 아래 프리셋으로 빠르게 흐름을 시험할 수 있습니다.</p>
+            </div>
+
+            <div className="mb-4 grid gap-2">
+              <button type="button" onClick={() => applyPreset("basic")} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-medium text-neutral-200 hover:border-white/20 hover:bg-white/[0.06]">
+                기본 구성 불러오기
+              </button>
+              <button type="button" onClick={() => applyPreset("accent")} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-medium text-neutral-200 hover:border-white/20 hover:bg-white/[0.06]">
+                포인트 강조 프리셋
+              </button>
+              <button type="button" onClick={() => applyPreset("clear")} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left text-sm font-medium text-neutral-200 hover:border-white/20 hover:bg-white/[0.06]">
+                작업대 비우기
+              </button>
             </div>
 
             <div className="space-y-3">
@@ -284,7 +358,7 @@ export default function PopStudioClient() {
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">중앙 POP 작업대</h2>
-                <p className="mt-1 text-sm text-neutral-300">필수 슬롯 P1~P3와 선택 슬롯 P4가 준비될수록 우측 CTA 상태가 바뀝니다.</p>
+                <p className="mt-1 text-sm text-neutral-300">필수 슬롯 P1~P3와 선택 슬롯 P4 상태를 작업대에서 바로 확인합니다.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-neutral-200">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">Flow Status</div>
@@ -299,10 +373,7 @@ export default function PopStudioClient() {
                   <div className="text-sm text-neutral-300">{completionRatio}%</div>
                 </div>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-cyan-300 transition-all"
-                    style={{ width: `${completionRatio}%` }}
-                  />
+                  <div className="h-full rounded-full bg-cyan-300 transition-all" style={{ width: `${completionRatio}%` }} />
                 </div>
                 <div className="mt-3 text-xs text-neutral-400">
                   필수 누락 슬롯: {requiredMissing.length > 0 ? requiredMissing.map((slot) => SLOT_META[slot].label).join(", ") : "없음"}
@@ -312,8 +383,8 @@ export default function PopStudioClient() {
               <div className="grid gap-3 md:grid-cols-2">
                 {slotStates.map((state) => {
                   const cardClass = state.filled
-                    ? "min-h-[160px] rounded-3xl border border-cyan-300/40 bg-cyan-400/10 p-4"
-                    : "min-h-[160px] rounded-3xl border border-dashed border-white/15 bg-black/20 p-4";
+                    ? "min-h-[168px] rounded-3xl border border-cyan-300/40 bg-cyan-400/10 p-4"
+                    : "min-h-[168px] rounded-3xl border border-dashed border-white/15 bg-black/20 p-4";
 
                   return (
                     <div key={state.slot} className={cardClass}>
@@ -346,30 +417,26 @@ export default function PopStudioClient() {
                 })}
               </div>
 
-              <div className="mt-4 rounded-3xl border border-white/10 bg-black/20 p-4">
-                <div className="text-sm font-semibold">작업 흐름 메모</div>
-                <div className="mt-3 grid gap-2 text-sm text-neutral-300 md:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                    <div className="font-medium">1. 슬롯 채우기</div>
-                    <div className="mt-1 text-neutral-400">P1, P2, P3가 비어 있지 않아야 실제 CTA가 열립니다.</div>
+              <div className="mt-4 grid gap-2 md:grid-cols-3">
+                {readinessRows.map((row) => (
+                  <div key={row.key} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold">{row.label}</div>
+                      <div className={row.ready ? "text-xs text-emerald-300" : "text-xs text-amber-300"}>
+                        {row.ready ? "가능" : "대기"}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-neutral-400">{row.reason}</div>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                    <div className="font-medium">2. 작업대 상태 확정</div>
-                    <div className="mt-1 text-neutral-400">선택한 슬롯과 부자재, 수량, 메모가 우측 흐름으로 넘겨집니다.</div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                    <div className="font-medium">3. 실제 라우트 이동</div>
-                    <div className="mt-1 text-neutral-400">/storage, /orders, /order-check 로 쿼리를 붙여 이동합니다.</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </section>
 
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">우측 부자재 + CTA</h2>
-              <p className="mt-1 text-sm text-neutral-400">현재 상태에 따라 서랍 저장 / 주문 진행 / 주문확인 버튼이 열리거나 잠깁니다.</p>
+              <h2 className="text-lg font-semibold">우측 부자재 + handoff preview</h2>
+              <p className="mt-1 text-sm text-neutral-400">현재 상태가 어떤 쿼리 문자열로 넘어가는지 바로 보고, 필요한 CTA만 실행할 수 있습니다.</p>
             </div>
 
             <div className="space-y-2">
@@ -406,13 +473,7 @@ export default function PopStudioClient() {
               </div>
 
               <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSafeQuantity(quantity - 1)}
-                  className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg"
-                >
-                  -
-                </button>
+                <button type="button" onClick={() => setSafeQuantity(quantity - 1)} className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg">-</button>
                 <input
                   inputMode="numeric"
                   value={quantity}
@@ -422,19 +483,13 @@ export default function PopStudioClient() {
                   }}
                   className="h-11 flex-1 rounded-2xl border border-white/10 bg-black/20 px-4 text-center text-base font-semibold outline-none"
                 />
-                <button
-                  type="button"
-                  onClick={() => setSafeQuantity(quantity + 1)}
-                  className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg"
-                >
-                  +
-                </button>
+                <button type="button" onClick={() => setSafeQuantity(quantity + 1)} className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg">+</button>
               </div>
 
               <textarea
                 value={memo}
                 onChange={(event) => setMemo(event.target.value)}
-                placeholder="작업 메모를 적으면 서랍/주문/주문확인 흐름으로 함께 넘깁니다."
+                placeholder="작업 메모를 적으면 handoff query에 함께 포함됩니다."
                 className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500"
               />
 
@@ -451,10 +506,6 @@ export default function PopStudioClient() {
                   <span>예상 합계</span>
                   <span>{formatPrice(totalPrice)}원</span>
                 </div>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 py-3 text-sm text-amber-100">
-                현재 상태: {flowLabel}
               </div>
 
               <div className="mt-4 space-y-2">
@@ -492,10 +543,18 @@ export default function PopStudioClient() {
                 </button>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-neutral-400">
-                <div>/storage?source=pop-studio...</div>
-                <div className="mt-1">/orders?source=pop-studio...</div>
-                <div className="mt-1">/order-check?source=pop-studio...</div>
+              <div className="mt-4 space-y-3">
+                {handoffTargets.map((target) => (
+                  <div key={target.mode} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold">{target.label}</div>
+                      <div className={target.ready ? "text-xs text-emerald-300" : "text-xs text-amber-300"}>
+                        {target.ready ? "ready" : "locked"}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-[11px] text-neutral-400 break-all">{target.label}?{target.query}</div>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-neutral-300">
