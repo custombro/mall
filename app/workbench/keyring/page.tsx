@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+type PreviewSide = "front" | "back";
 type HoleSizeMm = 2 | 2.5 | 3;
 
 type HoleDraft = {
@@ -23,8 +24,10 @@ type HoleReport = {
   valid: boolean;
   distance: number;
   boundaryRadius: number;
-  outerRadius: number;
+  innerLimit: number;
+  outerLimit: number;
   overflow: number;
+  previewX: number;
   snapLabel: string;
 };
 
@@ -35,7 +38,7 @@ const BODY_RY = 56;
 const SNAP_DISTANCE = 6;
 
 const HOLE_SIZE_OPTIONS: readonly HoleSizeMm[] = [2, 2.5, 3];
-const MATERIAL_OPTIONS = ["투명 아크릴", "유백 아크릴", "반투명 아크릴"] as const;
+const MATERIAL_OPTIONS = ["투명 아크릴", "반투명 아크릴"] as const;
 const THICKNESS_OPTIONS = ["3T", "5T"] as const;
 const RING_OPTIONS = ["실버 링", "골드 링", "볼체인"] as const;
 
@@ -98,9 +101,9 @@ function clampHoleToValidBand(rawX: number, rawY: number, sizeMm: HoleSizeMm) {
   const { angle, distance } = getAngleAndDistance(x, y);
   const boundaryRadius = getBoundaryRadiusByAngle(angle);
   const outerRadius = sizeMm / 2 + OUTER_OFFSET_MM;
-  const minDistance = Math.max(0, boundaryRadius - outerRadius);
-  const maxDistance = boundaryRadius + sizeMm / 2;
-  const clampedDistance = clamp(distance, minDistance, maxDistance);
+  const innerLimit = Math.max(0, boundaryRadius - outerRadius);
+  const outerLimit = boundaryRadius + sizeMm / 2;
+  const clampedDistance = clamp(distance, innerLimit, outerLimit);
 
   return {
     x: Math.cos(angle) * clampedDistance,
@@ -109,23 +112,25 @@ function clampHoleToValidBand(rawX: number, rawY: number, sizeMm: HoleSizeMm) {
   };
 }
 
-function validateHole(hole: HoleDraft): HoleReport {
+function validateHole(hole: HoleDraft, side: PreviewSide = "front"): HoleReport {
   const { angle, distance } = getAngleAndDistance(hole.x, hole.y);
   const boundaryRadius = getBoundaryRadiusByAngle(angle);
   const outerRadius = hole.sizeMm / 2 + OUTER_OFFSET_MM;
-  const minDistance = Math.max(0, boundaryRadius - outerRadius);
-  const maxDistance = boundaryRadius + hole.sizeMm / 2;
+  const innerLimit = Math.max(0, boundaryRadius - outerRadius);
+  const outerLimit = boundaryRadius + hole.sizeMm / 2;
   const overflow = Math.max(0, distance + outerRadius - boundaryRadius);
   const valid =
-    distance >= minDistance - 0.001 && distance <= maxDistance + 0.001;
+    distance >= innerLimit - 0.001 && distance <= outerLimit + 0.001;
 
   return {
     id: hole.id,
     valid,
     distance,
     boundaryRadius,
-    outerRadius,
+    innerLimit,
+    outerLimit,
     overflow,
+    previewX: side === "back" ? -hole.x : hole.x,
     snapLabel: findNearestSnap(hole.x, hole.y)?.label ?? "자유 배치",
   };
 }
@@ -145,21 +150,20 @@ function estimateUnitPrice(args: {
 
 function ProductPreviewSvg(props: {
   holes: HoleDraft[];
-  sideLabel: string;
-  tint: "front" | "back";
+  side: PreviewSide;
   className?: string;
 }) {
-  const { holes, sideLabel, tint, className } = props;
+  const { holes, side, className } = props;
 
   return (
-    <svg viewBox="-78 -88 156 176" className={className ?? "h-[300px] w-full"}>
+    <svg viewBox="-72 -82 144 164" className={className ?? "h-[340px] w-full"}>
       <defs>
-        <linearGradient id={`bodyFill-${tint}`} x1="0" x2="0" y1="0" y2="1">
+        <linearGradient id={`bodyFill-${side}`} x1="0" x2="0" y1="0" y2="1">
           <stop
             offset="0%"
             stopColor={
-              tint === "front"
-                ? "rgba(125,211,252,0.45)"
+              side === "front"
+                ? "rgba(125,211,252,0.40)"
                 : "rgba(203,213,225,0.28)"
             }
           />
@@ -170,19 +174,9 @@ function ProductPreviewSvg(props: {
       <ellipse
         cx="0"
         cy="0"
-        rx={BODY_RX + OUTER_OFFSET_MM}
-        ry={BODY_RY + OUTER_OFFSET_MM}
-        fill="none"
-        stroke="rgba(248,113,113,0.95)"
-        strokeWidth="0.9"
-        strokeDasharray="1.8 1.8"
-      />
-      <ellipse
-        cx="0"
-        cy="0"
         rx={BODY_RX}
         ry={BODY_RY}
-        fill={`url(#bodyFill-${tint})`}
+        fill={`url(#bodyFill-${side})`}
         stroke="rgba(255,255,255,0.78)"
         strokeWidth="0.8"
       />
@@ -193,12 +187,12 @@ function ProductPreviewSvg(props: {
         rx={BODY_RX - 8}
         ry={BODY_RY - 10}
         fill={
-          tint === "front"
+          side === "front"
             ? "rgba(255,255,255,0.08)"
             : "rgba(255,255,255,0.04)"
         }
         stroke={
-          tint === "front"
+          side === "front"
             ? "rgba(255,255,255,0.16)"
             : "rgba(148,163,184,0.18)"
         }
@@ -212,9 +206,9 @@ function ProductPreviewSvg(props: {
         className="fill-white"
         fontSize="8"
         fontWeight="700"
-        letterSpacing="1.6"
+        letterSpacing="1.3"
       >
-        {sideLabel}
+        {side === "front" ? "정면 완성 미리보기" : "배면 완성 미리보기"}
       </text>
       <text
         x="0"
@@ -222,29 +216,25 @@ function ProductPreviewSvg(props: {
         textAnchor="middle"
         className="fill-slate-300"
         fontSize="5.8"
-        letterSpacing="0.8"
+        letterSpacing="0.6"
       >
         업로드 1개 기준 기본 양면 인쇄
       </text>
 
       {holes.map((hole) => {
-        const report = validateHole(hole);
+        const report = validateHole(hole, side);
         return (
-          <g key={`${sideLabel}-${hole.id}`}>
+          <g key={`${side}-${hole.id}`}>
             <circle
-              cx={hole.x}
+              cx={report.previewX}
               cy={hole.y}
-              r={report.outerRadius}
+              r={hole.sizeMm / 2 + OUTER_OFFSET_MM}
               fill="none"
-              stroke={
-                report.valid
-                  ? "rgba(250,204,21,0.95)"
-                  : "rgba(251,113,133,0.95)"
-              }
-              strokeWidth="0.9"
+              stroke="rgba(250,204,21,0.95)"
+              strokeWidth="1"
             />
             <circle
-              cx={hole.x}
+              cx={report.previewX}
               cy={hole.y}
               r={hole.sizeMm / 2}
               fill="rgba(2,6,23,0.96)"
@@ -285,6 +275,7 @@ export default function Page() {
   const [ring, setRing] =
     useState<(typeof RING_OPTIONS)[number]>("실버 링");
   const [quantity, setQuantity] = useState(10);
+  const [previewSide, setPreviewSide] = useState<PreviewSide>("front");
   const [holes, setHoles] = useState<HoleDraft[]>(() => [makeHole()]);
   const [selectedHoleId, setSelectedHoleId] = useState<string | null>(null);
   const [snapMessage, setSnapMessage] = useState("구멍은 키링 안쪽으로 들어갈 수 없음");
@@ -293,7 +284,7 @@ export default function Page() {
   const selectedHole =
     holes.find((hole) => hole.id === selectedHoleId) ?? holes[0] ?? null;
 
-  const holeReports = useMemo(() => holes.map(validateHole), [holes]);
+  const holeReports = useMemo(() => holes.map((hole) => validateHole(hole)), [holes]);
   const selectedHoleReport =
     holeReports.find((report) => report.id === selectedHole?.id) ?? null;
 
@@ -477,8 +468,8 @@ export default function Page() {
                 </h1>
                 <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-300">
                   업로드 데이터 1개를 기준으로 기본 양면 인쇄만 사용합니다.
-                  인쇄면수, 표면마감, 불필요한 버튼은 제거했고,
-                  지금 화면은 완성품 정면·배면 확인과 구멍 드래그 조정에만 집중합니다.
+                  인쇄면수, 표면마감, 불필요한 위치 버튼은 제거했고,
+                  지금 화면은 완성품 미리보기 1칸 확인과 구멍 드래그 조정에만 집중합니다.
                 </p>
               </div>
 
@@ -565,9 +556,9 @@ export default function Page() {
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-slate-300">
-                    <div>인쇄: 기본 양면 인쇄 고정</div>
-                    <div>구멍 조정: 직접 드래그</div>
-                    <div>구멍 규칙: 외곽선 접촉 유지 / 안쪽 진입 불가</div>
+                    <div>자재는 투명 / 반투명만 사용</div>
+                    <div>미리보기는 1칸 토글형</div>
+                    <div>배면은 타공 위치가 좌우 반전되어 표시</div>
                   </div>
                 </div>
               </section>
@@ -575,43 +566,44 @@ export default function Page() {
 
             <main className="space-y-4">
               <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
-                    CENTER / 완성품 미리보기
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    정면 · 배면 동시 확인
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    완성품 기준으로 정면에서 보이는 모습과 배면에서 보이는 모습을 동시에 확인합니다.
-                    완성품 기준이 아닌 중간 설명 패널은 제거했습니다.
-                  </p>
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/70">
+                      CENTER / 완성품 미리보기
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                      미리보기 1칸 토글 확인
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      미리보기를 메인에 과하게 두지 않고 1칸만 유지합니다.
+                      현재 {previewSide === "front" ? "정면" : "배면"} 기준으로 확인 중이며,
+                      배면에서는 타공 위치가 좌우 반전되어 보입니다.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewSide((prev) => (prev === "front" ? "back" : "front"))
+                    }
+                    className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100"
+                  >
+                    {previewSide === "front" ? "뒷면 보기" : "앞면 보기"}
+                  </button>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-[28px] border border-white/10 bg-slate-950/80 p-4">
-                    <ProductPreviewSvg
-                      holes={holes}
-                      sideLabel="정면 완성 미리보기"
-                      tint="front"
-                      className="h-[320px] w-full"
-                    />
-                  </div>
-
-                  <div className="rounded-[28px] border border-white/10 bg-slate-950/80 p-4">
-                    <ProductPreviewSvg
-                      holes={holes}
-                      sideLabel="배면 완성 미리보기"
-                      tint="back"
-                      className="h-[320px] w-full"
-                    />
-                  </div>
+                <div className="mt-4 rounded-[28px] border border-white/10 bg-slate-950/80 p-4">
+                  <ProductPreviewSvg
+                    holes={holes}
+                    side={previewSide}
+                    className="h-[340px] w-full"
+                  />
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-slate-300">
-                  <div>정면/배면 모두 업로드 1개 기준 기본 양면 인쇄</div>
-                  <div>최종 테두리 칼선: 빨강 100% / 0.01mm / 채우기 없음</div>
-                  <div>구멍 선: 검정 / 0.01mm / 채우기 없음</div>
+                  <div>현재 표시: {previewSide === "front" ? "정면 미리보기" : "배면 미리보기"}</div>
+                  <div>배면 보기에서는 타공 위치가 좌우 반전됨</div>
+                  <div>빨간 점선 외곽 표시는 제거</div>
                 </div>
               </section>
 
@@ -640,23 +632,13 @@ export default function Page() {
                   <div className="rounded-[28px] border border-white/10 bg-slate-950/80 p-4">
                     <svg
                       ref={stageRef}
-                      viewBox="-78 -88 156 176"
+                      viewBox="-72 -82 144 164"
                       className="h-[380px] w-full touch-none"
                       onPointerMove={handleStagePointerMove}
                       onPointerUp={handleStagePointerUp}
                       onPointerLeave={handleStagePointerUp}
                       onPointerCancel={handleStagePointerUp}
                     >
-                      <ellipse
-                        cx="0"
-                        cy="0"
-                        rx={BODY_RX + OUTER_OFFSET_MM}
-                        ry={BODY_RY + OUTER_OFFSET_MM}
-                        fill="none"
-                        stroke="rgba(248,113,113,0.95)"
-                        strokeWidth="0.9"
-                        strokeDasharray="1.8 1.8"
-                      />
                       <ellipse
                         cx="0"
                         cy="0"
@@ -672,17 +654,16 @@ export default function Page() {
                           <circle
                             cx={point.x}
                             cy={point.y}
-                            r="1.6"
-                            fill="rgba(125,211,252,0.8)"
+                            r="1.8"
+                            fill="rgba(125,211,252,0.65)"
                           />
                           <circle
                             cx={point.x}
                             cy={point.y}
-                            r="4.6"
+                            r="5"
                             fill="none"
-                            stroke="rgba(125,211,252,0.18)"
+                            stroke="rgba(125,211,252,0.16)"
                             strokeWidth="0.6"
-                            strokeDasharray="1.4 1.4"
                           />
                         </g>
                       ))}
@@ -698,14 +679,10 @@ export default function Page() {
                             <circle
                               cx={hole.x}
                               cy={hole.y}
-                              r={report.outerRadius}
+                              r={hole.sizeMm / 2 + OUTER_OFFSET_MM}
                               fill="none"
-                              stroke={
-                                report.valid
-                                  ? "rgba(250,204,21,0.95)"
-                                  : "rgba(251,113,133,0.95)"
-                              }
-                              strokeWidth={selected ? "1.2" : "0.9"}
+                              stroke="rgba(250,204,21,0.95)"
+                              strokeWidth={selected ? "1.2" : "1"}
                             />
                             <circle
                               cx={hole.x}
@@ -742,10 +719,10 @@ export default function Page() {
 
                       <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                         <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                          외곽 오프셋
+                          외곽 밴드
                         </div>
                         <div className="mt-2 text-sm text-white">
-                          +2.5mm / 본체 외곽 접촉 유지
+                          본체 외곽 접촉 유지 / 안쪽 진입 불가
                         </div>
                       </div>
 
@@ -767,7 +744,7 @@ export default function Page() {
                       </p>
 
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {holes.map((hole) => (
+                        {holes.map((hole, idx) => (
                           <button
                             key={hole.id}
                             type="button"
@@ -778,7 +755,7 @@ export default function Page() {
                                 : "rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition hover:bg-white/10"
                             }
                           >
-                            {hole.id.replace("hole-", "#")} · {hole.sizeMm}mm
+                            #{idx + 1} · {hole.sizeMm}mm
                           </button>
                         ))}
                       </div>
@@ -839,10 +816,11 @@ export default function Page() {
 
                       {selectedHoleReport ? (
                         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs leading-6 text-slate-300">
-                          <div>현재 선택: {selectedHole?.id.replace("hole-", "#")}</div>
+                          <div>현재 선택: #{holes.findIndex((h) => h.id === selectedHole?.id) + 1}</div>
                           <div>경계 반경: {round1(selectedHoleReport.boundaryRadius)}mm</div>
                           <div>중심 거리: {round1(selectedHoleReport.distance)}mm</div>
-                          <div>돌출량: {round1(selectedHoleReport.overflow)}mm</div>
+                          <div>내측 한계: {round1(selectedHoleReport.innerLimit)}mm</div>
+                          <div>외측 한계: {round1(selectedHoleReport.outerLimit)}mm</div>
                         </div>
                       ) : null}
                     </section>
