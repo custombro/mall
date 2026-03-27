@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import {
-  useEffect,
+useEffect,
   useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+
+const deployMarker = "DEPLOY_KEYRING_20260327_205210";
 
 type PreviewSide = "front" | "back";
 type HoleSizeMm = 2 | 2.5 | 3;
@@ -861,6 +863,12 @@ export default function Page() {
   </ul>
 </section>
 {/* KEYRING_PRODUCTION_RULES_END */}
+
+      <div className="mt-3 rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3">
+        <p className="text-[11px] font-semibold tracking-[0.08em] text-neutral-500">
+          배포 확인 기준: {deployMarker}
+        </p>
+      </div>
 </main>
 
             <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
