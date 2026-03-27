@@ -183,7 +183,7 @@ svg{display:block;width:100%;height:auto}
           <span style="color:var(--muted)">수량</span>
           <div class="qty">
             <button type="button" id="qtyMinus">-</button>
-            <input id="qtyInput" value="10" />
+            <input id="qtyInput" type="text" inputmode="numeric" maxlength="4" value="10" />
             <button type="button" id="qtyPlus">+</button>
           </div>
         </div>
@@ -208,6 +208,8 @@ svg{display:block;width:100%;height:auto}
 <script>
 const OUTER_OFFSET_MM = 2.5;
 const MAX_HOLES = 5;
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 9999;
 const BODY_RX = 43;
 const BODY_RY = 56;
 const SNAP_DISTANCE = 6;
@@ -240,6 +242,11 @@ const state = {
 function clamp(value, min, max){ return Math.min(max, Math.max(min, value)); }
 function round1(v){ return Math.round((v + Number.EPSILON) * 10) / 10; }
 function won(v){ return Number(v || 0).toLocaleString() + "원"; }
+function sanitizeQuantityInput(raw){
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if(!digits) return MIN_QUANTITY;
+  return clamp(parseInt(digits, 10), MIN_QUANTITY, MAX_QUANTITY);
+}
 
 function getAngleAndDistance(x, y){
   if(x === 0 && y === 0){ return { angle: -Math.PI / 2, distance: 0 }; }
@@ -550,17 +557,17 @@ document.getElementById("removeHoleBtn").addEventListener("click", () => {
 });
 
 document.getElementById("qtyMinus").addEventListener("click", () => {
-  state.quantity = Math.max(1, state.quantity - 1);
+  state.quantity = clamp(state.quantity - 1, MIN_QUANTITY, MAX_QUANTITY);
   render();
 });
 
 document.getElementById("qtyPlus").addEventListener("click", () => {
-  state.quantity += 1;
+  state.quantity = clamp(state.quantity + 1, MIN_QUANTITY, MAX_QUANTITY);
   render();
 });
 
 document.getElementById("qtyInput").addEventListener("input", (e) => {
-  state.quantity = Math.max(1, Number(e.target.value) || 1);
+  state.quantity = sanitizeQuantityInput(e.target.value);
   render();
 });
 

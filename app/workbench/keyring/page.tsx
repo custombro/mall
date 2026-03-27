@@ -33,6 +33,8 @@ type HoleReport = {
 
 const OUTER_OFFSET_MM = 2.5;
 const MAX_HOLES = 5;
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 9999;
 const BODY_RX = 43;
 const BODY_RY = 56;
 const SNAP_DISTANCE = 6;
@@ -146,6 +148,12 @@ function estimateUnitPrice(args: {
   if (args.ring === "볼체인") total += 100;
   total += Math.max(0, args.holeCount - 1) * 120;
   return total;
+}
+
+function sanitizeQuantityInput(raw: string | number) {
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if (!digits) return MIN_QUANTITY;
+  return clamp(parseInt(digits, 10), MIN_QUANTITY, MAX_QUANTITY);
 }
 
 function ProductPreviewSvg(props: {
@@ -853,21 +861,24 @@ export default function Page() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                        onClick={() => setQuantity((prev) => clamp(prev - 1, MIN_QUANTITY, MAX_QUANTITY))}
                         className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
                       >
                         -
                       </button>
                       <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={4}
                         value={quantity}
                         onChange={(event) =>
-                          setQuantity(Math.max(1, Number(event.target.value) || 1))
+                          setQuantity(sanitizeQuantityInput(event.target.value))
                         }
                         className="h-9 w-20 rounded-xl border border-white/10 bg-slate-900 px-3 text-center text-sm text-white outline-none"
                       />
                       <button
                         type="button"
-                        onClick={() => setQuantity((prev) => prev + 1)}
+                        onClick={() => setQuantity((prev) => clamp(prev + 1, MIN_QUANTITY, MAX_QUANTITY))}
                         className="h-9 w-9 rounded-xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
                       >
                         +
