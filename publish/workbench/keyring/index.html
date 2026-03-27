@@ -3,397 +3,590 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>키링 제작 - 드래그 홀 프리뷰</title>
+  <title>커스텀브로 | 키링 제작</title>
   <style>
     :root{
-      --bg:#05080f; --panel:#111318; --text:#ffffff; --cyan:#7dd3fc; --amber:#fde68a;
+      --bg:#07111f;
+      --panel:#0b1627;
+      --panel2:#0f1d31;
+      --line:rgba(255,255,255,.10);
+      --muted:#9fb0c3;
+      --text:#f8fbff;
+      --accent:#7dd3fc;
+      --accent2:#22d3ee;
+      --warn:#facc15;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Apple SD Gothic Neo,sans-serif}
-    .wrap{max-width:1240px;margin:0 auto;padding:32px 24px}
-    .hero,.panel{border:1px solid rgba(255,255,255,.08);background:var(--panel);border-radius:28px}
-    .hero{padding:28px 32px;margin-bottom:16px}
-    .hero-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
-    .hero-tag{font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:var(--cyan);font-weight:700}
-    .hero h1{margin:10px 0 0;font-size:40px;line-height:1;font-weight:700}
-    .hero p{margin:16px 0 0;color:#cbd5e1;font-size:14px;line-height:1.7}
-    .status-card{padding:14px 16px;border-radius:18px;border:1px solid rgba(125,211,252,.28);background:rgba(14,165,233,.12);text-align:right}
-    .status-card .s1{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#bae6fd;font-weight:700}
-    .status-card .s2{margin-top:8px;font-size:14px;font-weight:700}
-    .status-card .s3{margin-top:4px;font-size:12px;color:#e0f2fe}
-    .grid{display:grid;grid-template-columns:280px minmax(0,1fr) 280px;gap:16px}
-    .panel{padding:20px}
-    .eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#64748b}
-    h2{margin:10px 0 0;font-size:30px;line-height:1.1}
-    .section{margin-top:20px}
-    .label{margin-bottom:8px;font-size:14px;font-weight:700;color:#cbd5e1}
-    .btn{width:100%;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#cbd5e1;padding:14px 16px;font-weight:700;cursor:pointer}
-    .btn.active{border-color:rgba(125,211,252,.95);background:rgba(14,165,233,.15);color:#e0f2fe}
-    .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .btn-stack{display:grid;gap:8px}
-    .note{margin-top:12px;border-radius:18px;border:1px solid rgba(253,230,138,.22);background:rgba(245,158,11,.10);padding:12px 14px;font-size:12px;line-height:1.7;color:#fef3c7}
-    .center-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .pill{padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#cbd5e1;font-size:14px}
-    .center-grid{display:grid;grid-template-columns:1fr 1fr 220px;gap:16px;margin-top:20px}
-    .card{border-radius:24px;padding:20px}
-    .front{border:1px solid rgba(125,211,252,.35);background:rgba(14,165,233,.08)}
-    .back{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03)}
-    .mini{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#cbd5e1}
-    .card h3{margin:12px 0 0;font-size:28px}
-    .card p{margin:14px 0 0;color:#cbd5e1;font-size:14px;line-height:1.8}
-    .preview-panel{border:1px solid rgba(125,211,252,.22);background:rgba(255,255,255,.03)}
-    .preview-tag{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#94a3b8}
-    .preview-shell{position:relative;margin:16px auto 0;width:208px;height:260px;border-radius:34px;border:1px solid rgba(125,211,252,.25);background:radial-gradient(circle at top,rgba(125,211,252,.12),transparent 55%),linear-gradient(180deg,#515963 0%,#2a2f36 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
-    .preview-shell::after{content:"";position:absolute;inset:12px;border-radius:28px;border:1px dashed rgba(125,211,252,.18)}
-    .guide-ring{position:absolute;border-radius:999px;border:1px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.02)}
-    .guide-ring.active{border-color:rgba(125,211,252,.95);background:rgba(125,211,252,.10)}
-    .ring-clear{position:absolute;border-radius:999px;border:1px dashed rgba(253,230,138,.90);background:rgba(253,230,138,.10);cursor:grab}
-    .ring-hole{position:absolute;border-radius:999px;border:2px solid rgba(125,211,252,.95);background:rgba(11,21,32,.55);cursor:grab}
-    .ring-core{position:absolute;border-radius:999px;background:#bae6fd;box-shadow:0 0 16px rgba(125,211,252,.55)}
-    .preview-meta{margin-top:14px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:#0b0d12;padding:12px 14px;font-size:12px;color:#cbd5e1}
-    .meta-line{display:flex;justify-content:space-between;gap:8px;margin:7px 0}
-    .qty-box,.price-box,.summary-box{margin-top:16px;border-radius:24px;border:1px solid rgba(255,255,255,.1);background:#0b0d12;padding:16px}
-    .qty-grid{display:grid;grid-template-columns:44px 1fr 44px;gap:12px;align-items:center}
-    .qty-btn,.primary,.secondary,.reset-btn{border-radius:18px;cursor:pointer;font-weight:700}
-    .qty-btn{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#fff;padding:12px 0;font-size:20px}
-    .qty-value{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);padding:12px 0;border-radius:18px;text-align:center;font-size:28px;font-weight:700}
-    .reset-btn{margin-top:8px;width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#e2e8f0}
-    .line{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:#cbd5e1}
-    .total{margin-top:12px;display:flex;justify-content:space-between;gap:12px;font-size:30px;font-weight:700;color:#bae6fd}
-    .summary-box{font-size:14px;line-height:1.9;color:#cbd5e1}
-    .action-grid{display:grid;gap:12px;margin-top:16px}
-    .primary{background:#fff;color:#000;padding:16px;border:none}
-    .secondary{background:rgba(14,165,233,.15);color:#e0f2fe;padding:16px;border:1px solid rgba(125,211,252,.95)}
-    @media (max-width: 1100px){ .grid{grid-template-columns:1fr} .center-grid{grid-template-columns:1fr} }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Pretendard,Segoe UI,Arial,sans-serif}
+    body.dragging, body.dragging * { user-select:none !important; -webkit-user-select:none !important; cursor:grabbing !important; }
+    .wrap{max-width:1600px;margin:0 auto;padding:20px}
+    .shell{border:1px solid var(--line);border-radius:28px;background:rgba(255,255,255,.04);padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+    .header{border:1px solid var(--line);border-radius:24px;background:rgba(2,6,23,.72);padding:20px;display:flex;gap:16px;justify-content:space-between;align-items:end}
+    .eyebrow{font-size:11px;letter-spacing:.26em;color:#b8ecff;text-transform:uppercase;font-weight:700}
+    h1{margin:8px 0 0;font-size:30px}
+    .sub{margin:10px 0 0;max-width:900px;color:#c8d4e2;font-size:14px;line-height:1.75}
+    .hint{border:1px solid rgba(125,211,252,.20);background:rgba(125,211,252,.10);border-radius:18px;padding:12px 14px;font-size:12px;line-height:1.7;color:#d9f7ff}
+    .grid{display:grid;grid-template-columns:320px minmax(0,1fr) 340px;gap:16px;margin-top:16px}
+    .card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.04);padding:16px}
+    .card h2{margin:8px 0 0;font-size:28px}
+    .label{font-size:11px;letter-spacing:.22em;color:#b8ecff;text-transform:uppercase;font-weight:700}
+    .stack{display:grid;gap:10px}
+    .btn{width:100%;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);border-radius:18px;padding:12px 14px;text-align:left;cursor:pointer}
+    .btn.active{border-color:rgba(125,211,252,.35);background:rgba(125,211,252,.12);color:#d9f7ff;font-weight:700}
+    .mini{font-size:12px;color:var(--muted);line-height:1.7}
+    .split2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .splitStage{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px}
+    .previewBox,.stageBox{border:1px solid var(--line);border-radius:24px;background:rgba(2,6,23,.72);padding:14px}
+    .soft{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.05);padding:12px}
+    .row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .qty{display:flex;align-items:center;gap:8px}
+    .qty button{width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .qty input{width:78px;height:36px;border-radius:12px;border:1px solid var(--line);background:#0b1220;color:#fff;text-align:center}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 12px;font-size:12px}
+    .pill.active{border-color:rgba(125,211,252,.35);background:rgba(125,211,252,.12);color:#d9f7ff;font-weight:700}
+    .pills{display:flex;flex-wrap:wrap;gap:8px}
+    .actions{display:grid;gap:10px}
+    .actionBtn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;border-radius:18px;padding:12px 14px;font-weight:700;cursor:pointer}
+    .actionBtn.primary{background:#7dd3fc;color:#07111f}
+    .ok{border:1px solid rgba(52,211,153,.20);background:rgba(52,211,153,.10);border-radius:20px;padding:14px;color:#dcfff2}
+    .notice{border:1px solid rgba(250,204,21,.20);background:rgba(250,204,21,.10);border-radius:18px;padding:12px;color:#fff0b8;font-size:14px}
+    svg{display:block;width:100%;height:auto}
+    .noSelect{user-select:none;-webkit-user-select:none}
+    @media (max-width:1200px){
+      .grid{grid-template-columns:1fr}
+      .split2,.splitStage{grid-template-columns:1fr}
+      .header{flex-direction:column;align-items:start}
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <section class="hero">
-      <div class="hero-tag">Keyring / Drag Hole / Hole Cutline / Snap Guide</div>
-      <div class="hero-top">
+    <div class="shell">
+      <div class="header">
         <div>
-          <h1>키링 제작</h1>
-          <p>구멍 위치는 프리뷰에서 바로 드래그로 미세 조정하고, 홀 내경 칼선과 2.5mm 여백선을 함께 확인합니다. 기준 위치 근처에서는 스냅 가이드가 자동으로 맞춰집니다.</p>
+          <div class="eyebrow">상태창</div>
+          <h1>키링 제작 / 기본 양면 인쇄</h1>
+          <div class="sub">업로드 데이터 1개를 기준으로 기본 양면 인쇄만 사용합니다. 인쇄면수, 표면마감, 고리 위치 버튼은 제거했고, 지금 화면은 완성품 정면·배면 확인과 구멍 드래그 조정에만 집중합니다.</div>
         </div>
-        <div class="status-card">
-          <div class="s1">상태창</div>
-          <div class="s2">현재 단계: 고리 위치 조정</div>
-          <div class="s3">안내 방식: 요청 시 상세 안내</div>
-          <div class="s3" id="snapStatusTop">스냅 상태: 상단 중앙 가이드 맞춤</div>
+        <div class="hint">
+          <div>업로드 1개 → 기본 양면 인쇄</div>
+          <div>구멍은 키링 안쪽으로 들어갈 수 없음</div>
+          <div>구멍은 직접 드래그로만 조정</div>
         </div>
       </div>
-    </section>
 
-    <section class="grid">
-      <aside class="panel">
-        <div class="eyebrow">좌측 / 설정</div>
-        <h2>옵션</h2>
+      <div class="grid">
+        <aside class="card">
+          <div class="label">LEFT / 기본 설정</div>
 
-        <div class="section">
-          <div class="label">자재</div>
-          <button class="btn" style="border-color:rgba(110,231,183,.25);background:rgba(16,185,129,.12);text-align:left">
-            <div style="font-size:12px;color:#a7f3d0">단일 기본 자재</div>
-            <div style="margin-top:6px;font-size:20px;color:#fff">투명 아크릴 3T</div>
-          </button>
-        </div>
-
-        <div class="section">
-          <div class="label">인쇄 면수</div>
-          <div class="btn-grid">
-            <button class="btn" data-side="단면">단면</button>
-            <button class="btn active" data-side="양면">양면</button>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="label">표면 마감</div>
-          <div class="btn-grid">
-            <button class="btn active" data-finish="유광">유광</button>
-            <button class="btn" data-finish="무광">무광</button>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="label">고리 위치</div>
-          <div class="btn-stack">
-            <button class="btn active preset" data-id="top-center" data-x="104" data-y="28">상단 중앙</button>
-            <button class="btn preset" data-id="top-left" data-x="48" data-y="34">좌측 상단</button>
-            <button class="btn preset" data-id="top-right" data-x="160" data-y="34">우측 상단</button>
-          </div>
-          <button class="reset-btn" id="resetBtn">위치 재설정</button>
-          <div class="note">드래그로 고리 위치 미세 조정<br>홀 칼선(내부) + 외곽 여백선(+2.5mm)<br>스냅 가이드: 기준 위치 근처 자동 맞춤</div>
-        </div>
-      </aside>
-
-      <section class="panel">
-        <div class="center-top">
-          <div>
-            <div class="eyebrow">중앙 / 작업</div>
-            <h2>작업테이블</h2>
-          </div>
-          <div class="pill" id="focusPill">현재 포커스: 고리 위치 조정</div>
-        </div>
-
-        <div class="center-grid">
-          <div class="card front">
-            <div class="mini">Front</div>
-            <h3>앞면 핵심 배치</h3>
-            <p>업로드 영역과 메인 이미지를 먼저 두고, 고리 위치는 중심이 아니라 실제 홀 여백 기준으로 확인합니다.</p>
+          <div style="margin-top:14px">
+            <div class="mini" style="margin-bottom:8px;text-transform:uppercase;letter-spacing:.14em">자재</div>
+            <div class="stack" id="materialButtons"></div>
           </div>
 
-          <div class="card back">
-            <div class="mini">Back</div>
-            <h3>뒷면 메모 영역</h3>
-            <p>후면 인쇄 여부와 간단한 메모 방향을 바로 맞출 수 있게 유지합니다.</p>
+          <div style="margin-top:16px">
+            <div class="mini" style="margin-bottom:8px;text-transform:uppercase;letter-spacing:.14em">두께</div>
+            <div class="pills" id="thicknessButtons"></div>
           </div>
 
-          <div class="card preview-panel">
-            <div class="preview-tag">Preview</div>
-            <div class="preview-shell" id="previewShell">
-              <div class="guide-ring" id="guide_top-center"></div>
-              <div class="guide-ring" id="guide_top-left"></div>
-              <div class="guide-ring" id="guide_top-right"></div>
-              <div class="ring-clear" id="ringClear"></div>
-              <div class="ring-hole" id="ringHole"></div>
-              <div class="ring-core" id="ringCore"></div>
+          <div style="margin-top:16px">
+            <div class="mini" style="margin-bottom:8px;text-transform:uppercase;letter-spacing:.14em">링 / 체결</div>
+            <div class="stack" id="ringButtons"></div>
+          </div>
+
+          <div class="soft" style="margin-top:16px">
+            <div class="mini">인쇄: 기본 양면 인쇄 고정</div>
+            <div class="mini">구멍 조정: 직접 드래그</div>
+            <div class="mini">구멍 규칙: 외곽선 접촉 유지 / 안쪽 진입 불가</div>
+          </div>
+        </aside>
+
+        <main class="stack">
+          <section class="card">
+            <div class="label">CENTER / 완성품 미리보기</div>
+            <h2>정면 · 배면 동시 확인</h2>
+            <div class="sub" style="max-width:none">완성품 기준으로 정면에서 보이는 모습과 배면에서 보이는 모습을 동시에 확인합니다. 완성품 기준이 아닌 중간 설명 패널은 제거했습니다.</div>
+
+            <div class="split2" style="margin-top:16px">
+              <div class="previewBox">
+                <div id="frontPreview"></div>
+              </div>
+              <div class="previewBox">
+                <div id="backPreview"></div>
+              </div>
             </div>
 
-            <div class="preview-meta">
-              <div class="meta-line"><span>홀 칼선(내부)</span><span>18px 기준 프리뷰</span></div>
-              <div class="meta-line"><span>외곽 여백선(+2.5mm)</span><span>2.5mm</span></div>
-              <div class="meta-line"><span>스냅 상태</span><span id="snapStatusMeta">상단 중앙 가이드 맞춤</span></div>
-              <div class="meta-line"><span>현재 위치</span><span id="positionText">X 104 / Y 28</span></div>
+            <div class="soft" style="margin-top:16px">
+              <div class="mini">정면/배면 모두 업로드 1개 기준 기본 양면 인쇄</div>
+              <div class="mini">최종 테두리 칼선: 빨강 100% / 0.01mm / 채우기 없음</div>
+              <div class="mini">구멍 선: 검정 / 0.01mm / 채우기 없음</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row">
+              <div>
+                <div class="label">CENTER / 홀 드래그 조정</div>
+                <h2>구멍은 외곽 밴드 안에서만 이동</h2>
+                <div class="sub" style="max-width:none">구멍은 직접 드래그해서 조정합니다. 드래그 중 텍스트 선택이 생기지 않도록 잠금 처리했고, 안쪽으로 완전히 들어가는 위치는 자동으로 막습니다.</div>
+              </div>
+              <div class="pill noSelect" id="snapMessage">현재 안내: 구멍은 키링 안쪽으로 들어갈 수 없음</div>
+            </div>
+
+            <div class="splitStage" style="margin-top:16px">
+              <div class="stageBox">
+                <svg id="stageSvg" viewBox="-78 -88 156 176" class="noSelect">
+                  <ellipse cx="0" cy="0" rx="45.5" ry="58.5" fill="none" stroke="rgba(248,113,113,0.95)" stroke-width="0.9" stroke-dasharray="1.8 1.8"></ellipse>
+                  <ellipse cx="0" cy="0" rx="43" ry="56" fill="rgba(56,189,248,0.18)" stroke="rgba(255,255,255,0.72)" stroke-width="0.8"></ellipse>
+                  <g id="snapPoints"></g>
+                  <g id="holesLayer"></g>
+                </svg>
+
+                <div class="split2" style="grid-template-columns:1fr 1fr 1fr; margin-top:12px; gap:12px">
+                  <div class="soft"><div class="mini">홀 칼선</div><div>검정 / 0.01mm / 채우기 없음</div></div>
+                  <div class="soft"><div class="mini">외곽 오프셋</div><div>+2.5mm / 본체 외곽 접촉 유지</div></div>
+                  <div class="soft"><div class="mini">현재 안내</div><div id="snapMessageCard">구멍은 키링 안쪽으로 들어갈 수 없음</div></div>
+                </div>
+              </div>
+
+              <div class="stack">
+                <section class="previewBox">
+                  <div class="label">구멍 제어</div>
+                  <div class="pills" id="holeTabs" style="margin-top:12px"></div>
+
+                  <div style="margin-top:14px">
+                    <div class="mini" style="margin-bottom:8px;text-transform:uppercase;letter-spacing:.14em">내경 선택</div>
+                    <div class="pills" id="sizeButtons"></div>
+                  </div>
+
+                  <div class="actions" style="margin-top:14px">
+                    <button class="actionBtn" id="addHoleBtn">구멍 추가</button>
+                    <button class="actionBtn" id="resetHoleBtn">위치 재설정</button>
+                    <button class="actionBtn" id="removeHoleBtn">선택 구멍 제거</button>
+                  </div>
+
+                  <div class="soft" style="margin-top:14px">
+                    <div class="mini">구멍은 키링 안쪽으로 들어갈 수 없음</div>
+                    <div class="mini">구멍은 직접 드래그로만 조정</div>
+                    <div class="mini">기본 내경: 2.5mm</div>
+                    <div class="mini">최대 5개</div>
+                  </div>
+
+                  <div class="soft" id="holeInfo" style="margin-top:14px"></div>
+                </section>
+
+                <section class="ok">
+                  <div style="font-weight:700">자동 접수 판정</div>
+                  <div style="margin-top:8px;line-height:1.7">현재 홀은 모두 외곽 밴드 안에서 유지되며, 단일 업로드 기준 기본 양면 인쇄 흐름으로 정리되었습니다.</div>
+                </section>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <aside class="card">
+          <div class="label">RIGHT / 수량 · 가격 · 저장 · 주문</div>
+          <h2 style="font-size:24px">주문 카드</h2>
+
+          <div class="row" style="margin-top:16px">
+            <span style="color:var(--muted)">수량</span>
+            <div class="qty">
+              <button type="button" id="qtyMinus">-</button>
+              <input id="qtyInput" value="10" />
+              <button type="button" id="qtyPlus">+</button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <aside class="panel">
-        <div class="eyebrow">우측 / 요약</div>
-        <h2>수량 · 가격 · 저장 · 주문</h2>
-
-        <div class="qty-box">
-          <div class="label">수량</div>
-          <div class="qty-grid">
-            <button class="qty-btn" id="minusBtn">-</button>
-            <div class="qty-value" id="quantityValue">10</div>
-            <button class="qty-btn" id="plusBtn">+</button>
+          <div class="soft" style="margin-top:16px">
+            <div class="row"><span class="mini">예상 단가</span><strong id="unitPrice">0원</strong></div>
+            <div class="row" style="margin-top:10px"><span class="mini">예상 합계</span><strong id="totalPrice" style="font-size:20px">0원</strong></div>
           </div>
-        </div>
 
-        <div class="price-box">
-          <div class="line"><span>단가</span><span id="unitPrice">3,400원</span></div>
-          <div class="total"><span>합계</span><span id="totalPrice">34,000원</span></div>
-        </div>
+          <div class="soft" id="summaryBox" style="margin-top:16px"></div>
+          <div class="notice" id="noticeBox" style="margin-top:16px; display:none"></div>
 
-        <div class="summary-box">
-          <div>자재: 단일 기본 자재 / 투명 아크릴 3T</div>
-          <div id="printSideText">면수: 양면</div>
-          <div id="finishText">마감: 유광</div>
-          <div id="holeLabelText">고리 위치: 상단 중앙 / 드래그 미세 조정</div>
-          <div id="snapStatusRight">스냅 상태: 상단 중앙 가이드 맞춤</div>
-          <div>홀 기준: 내경 칼선 + 2.5mm 여백선</div>
-        </div>
-
-        <div class="action-grid">
-          <button class="primary">보관함 저장</button>
-          <button class="secondary">바로 주문 진행</button>
-        </div>
-      </aside>
-    </section>
+          <div class="actions" style="margin-top:16px">
+            <a class="actionBtn primary" href="/storage" style="text-decoration:none;text-align:center">서랍 저장</a>
+            <a class="actionBtn" href="/orders" style="text-decoration:none;text-align:center">주문으로</a>
+          </div>
+        </aside>
+      </div>
+    </div>
   </div>
 
   <script>
-    (function(){
-      const BOARD = { width: 208, height: 260 };
-      const HOLE_RADIUS = 9;
-      const CLEARANCE_MM = 2.5;
-      const MM_TO_PX = 6;
-      const CLEARANCE_RADIUS = HOLE_RADIUS + CLEARANCE_MM * MM_TO_PX;
-      const SNAP_DISTANCE = 18;
-      const FOCUS_LABEL = "현재 포커스: 고리 위치 조정";
+    const OUTER_OFFSET_MM = 2.5;
+    const MAX_HOLES = 5;
+    const BODY_RX = 43;
+    const BODY_RY = 56;
+    const SNAP_DISTANCE = 6;
 
-      const previewShell = document.getElementById("previewShell");
-      const ringClear = document.getElementById("ringClear");
-      const ringHole = document.getElementById("ringHole");
-      const ringCore = document.getElementById("ringCore");
-      const positionText = document.getElementById("positionText");
-      const focusPill = document.getElementById("focusPill");
-      const holeLabelText = document.getElementById("holeLabelText");
-      const quantityValue = document.getElementById("quantityValue");
-      const unitPrice = document.getElementById("unitPrice");
-      const totalPrice = document.getElementById("totalPrice");
-      const minusBtn = document.getElementById("minusBtn");
-      const plusBtn = document.getElementById("plusBtn");
-      const resetBtn = document.getElementById("resetBtn");
-      const sideButtons = Array.from(document.querySelectorAll("[data-side]"));
-      const finishButtons = Array.from(document.querySelectorAll("[data-finish]"));
-      const presetButtons = Array.from(document.querySelectorAll(".preset"));
-      const snapStatusTop = document.getElementById("snapStatusTop");
-      const snapStatusMeta = document.getElementById("snapStatusMeta");
-      const snapStatusRight = document.getElementById("snapStatusRight");
+    const MATERIAL_OPTIONS = ["투명 아크릴","유백 아크릴","반투명 아크릴"];
+    const THICKNESS_OPTIONS = ["3T","5T"];
+    const RING_OPTIONS = ["실버 링","골드 링","볼체인"];
+    const HOLE_SIZE_OPTIONS = [2,2.5,3];
 
-      let quantity = 10;
-      let side = "양면";
-      let finish = "유광";
-      let dragging = false;
-      let hole = { x: 104, y: 28 };
+    const SNAP_POINTS = [
+      { x: 0, y: -(BODY_RY - 4), label: "상단 중앙" },
+      { x: BODY_RX - 4, y: -6, label: "우측 상단" },
+      { x: -(BODY_RX - 4), y: -6, label: "좌측 상단" },
+      { x: 0, y: BODY_RY - 5, label: "하단 중앙" },
+    ];
 
-      const presets = [
-        { id: "top-center", label: "상단 중앙", x: 104, y: 28 },
-        { id: "top-left", label: "좌측 상단", x: 48, y: 34 },
-        { id: "top-right", label: "우측 상단", x: 160, y: 34 }
-      ];
+    const state = {
+      material: "투명 아크릴",
+      thickness: "3T",
+      ring: "실버 링",
+      quantity: 10,
+      holes: [],
+      selectedHoleId: null,
+      draggingId: null,
+      snapMessage: "구멍은 키링 안쪽으로 들어갈 수 없음",
+      notice: ""
+    };
 
-      function clamp(value, min, max){
-        return Math.min(Math.max(value, min), max);
+    function clamp(value, min, max){ return Math.min(max, Math.max(min, value)); }
+    function round1(v){ return Math.round((v + Number.EPSILON) * 10) / 10; }
+    function won(v){ return Number(v || 0).toLocaleString() + "원"; }
+
+    function getAngleAndDistance(x, y){
+      if(x === 0 && y === 0){ return { angle: -Math.PI / 2, distance: 0 }; }
+      return { angle: Math.atan2(y, x), distance: Math.hypot(x, y) };
+    }
+
+    function getBoundaryRadiusByAngle(angle){
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const denominator = Math.sqrt((cos*cos)/(BODY_RX*BODY_RX) + (sin*sin)/(BODY_RY*BODY_RY));
+      return denominator === 0 ? Math.min(BODY_RX, BODY_RY) : 1 / denominator;
+    }
+
+    function findNearestSnap(x, y){
+      let best = null;
+      for(const p of SNAP_POINTS){
+        const d = Math.hypot(p.x - x, p.y - y);
+        if(d <= SNAP_DISTANCE && (!best || d < best.distance)){
+          best = { ...p, distance:d };
+        }
       }
+      return best;
+    }
 
-      function clampHole(pos){
-        return {
-          x: clamp(pos.x, CLEARANCE_RADIUS + 8, BOARD.width - CLEARANCE_RADIUS - 8),
-          y: clamp(pos.y, CLEARANCE_RADIUS + 8, BOARD.height - CLEARANCE_RADIUS - 8)
-        };
+    function clampHoleToValidBand(rawX, rawY, sizeMm){
+      const snap = findNearestSnap(rawX, rawY);
+      const x = snap ? snap.x : rawX;
+      const y = snap ? snap.y : rawY;
+
+      const { angle, distance } = getAngleAndDistance(x, y);
+      const boundaryRadius = getBoundaryRadiusByAngle(angle);
+      const outerRadius = sizeMm / 2 + OUTER_OFFSET_MM;
+      const minDistance = Math.max(0, boundaryRadius - outerRadius);
+      const maxDistance = boundaryRadius + sizeMm / 2;
+      const clampedDistance = clamp(distance, minDistance, maxDistance);
+
+      return {
+        x: Math.cos(angle) * clampedDistance,
+        y: Math.sin(angle) * clampedDistance,
+        snapLabel: snap ? snap.label : "자유 배치"
+      };
+    }
+
+    function validateHole(hole){
+      const { angle, distance } = getAngleAndDistance(hole.x, hole.y);
+      const boundaryRadius = getBoundaryRadiusByAngle(angle);
+      const outerRadius = hole.sizeMm / 2 + OUTER_OFFSET_MM;
+      const minDistance = Math.max(0, boundaryRadius - outerRadius);
+      const maxDistance = boundaryRadius + hole.sizeMm / 2;
+      const overflow = Math.max(0, distance + outerRadius - boundaryRadius);
+      const valid = distance >= minDistance - 0.001 && distance <= maxDistance + 0.001;
+      return {
+        id: hole.id,
+        valid,
+        distance,
+        boundaryRadius,
+        outerRadius,
+        overflow,
+        snapLabel: (findNearestSnap(hole.x, hole.y) || {}).label || "자유 배치"
+      };
+    }
+
+    function estimateUnitPrice(){
+      let total = 3400;
+      if(state.thickness === "5T") total += 600;
+      if(state.ring === "골드 링") total += 150;
+      if(state.ring === "볼체인") total += 100;
+      total += Math.max(0, state.holes.length - 1) * 120;
+      return total;
+    }
+
+    function makeHole(sizeMm = 2.5, rawX = 0, rawY = -(BODY_RY - 2)){
+      const c = clampHoleToValidBand(rawX, rawY, sizeMm);
+      return {
+        id: "hole-" + (Date.now().toString(36) + Math.random().toString(36).slice(2,6)),
+        x: c.x,
+        y: c.y,
+        sizeMm
+      };
+    }
+
+    function getSelectedHole(){
+      return state.holes.find(h => h.id === state.selectedHoleId) || state.holes[0] || null;
+    }
+
+    function setNotice(msg){
+      state.notice = msg || "";
+      const box = document.getElementById("noticeBox");
+      if(!state.notice){
+        box.style.display = "none";
+        box.textContent = "";
+      } else {
+        box.style.display = "";
+        box.textContent = state.notice;
       }
+    }
 
-      function findSnapPreset(pos){
-        return presets.find((preset) => Math.hypot(preset.x - pos.x, preset.y - pos.y) <= SNAP_DISTANCE) || null;
-      }
-
-      function resolveHole(pos){
-        const clamped = clampHole(pos);
-        const snapPreset = findSnapPreset(clamped);
-        if(snapPreset){ return { x: snapPreset.x, y: snapPreset.y }; }
-        return clamped;
-      }
-
-      function nearestPreset(pos){
-        return presets.reduce((best, current) => {
-          const bestDistance = Math.hypot(best.x - pos.x, best.y - pos.y);
-          const currentDistance = Math.hypot(current.x - pos.x, current.y - pos.y);
-          return currentDistance < bestDistance ? current : best;
-        }, presets[0]);
-      }
-
-      function renderGuides(activePreset){
-        presets.forEach((preset) => {
-          const el = document.getElementById("guide_" + preset.id);
-          el.style.width = (CLEARANCE_RADIUS * 2) + "px";
-          el.style.height = (CLEARANCE_RADIUS * 2) + "px";
-          el.style.left = (preset.x - CLEARANCE_RADIUS) + "px";
-          el.style.top = (preset.y - CLEARANCE_RADIUS) + "px";
-          el.classList.toggle("active", !!activePreset && activePreset.id === preset.id);
-        });
-      }
-
-      function render(){
-        const snapPreset = findSnapPreset(hole);
-        const nearest = nearestPreset(hole);
-        const snapText = snapPreset ? (snapPreset.label + " 가이드 맞춤") : "자유 배치";
-
-        renderGuides(snapPreset);
-
-        ringClear.style.width = (CLEARANCE_RADIUS * 2) + "px";
-        ringClear.style.height = (CLEARANCE_RADIUS * 2) + "px";
-        ringClear.style.left = (hole.x - CLEARANCE_RADIUS) + "px";
-        ringClear.style.top = (hole.y - CLEARANCE_RADIUS) + "px";
-
-        ringHole.style.width = (HOLE_RADIUS * 2) + "px";
-        ringHole.style.height = (HOLE_RADIUS * 2) + "px";
-        ringHole.style.left = (hole.x - HOLE_RADIUS) + "px";
-        ringHole.style.top = (hole.y - HOLE_RADIUS) + "px";
-
-        ringCore.style.width = "6px";
-        ringCore.style.height = "6px";
-        ringCore.style.left = (hole.x - 3) + "px";
-        ringCore.style.top = (hole.y - 3) + "px";
-
-        positionText.textContent = "X " + Math.round(hole.x) + " / Y " + Math.round(hole.y);
-        focusPill.textContent = FOCUS_LABEL;
-        snapStatusTop.textContent = "스냅 상태: " + snapText;
-        snapStatusMeta.textContent = snapText;
-        snapStatusRight.textContent = "스냅 상태: " + snapText;
-        holeLabelText.textContent =
-          nearest.label === "상단 중앙"
-            ? "고리 위치: 상단 중앙 / 드래그 미세 조정"
-            : "고리 위치: " + nearest.label + " / 드래그 미세 조정";
-
-        presetButtons.forEach((button) => {
-          button.classList.toggle("active", button.textContent.trim() === nearest.label);
-        });
-
-        sideButtons.forEach((button) => button.classList.toggle("active", button.dataset.side === side));
-        finishButtons.forEach((button) => button.classList.toggle("active", button.dataset.finish === finish));
-
-        const currentUnit = side === "양면" ? 3400 : 2900;
-        const currentTotal = currentUnit * quantity;
-        unitPrice.textContent = currentUnit.toLocaleString("ko-KR") + "원";
-        totalPrice.textContent = currentTotal.toLocaleString("ko-KR") + "원";
-        quantityValue.textContent = String(quantity);
-        document.getElementById("printSideText").textContent = "면수: " + side;
-        document.getElementById("finishText").textContent = "마감: " + finish;
-      }
-
-      function moveFromClient(clientX, clientY){
-        const rect = previewShell.getBoundingClientRect();
-        hole = resolveHole({ x: clientX - rect.left, y: clientY - rect.top });
-        render();
-      }
-
-      previewShell.addEventListener("mousedown", function(event){
-        dragging = true;
-        moveFromClient(event.clientX, event.clientY);
+    function renderButtonGroup(elId, options, current, onClick){
+      const host = document.getElementById(elId);
+      host.innerHTML = options.map(option => {
+        const active = option === current ? " active" : "";
+        return '<button class="btn' + active + '" type="button" data-value="' + option + '">' + option + '</button>';
+      }).join("");
+      host.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => onClick(btn.getAttribute("data-value")));
       });
+    }
 
-      window.addEventListener("mousemove", function(event){
-        if(!dragging) return;
-        moveFromClient(event.clientX, event.clientY);
+    function renderPills(elId, options, current, onClick){
+      const host = document.getElementById(elId);
+      host.innerHTML = options.map(option => {
+        const active = String(option) === String(current) ? " active" : "";
+        return '<button class="pill' + active + '" type="button" data-value="' + option + '">' + option + '</button>';
+      }).join("");
+      host.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => onClick(btn.getAttribute("data-value")));
       });
+    }
 
-      window.addEventListener("mouseup", function(){
-        dragging = false;
-      });
+    function previewSvg(sideLabel, tint){
+      const holes = state.holes.map(hole => {
+        const report = validateHole(hole);
+        return `
+          <g>
+            <circle cx="${hole.x}" cy="${hole.y}" r="${report.outerRadius}" fill="none" stroke="${report.valid ? "rgba(250,204,21,0.95)" : "rgba(251,113,133,0.95)"}" stroke-width="0.9"></circle>
+            <circle cx="${hole.x}" cy="${hole.y}" r="${hole.sizeMm/2}" fill="rgba(2,6,23,0.96)" stroke="rgba(15,23,42,1)" stroke-width="1.1"></circle>
+          </g>
+        `;
+      }).join("");
 
-      presetButtons.forEach((button) => {
-        button.addEventListener("click", function(){
-          hole = resolveHole({ x: Number(button.dataset.x), y: Number(button.dataset.y) });
+      return `
+        <svg viewBox="-78 -88 156 176">
+          <defs>
+            <linearGradient id="g-${tint}" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="${tint === "front" ? "rgba(125,211,252,0.45)" : "rgba(203,213,225,0.28)"}"></stop>
+              <stop offset="100%" stop-color="rgba(15,23,42,0.95)"></stop>
+            </linearGradient>
+          </defs>
+          <ellipse cx="0" cy="0" rx="${BODY_RX + OUTER_OFFSET_MM}" ry="${BODY_RY + OUTER_OFFSET_MM}" fill="none" stroke="rgba(248,113,113,0.95)" stroke-width="0.9" stroke-dasharray="1.8 1.8"></ellipse>
+          <ellipse cx="0" cy="0" rx="${BODY_RX}" ry="${BODY_RY}" fill="url(#g-${tint})" stroke="rgba(255,255,255,0.78)" stroke-width="0.8"></ellipse>
+          <ellipse cx="0" cy="0" rx="${BODY_RX - 8}" ry="${BODY_RY - 10}" fill="${tint === "front" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}" stroke="${tint === "front" ? "rgba(255,255,255,0.16)" : "rgba(148,163,184,0.18)"}" stroke-width="0.5"></ellipse>
+          <text x="0" y="-4" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" letter-spacing="1.6">${sideLabel}</text>
+          <text x="0" y="12" text-anchor="middle" fill="#cbd5e1" font-size="5.8" letter-spacing="0.8">업로드 1개 기준 기본 양면 인쇄</text>
+          ${holes}
+        </svg>
+      `;
+    }
+
+    function renderStage(){
+      const snapHost = document.getElementById("snapPoints");
+      snapHost.innerHTML = SNAP_POINTS.map(p => `
+        <g>
+          <circle cx="${p.x}" cy="${p.y}" r="1.6" fill="rgba(125,211,252,0.8)"></circle>
+          <circle cx="${p.x}" cy="${p.y}" r="4.6" fill="none" stroke="rgba(125,211,252,0.18)" stroke-width="0.6" stroke-dasharray="1.4 1.4"></circle>
+        </g>
+      `).join("");
+
+      const selected = getSelectedHole();
+      document.getElementById("holesLayer").innerHTML = state.holes.map(hole => {
+        const report = validateHole(hole);
+        const selectedNow = selected && selected.id === hole.id;
+        return `
+          <g>
+            <circle cx="${hole.x}" cy="${hole.y}" r="${report.outerRadius}" fill="none" stroke="${report.valid ? "rgba(250,204,21,0.95)" : "rgba(251,113,133,0.95)"}" stroke-width="${selectedNow ? 1.2 : 0.9}"></circle>
+            <circle cx="${hole.x}" cy="${hole.y}" r="${hole.sizeMm/2}" fill="rgba(2,6,23,0.96)" stroke="rgba(15,23,42,1)" stroke-width="1.1"></circle>
+            <circle class="holeHandle" data-id="${hole.id}" cx="${hole.x}" cy="${hole.y}" r="7" fill="transparent" style="cursor:grab"></circle>
+          </g>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".holeHandle").forEach(node => {
+        node.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          const id = node.getAttribute("data-id");
+          state.draggingId = id;
+          state.selectedHoleId = id;
+          document.body.classList.add("dragging");
+          try{ window.getSelection().removeAllRanges(); }catch(e){}
           render();
         });
       });
+    }
 
-      resetBtn.addEventListener("click", function(){
-        hole = resolveHole({ x: 104, y: 28 });
-        render();
-      });
-
-      sideButtons.forEach((button) => {
-        button.addEventListener("click", function(){
-          side = button.dataset.side;
+    function renderHoleTabs(){
+      const host = document.getElementById("holeTabs");
+      const selected = getSelectedHole();
+      host.innerHTML = state.holes.map(hole => {
+        const active = selected && selected.id === hole.id ? " active" : "";
+        return '<button class="pill' + active + '" type="button" data-id="' + hole.id + '">#' + (state.holes.indexOf(hole)+1) + ' · ' + hole.sizeMm + 'mm</button>';
+      }).join("");
+      host.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.selectedHoleId = btn.getAttribute("data-id");
           render();
         });
       });
+    }
 
-      finishButtons.forEach((button) => {
-        button.addEventListener("click", function(){
-          finish = button.dataset.finish;
-          render();
-        });
-      });
+    function renderInfo(){
+      const selected = getSelectedHole();
+      const report = selected ? validateHole(selected) : null;
 
-      minusBtn.addEventListener("click", function(){
-        quantity = Math.max(1, quantity - 1);
+      document.getElementById("frontPreview").innerHTML = previewSvg("정면 완성 미리보기", "front");
+      document.getElementById("backPreview").innerHTML = previewSvg("배면 완성 미리보기", "back");
+      document.getElementById("snapMessage").textContent = "현재 안내: " + state.snapMessage;
+      document.getElementById("snapMessageCard").textContent = state.snapMessage;
+
+      renderButtonGroup("materialButtons", MATERIAL_OPTIONS, state.material, value => { state.material = value; render(); });
+      renderPills("thicknessButtons", THICKNESS_OPTIONS, state.thickness, value => { state.thickness = value; render(); });
+      renderButtonGroup("ringButtons", RING_OPTIONS, state.ring, value => { state.ring = value; render(); });
+      renderHoleTabs();
+      renderPills("sizeButtons", HOLE_SIZE_OPTIONS, selected ? selected.sizeMm : 2.5, value => {
+        const hole = getSelectedHole();
+        if(!hole) return;
+        const size = Number(value);
+        const next = clampHoleToValidBand(hole.x, hole.y, size);
+        hole.sizeMm = size;
+        hole.x = next.x;
+        hole.y = next.y;
+        state.snapMessage = next.snapLabel === "자유 배치" ? "구멍은 키링 안쪽으로 들어갈 수 없음" : "스냅 가이드: " + next.snapLabel;
         render();
       });
 
-      plusBtn.addEventListener("click", function(){
-        quantity = quantity + 1;
-        render();
-      });
+      renderStage();
 
-      hole = resolveHole(hole);
+      if(report){
+        document.getElementById("holeInfo").innerHTML =
+          '<div class="mini">현재 선택: #' + (state.holes.findIndex(h => h.id === selected.id)+1) + '</div>' +
+          '<div class="mini">경계 반경: ' + round1(report.boundaryRadius) + 'mm</div>' +
+          '<div class="mini">중심 거리: ' + round1(report.distance) + 'mm</div>' +
+          '<div class="mini">돌출량: ' + round1(report.overflow) + 'mm</div>';
+      } else {
+        document.getElementById("holeInfo").innerHTML = '<div class="mini">구멍 없음</div>';
+      }
+
+      const unit = estimateUnitPrice();
+      document.getElementById("unitPrice").textContent = won(unit);
+      document.getElementById("totalPrice").textContent = won(unit * state.quantity);
+      document.getElementById("qtyInput").value = String(state.quantity);
+
+      document.getElementById("summaryBox").innerHTML =
+        '<div class="mini">자재: ' + state.material + ' / ' + state.thickness + '</div>' +
+        '<div class="mini">링: ' + state.ring + '</div>' +
+        '<div class="mini">인쇄: 기본 양면 인쇄(업로드 1개)</div>' +
+        '<div class="mini">구멍 수: ' + state.holes.length + '개</div>';
+
+      setNotice(state.notice);
+    }
+
+    function render(){
+      renderInfo();
+    }
+
+    document.getElementById("addHoleBtn").addEventListener("click", () => {
+      if(state.holes.length >= MAX_HOLES){
+        state.notice = "구멍은 최대 5개까지만 추가할 수 있습니다.";
+        render();
+        return;
+      }
+      const selected = getSelectedHole();
+      const baseSize = selected ? selected.sizeMm : 2.5;
+      const idx = state.holes.length;
+      const rawX = idx % 2 === 0 ? 12 + idx * 3 : -(12 + idx * 3);
+      const next = makeHole(baseSize, rawX, -20);
+      state.holes.push(next);
+      state.selectedHoleId = next.id;
+      state.snapMessage = "새 구멍 추가 후 바로 드래그 가능";
+      state.notice = "";
       render();
-    })();
+    });
+
+    document.getElementById("resetHoleBtn").addEventListener("click", () => {
+      const hole = getSelectedHole();
+      if(!hole) return;
+      const next = clampHoleToValidBand(0, -(BODY_RY - 2), hole.sizeMm);
+      hole.x = next.x;
+      hole.y = next.y;
+      state.snapMessage = "위치 재설정";
+      state.notice = "";
+      render();
+    });
+
+    document.getElementById("removeHoleBtn").addEventListener("click", () => {
+      if(state.holes.length <= 1) return;
+      const selected = getSelectedHole();
+      if(!selected) return;
+      state.holes = state.holes.filter(h => h.id !== selected.id);
+      state.selectedHoleId = state.holes[0] ? state.holes[0].id : null;
+      state.snapMessage = "구멍 제거 완료";
+      state.notice = "";
+      render();
+    });
+
+    document.getElementById("qtyMinus").addEventListener("click", () => {
+      state.quantity = Math.max(1, state.quantity - 1);
+      render();
+    });
+    document.getElementById("qtyPlus").addEventListener("click", () => {
+      state.quantity += 1;
+      render();
+    });
+    document.getElementById("qtyInput").addEventListener("input", (e) => {
+      state.quantity = Math.max(1, Number(e.target.value) || 1);
+      render();
+    });
+
+    document.getElementById("stageSvg").addEventListener("pointermove", (event) => {
+      if(!state.draggingId) return;
+      event.preventDefault();
+      try{ window.getSelection().removeAllRanges(); }catch(e){}
+      const svg = document.getElementById("stageSvg");
+      const rect = svg.getBoundingClientRect();
+      const vb = svg.viewBox.baseVal;
+      const x = ((event.clientX - rect.left) / rect.width) * vb.width + vb.x;
+      const y = ((event.clientY - rect.top) / rect.height) * vb.height + vb.y;
+      const hole = state.holes.find(h => h.id === state.draggingId);
+      if(!hole) return;
+      const next = clampHoleToValidBand(x, y, hole.sizeMm);
+      hole.x = next.x;
+      hole.y = next.y;
+      state.snapMessage = next.snapLabel === "자유 배치" ? "구멍은 키링 안쪽으로 들어갈 수 없음" : "스냅 가이드: " + next.snapLabel;
+      state.notice = "";
+      render();
+    });
+
+    ["pointerup","pointerleave","pointercancel"].forEach(type => {
+      document.getElementById("stageSvg").addEventListener(type, () => {
+        state.draggingId = null;
+        document.body.classList.remove("dragging");
+      });
+    });
+    window.addEventListener("pointerup", () => {
+      state.draggingId = null;
+      document.body.classList.remove("dragging");
+    });
+
+    state.holes = [makeHole()];
+    state.selectedHoleId = state.holes[0].id;
+    render();
   </script>
 </body>
 </html>
