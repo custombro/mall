@@ -844,7 +844,24 @@ export default function Page() {
                   </div>
                 </div>
               </section>
-            </main>
+            
+{/* KEYRING_PRODUCTION_RULES_START */}
+<section className="rounded-2xl border border-black/10 bg-white/70 p-4 text-sm leading-6">
+  <div className="text-[11px] font-semibold tracking-[0.18em] text-black/45">생산 기준</div>
+  <div className="mt-2 text-sm font-semibold text-black">키링 자동 칼선 / 구멍 규칙</div>
+  <ul className="mt-2 space-y-1 text-black/70">
+    <li>본체·분리 파츠 최종 칼선은 바깥 2.5mm 오프셋 기준이다.</li>
+    <li>본체 칼선은 빨강 100% / 0.01mm / 채우기 없음이다.</li>
+    <li>구멍 선은 검정 / 0.01mm / 채우기 없음이다.</li>
+    <li>구멍 지름은 2 / 2.5 / 3mm, 기본 2.5mm, 최대 5개다.</li>
+    <li>구멍 외곽선은 본체 외곽선과 최소 1점 이상 접촉 또는 겹침이 필요하다.</li>
+    <li>구멍 외곽선이 안쪽으로 완전히 들어가면 제작 불가다.</li>
+    <li>바깥 돌출은 구멍 지름의 절반까지만 허용한다.</li>
+    <li>배경 제거·실루엣 추출 신뢰도가 낮으면 자동 접수를 막고 수정 요청으로 전환한다.</li>
+  </ul>
+</section>
+{/* KEYRING_PRODUCTION_RULES_END */}
+</main>
 
             <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
               <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
