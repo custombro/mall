@@ -599,15 +599,15 @@ state.holes = [makeHole()];
 state.selectedHoleId = state.holes[0].id;
 render();
 </script>
-<style data-cb-safe-v15="CB_SAFE_BASELINE_V15">
+<style data-cb-safe-v17="CB_SAFE_RESTORE_V17">
   html, body { overflow-x:hidden !important; }
   @media (min-width:1024px){
-    body .container,
-    body [class*="max-w-"],
-    body [class*="mx-auto"],
-    body main > div,
-    body main > section,
-    body main > article{
+    body > div[class*="min-h-screen"] > main > div[class*="mx-auto"],
+    body > div[class*="min-h-screen"] > main > section[class*="mx-auto"],
+    body > div[class*="min-h-screen"] > main > article[class*="mx-auto"],
+    main > div[class*="mx-auto"][class*="max-w-"],
+    main > section[class*="mx-auto"][class*="max-w-"],
+    main > article[class*="mx-auto"][class*="max-w-"]{
       max-width:calc(100vw - 12px) !important;
       width:calc(100vw - 12px) !important;
       margin-left:6px !important;
@@ -651,7 +651,7 @@ render();
   }
 </style>
 <a href="/" data-cb-home-chip="1"><span data-cb-home-dot="1">CB</span><span>CUSTOMBRO HOME</span></a>
-<div style="display:none">CB_SAFE_BASELINE_V15</div>
+<div style="display:none">CB_SAFE_RESTORE_V17</div>
 </body>
 </html>
 
