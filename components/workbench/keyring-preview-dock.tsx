@@ -2,19 +2,14 @@
 
 import { useEffect } from "react";
 
-const MARKER = "CB_KEYRING_PREVIEW_DOCK_V4";
+const MARKER = "CB_KEYRING_PREVIEW_DOCK_V5";
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim();
 }
 
-function findBlocks() {
-  return Array.from(document.querySelectorAll<HTMLElement>("div, section, article, aside"));
-}
-
-function isVisible(el: HTMLElement) {
-  const style = window.getComputedStyle(el);
-  return style.display !== "none" && style.visibility !== "hidden";
+function nodes(selector: string, root?: ParentNode) {
+  return Array.from((root ?? document).querySelectorAll<HTMLElement>(selector));
 }
 
 function areaOf(el: HTMLElement) {
@@ -22,17 +17,22 @@ function areaOf(el: HTMLElement) {
   return Math.max(0, rect.width * rect.height);
 }
 
-function pickPreviewPanel(blocks: HTMLElement[]) {
-  for (const el of blocks) {
+function isVisible(el: HTMLElement) {
+  const style = window.getComputedStyle(el);
+  return style.display !== "none" && style.visibility !== "hidden";
+}
+
+function pickPanel() {
+  const list = nodes("div, section, article, aside");
+
+  for (const el of list) {
     const text = normalizeText(el.textContent);
-    if (text.includes("미리보기 1칸 토글 확인") && (text.includes("뒷면 보기") || text.includes("앞면 보기"))) {
-      return el;
-    }
+    if (text.includes("미리보기 1칸 토글 확인")) return el;
   }
 
-  for (const el of blocks) {
+  for (const el of list) {
     const text = normalizeText(el.textContent);
-    if (text.includes("완성 미리보기") && text.includes("뒷면 보기")) {
+    if (text.includes("완성 미리보기") && (text.includes("뒷면 보기") || text.includes("앞면 보기"))) {
       return el;
     }
   }
@@ -40,10 +40,10 @@ function pickPreviewPanel(blocks: HTMLElement[]) {
   return null;
 }
 
-function pickPreviewBlock(blocks: HTMLElement[]) {
+function pickPreview(panel: HTMLElement) {
   const hits: HTMLElement[] = [];
 
-  for (const el of blocks) {
+  for (const el of nodes("div, section, article, aside", panel)) {
     const text = normalizeText(el.textContent);
     if (
       isVisible(el) &&
@@ -55,29 +55,61 @@ function pickPreviewBlock(blocks: HTMLElement[]) {
     }
   }
 
+  if (!hits.length) {
+    for (const el of nodes("div, section, article, aside")) {
+      const text = normalizeText(el.textContent);
+      if (
+        isVisible(el) &&
+        (text.includes("정면 완성 미리보기") ||
+          text.includes("업로드 1개 기준 기본 양면 인쇄") ||
+          text.includes("뒷면 기준으로"))
+      ) {
+        hits.push(el);
+      }
+    }
+  }
+
   hits.sort((a, b) => areaOf(b) - areaOf(a));
   return hits[0] ?? null;
 }
 
 function ensureHost(panel: HTMLElement) {
-  let host = panel.querySelector<HTMLElement>('[data-cb-preview-dock-host="1"]');
+  let host = panel.querySelector<HTMLElement>('[data-cb-mini-preview-host="1"]');
   if (!host) {
     host = document.createElement("div");
-    host.setAttribute("data-cb-preview-dock-host", "1");
+    host.setAttribute("data-cb-mini-preview-host", "1");
     host.style.position = "absolute";
-    host.style.top = "18px";
-    host.style.right = "18px";
-    host.style.width = "172px";
-    host.style.minWidth = "172px";
-    host.style.maxWidth = "172px";
-    host.style.zIndex = "60";
+    host.style.top = "16px";
+    host.style.right = "16px";
+    host.style.width = "176px";
+    host.style.minWidth = "176px";
+    host.style.maxWidth = "176px";
+    host.style.zIndex = "80";
+    host.style.borderRadius = "18px";
+    host.style.background = "rgba(8,15,30,.94)";
+    host.style.border = "1px solid rgba(125,211,252,.28)";
+    host.style.boxShadow = "0 16px 28px rgba(0,0,0,.34)";
+    host.style.overflow = "hidden";
+
+    const badge = document.createElement("div");
+    badge.setAttribute("data-cb-mini-preview-badge", "1");
+    badge.textContent = "소형 미리보기";
+    badge.style.display = "block";
+    badge.style.padding = "8px 10px";
+    badge.style.fontSize = "11px";
+    badge.style.fontWeight = "800";
+    badge.style.letterSpacing = ".08em";
+    badge.style.color = "#7dd3fc";
+    badge.style.borderBottom = "1px solid rgba(125,211,252,.16)";
+
+    host.appendChild(badge);
     panel.appendChild(host);
   }
   return host;
 }
 
 function shrinkInner(preview: HTMLElement) {
-  preview.querySelectorAll<HTMLElement>("svg, canvas, img").forEach((el) => {
+  nodes("svg, canvas, img", preview).forEach((el) => {
     el.style.width = "100%";
     el.style.height = "auto";
     el.style.maxWidth = "100%";
@@ -85,18 +117,18 @@ function shrinkInner(preview: HTMLElement) {
 }
 
 function dockPreview() {
-  const blocks = findBlocks();
-  const panel = pickPreviewPanel(blocks);
-  const preview = pickPreviewBlock(blocks);
+  const panel = pickPanel();
+  if (!panel) return;
 
-  if (!panel || !preview) return;
+  const preview = pickPreview(panel);
+  if (!preview) return;
 
   const sourceParent = preview.parentElement as HTMLElement | null;
 
   panel.style.position = "relative";
   panel.style.overflow = "visible";
-  panel.style.paddingRight = "220px";
-  panel.style.minHeight = "240px";
+  panel.style.paddingRight = "230px";
+  panel.style.minHeight = "250px";
 
   const host = ensureHost(panel);
 
@@ -105,15 +137,15 @@ function dockPreview() {
   }
 
   preview.dataset.cbPreviewDocked = "1";
-  preview.style.width = "172px";
-  preview.style.minWidth = "172px";
-  preview.style.maxWidth = "172px";
+  preview.style.width = "176px";
+  preview.style.minWidth = "176px";
+  preview.style.maxWidth = "176px";
   preview.style.margin = "0";
-  preview.style.transform = "scale(0.78)";
+  preview.style.transform = "scale(0.72)";
   preview.style.transformOrigin = "top right";
-  preview.style.boxShadow = "0 16px 28px rgba(0,0,0,.34)";
-  preview.style.borderRadius = "18px";
-  preview.style.background = "rgba(15,23,42,.96)";
+  preview.style.background = "transparent";
+  preview.style.boxShadow = "none";
+  preview.style.borderRadius = "0";
 
   shrinkInner(preview);
 
