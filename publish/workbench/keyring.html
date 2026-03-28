@@ -94,11 +94,6 @@ svg{display:block;width:100%;height:auto}
       </aside>
 
       <main class="stack">
-<section data-cb-live-marker="KEYRING_RULES_VISIBLE_20260329_01" style="margin:16px 0 20px; padding:18px; border:1px solid rgba(125,211,252,.32); border-radius:18px; background:linear-gradient(180deg, rgba(12,18,32,.96) 0%, rgba(17,24,39,.92) 100%); box-shadow:0 0 0 1px rgba(255,255,255,.04) inset;">
-  
-  
-  
-</section>
         <section class="card">
           <div class="row">
             <div>
@@ -604,52 +599,24 @@ state.holes = [makeHole()];
 state.selectedHoleId = state.holes[0].id;
 render();
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<style data-cb-wide-v14="CB_WIDE_V14">
+<style data-cb-safe-v15="CB_SAFE_BASELINE_V15">
   html, body { overflow-x:hidden !important; }
   @media (min-width:1024px){
     body .container,
     body [class*="max-w-"],
     body [class*="mx-auto"],
     body main > div,
-    body main > section{
-      max-width:calc(100vw - 16px) !important;
-      width:calc(100vw - 16px) !important;
-      margin-left:8px !important;
-      margin-right:8px !important;
+    body main > section,
+    body main > article{
+      max-width:calc(100vw - 12px) !important;
+      width:calc(100vw - 12px) !important;
+      margin-left:6px !important;
+      margin-right:6px !important;
     }
+  }
+  img, svg, canvas{
+    max-width:100% !important;
+    height:auto !important;
   }
   [data-cb-home-chip="1"]{
     position:fixed !important;
@@ -684,16 +651,8 @@ render();
   }
 </style>
 <a href="/" data-cb-home-chip="1"><span data-cb-home-dot="1">CB</span><span>CUSTOMBRO HOME</span></a>
-<div style="display:none">CB_WIDE_V14</div>
-
+<div style="display:none">CB_SAFE_BASELINE_V15</div>
 </body>
 </html>
-
-
-
-
-
-
-
 
 
