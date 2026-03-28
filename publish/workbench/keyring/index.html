@@ -633,24 +633,20 @@ render();
 
 
 
-<style data-cb-wide-v12="CB_SITE_WIDE_V12">
+
+
+
+
+<style data-cb-ruleless-v13="CB_RULELESS_WIDE_V13">
   html, body { overflow-x:hidden !important; }
   @media (min-width:1024px){
     body .container,
     body [class*="max-w-"],
-    body main,
-    body section,
-    body article{
-      max-width:calc(100vw - 24px) !important;
-    }
-    body .container,
-    body [class*="max-w-"][class*="mx-auto"],
-    body main [class*="mx-auto"],
-    body section [class*="mx-auto"],
-    body article [class*="mx-auto"]{
-      width:calc(100vw - 24px) !important;
-      margin-left:12px !important;
-      margin-right:12px !important;
+    body [class*="mx-auto"]{
+      max-width:calc(100vw - 20px) !important;
+      width:calc(100vw - 20px) !important;
+      margin-left:10px !important;
+      margin-right:10px !important;
     }
   }
   [data-cb-home-chip="1"]{
@@ -686,7 +682,8 @@ render();
   }
 </style>
 <a href="/" data-cb-home-chip="1"><span data-cb-home-dot="1">CB</span><span>CUSTOMBRO HOME</span></a>
-<div style="display:none">CB_SITE_WIDE_V12</div>
+<div style="display:none">CB_RULELESS_WIDE_V13</div>
+
 </body>
 </html>
 
