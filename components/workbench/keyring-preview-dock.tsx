@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const MARKER = "CB_KEYRING_SAFE_OVERLAYS_V9";
+const MARKER = "CB_KEYRING_LAYOUT_V10";
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim();
@@ -22,13 +22,17 @@ function areaOf(el: HTMLElement) {
   return Math.max(0, rect.width * rect.height);
 }
 
-function cleanupBrokenArtifacts() {
+function cleanupArtifacts() {
   document.querySelectorAll<HTMLElement>('[data-cb-hole-guide="1"]').forEach((el) => {
     if (!el.closest('[data-cb-hole-canvas="1"]')) el.remove();
   });
 
   document.querySelectorAll<HTMLElement>('[data-cb-hole-panel-host="1"]').forEach((el) => {
     if (!el.closest('[data-cb-hole-canvas="1"]')) el.remove();
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-cb-mini-preview-host="1"]').forEach((el) => {
+    if (!el.closest('[data-cb-center-work="1"]')) el.remove();
   });
 
   document.querySelectorAll<HTMLElement>('[data-cb-home-chip="1"]').forEach((el, idx) => {
@@ -82,23 +86,137 @@ function ensureHomeChip() {
   document.body.appendChild(link);
 }
 
-function pickCanvas() {
+function pickShell() {
   const hits: HTMLElement[] = [];
 
   for (const el of blocks()) {
     const text = normalizeText(el.textContent);
     if (!isVisible(el)) continue;
+    if (text.includes("키링 제작 / 기본 양면 인쇄") && text.includes("주문 카드")) {
+      hits.push(el);
+    }
+  }
+
+  hits.sort((a, b) => areaOf(b) - areaOf(a));
+  return hits[0] ?? null;
+}
+
+function pickProductionRule() {
+  const hits: HTMLElement[] = [];
+
+  for (const el of blocks()) {
+    const text = normalizeText(el.textContent);
+    if (!isVisible(el)) continue;
+    if (text.includes("키링 생산 규칙") && text.includes("오프셋 2.5mm")) {
+      hits.push(el);
+    }
+  }
+
+  hits.sort((a, b) => areaOf(b) - areaOf(a));
+  return hits[0] ?? null;
+}
+
+function pickCenterWork() {
+  const hits: HTMLElement[] = [];
+
+  for (const el of blocks()) {
+    const text = normalizeText(el.textContent);
+    if (!isVisible(el)) continue;
+    if (text.includes("미리보기 1칸 토글 확인")) {
+      hits.push(el);
+    }
+  }
+
+  hits.sort((a, b) => areaOf(b) - areaOf(a));
+  return hits[0] ?? null;
+}
+
+function pickCanvas(center: HTMLElement) {
+  const hits: HTMLElement[] = [];
+
+  for (const el of Array.from(center.querySelectorAll<HTMLElement>("div, section, article, aside"))) {
+    const text = normalizeText(el.textContent);
+    if (!isVisible(el)) continue;
 
     const a = areaOf(el);
-    if (a < 70000 || a > 700000) continue;
+    if (a < 90000 || a > 800000) continue;
 
-    if (text.includes("정면 완성 미리보기") || text.includes("업로드 1개 기준 기본 양면 인쇄")) {
+    if (
+      text.includes("정면 완성 미리보기") ||
+      text.includes("업로드 1개 기준 기본 양면 인쇄") ||
+      el.querySelector("svg, canvas, img")
+    ) {
       hits.push(el);
     }
   }
 
   hits.sort((a, b) => areaOf(a) - areaOf(b));
   return hits[0] ?? null;
+}
+
+function applyShell(shell: HTMLElement) {
+  shell.style.maxWidth = "none";
+  shell.style.width = "calc(100vw - 48px)";
+  shell.style.marginLeft = "24px";
+  shell.style.marginRight = "24px";
+}
+
+function ensureMiniPreview(center: HTMLElement, canvas: HTMLElement) {
+  center.setAttribute("data-cb-center-work", "1");
+  center.style.position = "relative";
+  center.style.overflow = "visible";
+  center.style.paddingRight = "188px";
+
+  let host = center.querySelector<HTMLElement>('[data-cb-mini-preview-host="1"]');
+  if (!host) {
+    host = document.createElement("div");
+    host.setAttribute("data-cb-mini-preview-host", "1");
+    host.style.position = "absolute";
+    host.style.top = "14px";
+    host.style.right = "14px";
+    host.style.width = "156px";
+    host.style.zIndex = "88";
+    host.style.borderRadius = "14px";
+    host.style.background = "rgba(8,15,30,.94)";
+    host.style.border = "1px solid rgba(125,211,252,.22)";
+    host.style.boxShadow = "0 14px 24px rgba(0,0,0,.32)";
+    host.style.overflow = "hidden";
+
+    const badge = document.createElement("div");
+    badge.setAttribute("data-cb-mini-preview-badge", "1");
+    badge.textContent = "미리보기";
+    badge.style.display = "block";
+    badge.style.padding = "7px 9px";
+    badge.style.fontSize = "10px";
+    badge.style.fontWeight = "800";
+    badge.style.letterSpacing = ".08em";
+    badge.style.color = "#7dd3fc";
+    badge.style.borderBottom = "1px solid rgba(125,211,252,.16)";
+
+    const frame = document.createElement("div");
+    frame.setAttribute("data-cb-mini-preview-frame", "1");
+    frame.style.overflow = "hidden";
+    frame.style.height = "128px";
+    frame.style.position = "relative";
+
+    host.appendChild(badge);
+    host.appendChild(frame);
+    center.appendChild(host);
+  }
+
+  const frame = host.querySelector<HTMLElement>('[data-cb-mini-preview-frame="1"]');
+  if (frame && !frame.querySelector('[data-cb-mini-preview-canvas="1"]')) {
+    const clone = canvas.cloneNode(true) as HTMLElement;
+    clone.setAttribute("data-cb-mini-preview-canvas", "1");
+    clone.querySelectorAll('[data-cb-hole-guide="1"],[data-cb-hole-panel-host="1"],[data-cb-mini-preview-host="1"]').forEach((n) => n.remove());
+    clone.style.transform = "scale(0.24)";
+    clone.style.transformOrigin = "top left";
+    clone.style.width = "640px";
+    clone.style.maxWidth = "none";
+    clone.style.margin = "0";
+    clone.style.pointerEvents = "none";
+    frame.appendChild(clone);
+  }
 }
 
 function ensureGuide(canvas: HTMLElement) {
@@ -134,9 +252,9 @@ function setPreset(canvas: HTMLElement, preset: "top-center" | "top-left" | "top
   });
 
   const map = {
-    "top-center": { top: "118px", left: "50%", label: "상단 중앙" },
-    "top-left": { top: "132px", left: "38%", label: "좌측 상단" },
-    "top-right": { top: "132px", left: "62%", label: "우측 상단" },
+    "top-center": { top: "112px", left: "50%", label: "상단 중앙" },
+    "top-left": { top: "126px", left: "38%", label: "좌측 상단" },
+    "top-right": { top: "126px", left: "62%", label: "우측 상단" },
   };
 
   const conf = map[preset];
@@ -151,7 +269,7 @@ function setPreset(canvas: HTMLElement, preset: "top-center" | "top-left" | "top
   if (status) status.textContent = `현재 프리셋: ${conf.label}`;
 }
 
-function ensurePanel(canvas: HTMLElement) {
+function ensureHolePanel(canvas: HTMLElement) {
   if (canvas.querySelector('[data-cb-hole-panel-host="1"]')) return;
 
   canvas.setAttribute("data-cb-hole-canvas", "1");
@@ -163,12 +281,12 @@ function ensurePanel(canvas: HTMLElement) {
   host.style.position = "absolute";
   host.style.right = "14px";
   host.style.bottom = "14px";
-  host.style.width = "188px";
+  host.style.width = "184px";
   host.style.zIndex = "87";
   host.style.borderRadius = "14px";
   host.style.background = "rgba(8,15,30,.94)";
   host.style.border = "1px solid rgba(125,211,252,.22)";
-  host.style.boxShadow = "0 16px 28px rgba(0,0,0,.34)";
+  host.style.boxShadow = "0 14px 24px rgba(0,0,0,.32)";
   host.style.overflow = "hidden";
   host.style.padding = "10px";
 
@@ -183,7 +301,7 @@ function ensurePanel(canvas: HTMLElement) {
 
   const help = document.createElement("div");
   help.setAttribute("data-cb-hole-help", "1");
-  help.textContent = "중앙 미리보기 안에서 바로 조정합니다. 우선 프리셋 3개로 시작하고 다음 단계에서 드래그 미세조정으로 확장합니다.";
+  help.textContent = "가운데 작업대에서 바로 조정합니다. 먼저 프리셋으로 잡고, 다음 단계에서 드래그 미세조정으로 확장합니다.";
   help.style.fontSize = "11px";
   help.style.lineHeight = "1.42";
   help.style.color = "#cbd5e1";
@@ -237,21 +355,33 @@ function ensurePanel(canvas: HTMLElement) {
   setPreset(canvas, "top-center");
 }
 
-function mountSafeOverlays() {
-  cleanupBrokenArtifacts();
+function mountLayout() {
+  cleanupArtifacts();
   ensureHomeChip();
-  const canvas = pickCanvas();
+
+  const shell = pickShell();
+  if (shell) applyShell(shell);
+
+  const rule = pickProductionRule();
+  if (rule) rule.style.display = "none";
+
+  const center = pickCenterWork();
+  if (!center) return;
+
+  const canvas = pickCanvas(center);
   if (!canvas) return;
-  ensurePanel(canvas);
+
+  ensureMiniPreview(center, canvas);
+  ensureHolePanel(canvas);
 }
 
 export function KeyringPreviewDock() {
   useEffect(() => {
-    mountSafeOverlays();
-    const t1 = window.setTimeout(mountSafeOverlays, 60);
-    const t2 = window.setTimeout(mountSafeOverlays, 300);
-    const t3 = window.setTimeout(mountSafeOverlays, 900);
-    const interval = window.setInterval(mountSafeOverlays, 1200);
+    mountLayout();
+    const t1 = window.setTimeout(mountLayout, 60);
+    const t2 = window.setTimeout(mountLayout, 300);
+    const t3 = window.setTimeout(mountLayout, 900);
+    const interval = window.setInterval(mountLayout, 1200);
 
     return () => {
       window.clearTimeout(t1);
