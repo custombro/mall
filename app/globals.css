@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   color-scheme: dark;
@@ -24,3 +24,24 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* CB_FULLWIDTH_V11_START */
+:root {
+  --cb-site-gutter: 16px;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  .container,
+  [class*="max-w-"][class*="mx-auto"],
+  main [class*="max-w-"],
+  section [class*="max-w-"] {
+    max-width: calc(100vw - (var(--cb-site-gutter) * 2)) !important;
+    width: calc(100vw - (var(--cb-site-gutter) * 2)) !important;
+  }
+}
+/* CB_FULLWIDTH_V11_END */
+
