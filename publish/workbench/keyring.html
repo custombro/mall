@@ -609,163 +609,17 @@ state.holes = [makeHole()];
 state.selectedHoleId = state.holes[0].id;
 render();
 </script>
-<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V3">
-  [data-cb-preview-docked="1"]{
-    position:absolute !important;
-    top:16px !important;
-    right:16px !important;
-    width:168px !important;
-    min-width:168px !important;
-    max-width:168px !important;
-    margin:0 !important;
-    z-index:40 !important;
-    transform:scale(.82) !important;
-    transform-origin:top right !important;
-    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
-    border-radius:18px !important;
-    background:rgba(15,23,42,.96) !important;
-  }
-</style>
-<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V3">
-(function(){
-  function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
-  function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
-  function findPreview(list){
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("PREVIEW") && (t.includes("작업 요약") || t.includes("양면") || t.includes("현재 포커스"))) return el;
-    }
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("PREVIEW")) return el;
-    }
-    return null;
-  }
-  function findWorkbench(list){
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("작업테이블") && t.includes("앞면") && t.includes("뒷면")) return el;
-    }
-    return null;
-  }
-  function run(){
-    const list = blocks();
-    const preview = findPreview(list);
-    const work = findWorkbench(list);
-    if(!preview || !work) return;
-    if(preview.getAttribute("data-cb-preview-docked")==="1") return;
-    if(getComputedStyle(work).position === "static") work.style.position = "relative";
-    work.style.overflow = "visible";
-    if(preview.parentElement !== work) work.appendChild(preview);
-    preview.setAttribute("data-cb-preview-docked","1");
-  }
-  document.addEventListener("DOMContentLoaded", run);
-  setTimeout(run, 50);
-  setTimeout(run, 300);
-  setTimeout(run, 900);
-  setInterval(run, 1200);
-})();
-</script>
-<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V3</div>
-<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V4">
-  [data-cb-preview-dock-host="1"]{
-    position:absolute !important;
-    top:18px !important;
-    right:18px !important;
-    width:172px !important;
-    min-width:172px !important;
-    max-width:172px !important;
-    z-index:60 !important;
-    pointer-events:auto !important;
-  }
-  [data-cb-preview-docked="1"]{
-    width:172px !important;
-    min-width:172px !important;
-    max-width:172px !important;
-    margin:0 !important;
-    transform:scale(.78) !important;
-    transform-origin:top right !important;
-    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
-    border-radius:18px !important;
-    background:rgba(15,23,42,.96) !important;
-  }
-</style>
-<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V4">
-(function(){
-  function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
-  function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
-  function visible(el){ const s=getComputedStyle(el); return s.display!=="none" && s.visibility!=="hidden"; }
-  function area(el){ const r=el.getBoundingClientRect(); return Math.max(0,r.width*r.height); }
-  function pickPanel(list){
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("미리보기 1칸 토글 확인") && (t.includes("뒷면 보기") || t.includes("앞면 보기"))) return el;
-    }
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("완성 미리보기") && t.includes("뒷면 보기")) return el;
-    }
-    return null;
-  }
-  function pickPreview(list){
-    const hits = [];
-    for(const el of list){
-      const t = norm(el.textContent);
-      if((t.includes("정면 완성 미리보기") || t.includes("업로드 1개 기준 기본 양면 인쇄") || t.includes("뒷면 기준으로")) && visible(el)){
-        hits.push(el);
-      }
-    }
-    if(!hits.length) return null;
-    hits.sort(function(a,b){ return area(b)-area(a); });
-    return hits[0];
-  }
-  function ensureHost(panel){
-    let host = panel.querySelector('[data-cb-preview-dock-host="1"]');
-    if(!host){
-      host = document.createElement("div");
-      host.setAttribute("data-cb-preview-dock-host","1");
-      panel.appendChild(host);
-    }
-    return host;
-  }
-  function shrinkInner(preview){
-    Array.prototype.slice.call(preview.querySelectorAll("svg,canvas,img")).forEach(function(el){
-      el.style.width = "100%";
-      el.style.height = "auto";
-      el.style.maxWidth = "100%";
-    });
-  }
-  function run(){
-    const list = blocks();
-    const panel = pickPanel(list);
-    const preview = pickPreview(list);
-    if(!panel || !preview) return;
-    const srcParent = preview.parentElement;
-    panel.style.position = "relative";
-    panel.style.overflow = "visible";
-    panel.style.paddingRight = "220px";
-    panel.style.minHeight = "240px";
-    const host = ensureHost(panel);
-    if(preview.parentElement !== host){ host.appendChild(preview); }
-    preview.setAttribute("data-cb-preview-docked","1");
-    shrinkInner(preview);
-    if(srcParent && srcParent !== host && srcParent !== panel){
-      const txt = norm(srcParent.textContent);
-      if(txt.includes("정면 완성 미리보기") || txt.includes("업로드 1개 기준 기본 양면 인쇄") || txt.includes("뒷면 기준으로")){
-        srcParent.style.display = "none";
-      }
-    }
-  }
-  document.addEventListener("DOMContentLoaded", run);
-  setTimeout(run, 50);
-  setTimeout(run, 300);
-  setTimeout(run, 900);
-  setInterval(run, 1200);
-})();
-</script>
-<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V4</div>
-<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V5">
-  [data-cb-mini-preview-host="1"]{
+
+
+
+
+
+
+
+
+
+<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V7">
+  [data-cb-preview-floated="1"]{
     position:absolute !important;
     top:16px !important;
     right:16px !important;
@@ -773,129 +627,61 @@ render();
     min-width:176px !important;
     max-width:176px !important;
     z-index:80 !important;
-    border-radius:18px !important;
-    background:rgba(8,15,30,.94) !important;
-    border:1px solid rgba(125,211,252,.28) !important;
-    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
-    overflow:hidden !important;
-  }
-  [data-cb-mini-preview-badge="1"]{
-    display:block !important;
-    padding:8px 10px !important;
-    font-size:11px !important;
-    font-weight:800 !important;
-    letter-spacing:.08em !important;
-    color:#7dd3fc !important;
-    border-bottom:1px solid rgba(125,211,252,.16) !important;
-  }
-  [data-cb-preview-docked="1"]{
-    width:176px !important;
-    min-width:176px !important;
-    max-width:176px !important;
-    margin:0 !important;
     transform:scale(.72) !important;
     transform-origin:top right !important;
-    background:transparent !important;
-    box-shadow:none !important;
-    border-radius:0 !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
+    background:rgba(8,15,30,.96) !important;
+    border:1px solid rgba(125,211,252,.22) !important;
+    margin:0 !important;
+  }
+  [data-cb-preview-floated="1"] svg,
+  [data-cb-preview-floated="1"] canvas,
+  [data-cb-preview-floated="1"] img{
+    width:100% !important;
+    height:auto !important;
+    max-width:100% !important;
   }
 </style>
-<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V5">
+<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V7">
 (function(){
   function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
-  function nodes(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
-  function area(el){ const r = el.getBoundingClientRect(); return Math.max(0, r.width*r.height); }
+  function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
   function visible(el){ const s=getComputedStyle(el); return s.display!=="none" && s.visibility!=="hidden"; }
-
-  function pickPanel(){
-    const list = nodes("div,section,article,aside");
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("미리보기 1칸 토글 확인")) return el;
-    }
-    for(const el of list){
-      const t = norm(el.textContent);
-      if(t.includes("완성 미리보기") && (t.includes("뒷면 보기") || t.includes("앞면 보기"))) return el;
-    }
-    return null;
-  }
-
-  function pickPreview(panel){
-    const local = nodes("div,section,article,aside", panel);
+  function area(el){ const r=el.getBoundingClientRect(); return Math.max(0,r.width*r.height); }
+  function pickPreviewCard(){
     const hits = [];
-    for(const el of local){
+    for(const el of blocks()){
       const t = norm(el.textContent);
-      if(visible(el) && (t.includes("정면 완성 미리보기") || t.includes("업로드 1개 기준 기본 양면 인쇄") || t.includes("뒷면 기준으로"))){
+      if(!visible(el)) continue;
+      if(
+        t.includes("미리보기 1칸 토글 확인") ||
+        t.includes("정면 완성 미리보기") ||
+        (t.includes("완성 미리보기") && (t.includes("앞면 보기") || t.includes("뒷면 보기")))
+      ){
         hits.push(el);
       }
     }
-    if(!hits.length){
-      const global = nodes("div,section,article,aside");
-      for(const el of global){
-        const t = norm(el.textContent);
-        if(visible(el) && (t.includes("정면 완성 미리보기") || t.includes("업로드 1개 기준 기본 양면 인쇄") || t.includes("뒷면 기준으로"))){
-          hits.push(el);
-        }
-      }
-    }
     if(!hits.length) return null;
-    hits.sort(function(a,b){ return area(b)-area(a); });
+    hits.sort(function(a,b){ return area(a)-area(b); });
+    for(const el of hits){
+      if(area(el) > 12000) return el;
+    }
     return hits[0];
   }
-
-  function ensureHost(panel){
-    let host = panel.querySelector('[data-cb-mini-preview-host="1"]');
-    if(!host){
-      host = document.createElement("div");
-      host.setAttribute("data-cb-mini-preview-host","1");
-      const badge = document.createElement("div");
-      badge.setAttribute("data-cb-mini-preview-badge","1");
-      badge.textContent = "소형 미리보기";
-      host.appendChild(badge);
-      panel.appendChild(host);
-    }
-    return host;
-  }
-
-  function shrinkInner(preview){
-    nodes("svg,canvas,img", preview).forEach(function(el){
-      el.style.width = "100%";
-      el.style.height = "auto";
-      el.style.maxWidth = "100%";
-    });
-  }
-
   function run(){
-    const panel = pickPanel();
-    if(!panel) return;
-
-    const preview = pickPreview(panel);
-    if(!preview) return;
-
-    const sourceParent = preview.parentElement;
-    panel.style.position = "relative";
-    panel.style.overflow = "visible";
-    panel.style.paddingRight = "230px";
-    panel.style.minHeight = "250px";
-
-    const host = ensureHost(panel);
-    if(preview.parentElement !== host){ host.appendChild(preview); }
-
-    preview.setAttribute("data-cb-preview-docked","1");
-    preview.style.position = "relative";
-    preview.style.top = "0";
-    preview.style.right = "0";
-
-    shrinkInner(preview);
-
-    if(sourceParent && sourceParent !== host && sourceParent !== panel){
-      const txt = norm(sourceParent.textContent);
-      if(txt.includes("정면 완성 미리보기") || txt.includes("업로드 1개 기준 기본 양면 인쇄") || txt.includes("뒷면 기준으로")){
-        sourceParent.style.display = "none";
-      }
-    }
+    const card = pickPreviewCard();
+    if(!card) return;
+    if(card.getAttribute("data-cb-preview-floated")==="1") return;
+    const parent = card.parentElement;
+    if(!parent) return;
+    if(getComputedStyle(parent).position === "static"){ parent.style.position = "relative"; }
+    parent.style.overflow = "visible";
+    parent.style.paddingRight = "220px";
+    parent.style.minHeight = "220px";
+    card.setAttribute("data-cb-preview-floated","1");
   }
-
   document.addEventListener("DOMContentLoaded", run);
   setTimeout(run, 50);
   setTimeout(run, 300);
@@ -903,9 +689,10 @@ render();
   setInterval(run, 1200);
 })();
 </script>
-<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V5</div>
+<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V7</div>
 </body>
 </html>
+
 
 
 
