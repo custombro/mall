@@ -618,39 +618,83 @@ render();
 
 
 
-<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V7">
-  [data-cb-preview-floated="1"]{
+
+
+
+<style data-cb-hole-panel="CB_KEYRING_HOLE_PANEL_V8">
+  [data-cb-hole-panel-host="1"]{
     position:absolute !important;
-    top:16px !important;
-    right:16px !important;
-    width:176px !important;
-    min-width:176px !important;
-    max-width:176px !important;
-    z-index:80 !important;
-    transform:scale(.72) !important;
-    transform-origin:top right !important;
-    border-radius:18px !important;
-    overflow:hidden !important;
-    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
-    background:rgba(8,15,30,.96) !important;
+    right:18px !important;
+    bottom:18px !important;
+    width:196px !important;
+    z-index:85 !important;
+    border-radius:16px !important;
+    background:rgba(8,15,30,.94) !important;
     border:1px solid rgba(125,211,252,.22) !important;
-    margin:0 !important;
+    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
+    overflow:hidden !important;
+    padding:12px !important;
   }
-  [data-cb-preview-floated="1"] svg,
-  [data-cb-preview-floated="1"] canvas,
-  [data-cb-preview-floated="1"] img{
-    width:100% !important;
-    height:auto !important;
-    max-width:100% !important;
+  [data-cb-hole-title="1"]{
+    font-size:12px !important;
+    font-weight:800 !important;
+    letter-spacing:.08em !important;
+    color:#7dd3fc !important;
+    margin-bottom:8px !important;
+  }
+  [data-cb-hole-help="1"]{
+    font-size:11px !important;
+    line-height:1.45 !important;
+    color:#cbd5e1 !important;
+    margin-bottom:10px !important;
+  }
+  [data-cb-hole-buttons="1"]{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    margin-bottom:8px !important;
+  }
+  [data-cb-hole-btn="1"]{
+    appearance:none !important;
+    border:1px solid rgba(125,211,252,.18) !important;
+    background:rgba(255,255,255,.04) !important;
+    color:#e2e8f0 !important;
+    border-radius:10px !important;
+    padding:8px 10px !important;
+    font-size:12px !important;
+    font-weight:700 !important;
+    text-align:left !important;
+    cursor:pointer !important;
+  }
+  [data-cb-hole-btn="1"][data-active="1"]{
+    background:rgba(125,211,252,.14) !important;
+    border-color:rgba(125,211,252,.34) !important;
+    color:#7dd3fc !important;
+  }
+  [data-cb-hole-status="1"]{
+    font-size:11px !important;
+    color:#94a3b8 !important;
+  }
+  [data-cb-hole-guide="1"]{
+    position:absolute !important;
+    width:18px !important;
+    height:18px !important;
+    border-radius:999px !important;
+    border:3px solid #facc15 !important;
+    background:rgba(15,23,42,.96) !important;
+    box-shadow:0 0 0 2px rgba(255,255,255,.16) !important;
+    z-index:84 !important;
+    pointer-events:none !important;
   }
 </style>
-<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V7">
+<script data-cb-hole-panel="CB_KEYRING_HOLE_PANEL_V8">
 (function(){
   function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
   function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
   function visible(el){ const s=getComputedStyle(el); return s.display!=="none" && s.visibility!=="hidden"; }
   function area(el){ const r=el.getBoundingClientRect(); return Math.max(0,r.width*r.height); }
-  function pickPreviewCard(){
+
+  function pickPreviewPanel(){
     const hits = [];
     for(const el of blocks()){
       const t = norm(el.textContent);
@@ -664,24 +708,97 @@ render();
       }
     }
     if(!hits.length) return null;
-    hits.sort(function(a,b){ return area(a)-area(b); });
-    for(const el of hits){
-      if(area(el) > 12000) return el;
-    }
+    hits.sort(function(a,b){ return area(b)-area(a); });
     return hits[0];
   }
-  function run(){
-    const card = pickPreviewCard();
-    if(!card) return;
-    if(card.getAttribute("data-cb-preview-floated")==="1") return;
-    const parent = card.parentElement;
-    if(!parent) return;
-    if(getComputedStyle(parent).position === "static"){ parent.style.position = "relative"; }
-    parent.style.overflow = "visible";
-    parent.style.paddingRight = "220px";
-    parent.style.minHeight = "220px";
-    card.setAttribute("data-cb-preview-floated","1");
+
+  function ensureGuide(panel){
+    let guide = panel.querySelector('[data-cb-hole-guide="1"]');
+    if(!guide){
+      guide = document.createElement("div");
+      guide.setAttribute("data-cb-hole-guide","1");
+      panel.appendChild(guide);
+    }
+    return guide;
   }
+
+  function setPreset(panel, preset){
+    const guide = ensureGuide(panel);
+    const status = panel.querySelector('[data-cb-hole-status="1"]');
+    const btns = panel.querySelectorAll('[data-cb-hole-btn="1"]');
+
+    btns.forEach(function(btn){
+      btn.setAttribute("data-active", btn.getAttribute("data-hole-preset") === preset ? "1" : "0");
+    });
+
+    const map = {
+      "top-center": { top: "92px", left: "50%", label: "상단 중앙" },
+      "top-left":   { top: "102px", left: "35%", label: "좌측 상단" },
+      "top-right":  { top: "102px", left: "65%", label: "우측 상단" }
+    };
+    const conf = map[preset] || map["top-center"];
+
+    panel.style.position = "relative";
+    guide.style.top = conf.top;
+    guide.style.left = conf.left;
+    guide.style.transform = "translate(-50%, -50%)";
+
+    if(status){ status.textContent = "현재 프리셋: " + conf.label; }
+  }
+
+  function ensurePanel(panel){
+    if(panel.querySelector('[data-cb-hole-panel-host="1"]')) return;
+
+    panel.style.position = "relative";
+    panel.style.overflow = "visible";
+
+    const host = document.createElement("div");
+    host.setAttribute("data-cb-hole-panel-host","1");
+
+    const title = document.createElement("div");
+    title.setAttribute("data-cb-hole-title","1");
+    title.textContent = "구멍 위치 조정";
+
+    const help = document.createElement("div");
+    help.setAttribute("data-cb-hole-help","1");
+    help.textContent = "중앙 작업대에서 바로 위치를 잡는 흐름이 맞습니다. 먼저 프리셋으로 시작하고, 다음 단계에서 드래그 미세조정으로 확장합니다.";
+
+    const buttons = document.createElement("div");
+    buttons.setAttribute("data-cb-hole-buttons","1");
+
+    [
+      { preset: "top-center", label: "상단 중앙" },
+      { preset: "top-left", label: "좌측 상단" },
+      { preset: "top-right", label: "우측 상단" }
+    ].forEach(function(item){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("data-cb-hole-btn","1");
+      btn.setAttribute("data-hole-preset", item.preset);
+      btn.textContent = item.label;
+      btn.addEventListener("click", function(){ setPreset(panel, item.preset); });
+      buttons.appendChild(btn);
+    });
+
+    const status = document.createElement("div");
+    status.setAttribute("data-cb-hole-status","1");
+    status.textContent = "현재 프리셋: 상단 중앙";
+
+    host.appendChild(title);
+    host.appendChild(help);
+    host.appendChild(buttons);
+    host.appendChild(status);
+    panel.appendChild(host);
+
+    setPreset(panel, "top-center");
+  }
+
+  function run(){
+    const panel = pickPreviewPanel();
+    if(!panel) return;
+    ensurePanel(panel);
+  }
+
   document.addEventListener("DOMContentLoaded", run);
   setTimeout(run, 50);
   setTimeout(run, 300);
@@ -689,9 +806,10 @@ render();
   setInterval(run, 1200);
 })();
 </script>
-<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V7</div>
+<div style="display:none">CB_KEYRING_HOLE_PANEL_V8</div>
 </body>
 </html>
+
 
 
 
