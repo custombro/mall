@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const MARKER = "CB_KEYRING_PREVIEW_DOCK_V5";
+const MARKER = "CB_KEYRING_PREVIEW_DOCK_V6";
 
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim();
@@ -12,14 +12,14 @@ function nodes(selector: string, root?: ParentNode) {
   return Array.from((root ?? document).querySelectorAll<HTMLElement>(selector));
 }
 
-function areaOf(el: HTMLElement) {
-  const rect = el.getBoundingClientRect();
-  return Math.max(0, rect.width * rect.height);
-}
-
 function isVisible(el: HTMLElement) {
   const style = window.getComputedStyle(el);
   return style.display !== "none" && style.visibility !== "hidden";
+}
+
+function areaOf(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  return Math.max(0, rect.width * rect.height);
 }
 
 function pickPanel() {
@@ -40,32 +40,16 @@ function pickPanel() {
   return null;
 }
 
-function pickPreview(panel: HTMLElement) {
+function pickLargePreview() {
   const hits: HTMLElement[] = [];
 
-  for (const el of nodes("div, section, article, aside", panel)) {
+  for (const el of nodes("div, section, article, aside")) {
     const text = normalizeText(el.textContent);
     if (
       isVisible(el) &&
-      (text.includes("정면 완성 미리보기") ||
-        text.includes("업로드 1개 기준 기본 양면 인쇄") ||
-        text.includes("뒷면 기준으로"))
+      (text.includes("정면 완성 미리보기") || text.includes("업로드 1개 기준 기본 양면 인쇄"))
     ) {
       hits.push(el);
-    }
-  }
-
-  if (!hits.length) {
-    for (const el of nodes("div, section, article, aside")) {
-      const text = normalizeText(el.textContent);
-      if (
-        isVisible(el) &&
-        (text.includes("정면 완성 미리보기") ||
-          text.includes("업로드 1개 기준 기본 양면 인쇄") ||
-          text.includes("뒷면 기준으로"))
-      ) {
-        hits.push(el);
-      }
     }
   }
 
@@ -81,22 +65,22 @@ function ensureHost(panel: HTMLElement) {
     host.style.position = "absolute";
     host.style.top = "16px";
     host.style.right = "16px";
-    host.style.width = "176px";
-    host.style.minWidth = "176px";
-    host.style.maxWidth = "176px";
-    host.style.zIndex = "80";
+    host.style.width = "164px";
+    host.style.minWidth = "164px";
+    host.style.maxWidth = "164px";
+    host.style.zIndex = "90";
     host.style.borderRadius = "18px";
-    host.style.background = "rgba(8,15,30,.94)";
-    host.style.border = "1px solid rgba(125,211,252,.28)";
-    host.style.boxShadow = "0 16px 28px rgba(0,0,0,.34)";
+    host.style.background = "rgba(8,15,30,.96)";
+    host.style.border = "1px solid rgba(125,211,252,.24)";
+    host.style.boxShadow = "0 16px 30px rgba(0,0,0,.34)";
     host.style.overflow = "hidden";
 
     const badge = document.createElement("div");
     badge.setAttribute("data-cb-mini-preview-badge", "1");
     badge.textContent = "소형 미리보기";
     badge.style.display = "block";
-    badge.style.padding = "8px 10px";
-    badge.style.fontSize = "11px";
+    badge.style.padding = "7px 10px";
+    badge.style.fontSize = "10px";
     badge.style.fontWeight = "800";
     badge.style.letterSpacing = ".08em";
     badge.style.color = "#7dd3fc";
@@ -108,66 +92,61 @@ function ensureHost(panel: HTMLElement) {
   return host;
 }
 
-function shrinkInner(preview: HTMLElement) {
-  nodes("svg, canvas, img", preview).forEach((el) => {
+function shrinkInner(root: HTMLElement) {
+  nodes("svg, canvas, img", root).forEach((el) => {
     el.style.width = "100%";
     el.style.height = "auto";
     el.style.maxWidth = "100%";
   });
 }
 
-function dockPreview() {
+function clonePreview() {
   const panel = pickPanel();
-  if (!panel) return;
+  const original = pickLargePreview();
 
-  const preview = pickPreview(panel);
-  if (!preview) return;
-
-  const sourceParent = preview.parentElement as HTMLElement | null;
+  if (!panel || !original) return;
 
   panel.style.position = "relative";
   panel.style.overflow = "visible";
-  panel.style.paddingRight = "230px";
-  panel.style.minHeight = "250px";
+  panel.style.paddingRight = "220px";
+  panel.style.minHeight = "240px";
 
   const host = ensureHost(panel);
+  if (host.querySelector('[data-cb-mini-preview-clone="1"]')) return;
 
-  if (preview.parentElement !== host) {
-    host.appendChild(preview);
-  }
+  const clone = original.cloneNode(true) as HTMLElement;
+  clone.setAttribute("data-cb-mini-preview-clone", "1");
+  clone.style.width = "164px";
+  clone.style.minWidth = "164px";
+  clone.style.maxWidth = "164px";
+  clone.style.margin = "0";
+  clone.style.transform = "scale(0.64)";
+  clone.style.transformOrigin = "top right";
+  clone.style.background = "transparent";
+  clone.style.boxShadow = "none";
+  clone.style.borderRadius = "0";
 
-  preview.dataset.cbPreviewDocked = "1";
-  preview.style.width = "176px";
-  preview.style.minWidth = "176px";
-  preview.style.maxWidth = "176px";
-  preview.style.margin = "0";
-  preview.style.transform = "scale(0.72)";
-  preview.style.transformOrigin = "top right";
-  preview.style.background = "transparent";
-  preview.style.boxShadow = "none";
-  preview.style.borderRadius = "0";
+  host.appendChild(clone);
+  shrinkInner(clone);
 
-  shrinkInner(preview);
+  original.style.display = "none";
 
-  if (sourceParent && sourceParent !== host && sourceParent !== panel) {
-    const parentText = normalizeText(sourceParent.textContent);
-    if (
-      parentText.includes("정면 완성 미리보기") ||
-      parentText.includes("업로드 1개 기준 기본 양면 인쇄") ||
-      parentText.includes("뒷면 기준으로")
-    ) {
-      sourceParent.style.display = "none";
+  const parent = original.parentElement as HTMLElement | null;
+  if (parent && parent !== panel) {
+    const parentText = normalizeText(parent.textContent);
+    if (parentText.includes("정면 완성 미리보기") || parentText.includes("업로드 1개 기준 기본 양면 인쇄")) {
+      parent.style.display = "none";
     }
   }
 }
 
 export function KeyringPreviewDock() {
   useEffect(() => {
-    dockPreview();
-    const t1 = window.setTimeout(dockPreview, 60);
-    const t2 = window.setTimeout(dockPreview, 300);
-    const t3 = window.setTimeout(dockPreview, 900);
-    const interval = window.setInterval(dockPreview, 1200);
+    clonePreview();
+    const t1 = window.setTimeout(clonePreview, 60);
+    const t2 = window.setTimeout(clonePreview, 300);
+    const t3 = window.setTimeout(clonePreview, 900);
+    const interval = window.setInterval(clonePreview, 1200);
 
     return () => {
       window.clearTimeout(t1);

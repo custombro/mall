@@ -904,8 +904,137 @@ render();
 })();
 </script>
 <div style="display:none">CB_KEYRING_PREVIEW_DOCK_V5</div>
+<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V6">
+  [data-cb-mini-preview-host="1"]{
+    position:absolute !important;
+    top:16px !important;
+    right:16px !important;
+    width:164px !important;
+    min-width:164px !important;
+    max-width:164px !important;
+    z-index:90 !important;
+    border-radius:18px !important;
+    background:rgba(8,15,30,.96) !important;
+    border:1px solid rgba(125,211,252,.24) !important;
+    box-shadow:0 16px 30px rgba(0,0,0,.34) !important;
+    overflow:hidden !important;
+  }
+  [data-cb-mini-preview-badge="1"]{
+    display:block !important;
+    padding:7px 10px !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.08em !important;
+    color:#7dd3fc !important;
+    border-bottom:1px solid rgba(125,211,252,.16) !important;
+  }
+  [data-cb-mini-preview-clone="1"]{
+    width:164px !important;
+    min-width:164px !important;
+    max-width:164px !important;
+    margin:0 !important;
+    transform:scale(.64) !important;
+    transform-origin:top right !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    border-radius:0 !important;
+  }
+</style>
+<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V6">
+(function(){
+  function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
+  function nodes(sel, root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
+  function visible(el){ const s=getComputedStyle(el); return s.display!=="none" && s.visibility!=="hidden"; }
+  function area(el){ const r=el.getBoundingClientRect(); return Math.max(0, r.width*r.height); }
+
+  function pickPanel(){
+    const list = nodes("div,section,article,aside");
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("미리보기 1칸 토글 확인")) return el;
+    }
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("완성 미리보기") && (t.includes("뒷면 보기") || t.includes("앞면 보기"))) return el;
+    }
+    return null;
+  }
+
+  function pickLargePreview(){
+    const hits = [];
+    for(const el of nodes("div,section,article,aside")){
+      const t = norm(el.textContent);
+      if(visible(el) && (t.includes("정면 완성 미리보기") || t.includes("업로드 1개 기준 기본 양면 인쇄"))){
+        hits.push(el);
+      }
+    }
+    if(!hits.length) return null;
+    hits.sort(function(a,b){ return area(b)-area(a); });
+    return hits[0];
+  }
+
+  function ensureHost(panel){
+    let host = panel.querySelector('[data-cb-mini-preview-host="1"]');
+    if(!host){
+      host = document.createElement("div");
+      host.setAttribute("data-cb-mini-preview-host","1");
+      const badge = document.createElement("div");
+      badge.setAttribute("data-cb-mini-preview-badge","1");
+      badge.textContent = "소형 미리보기";
+      host.appendChild(badge);
+      panel.appendChild(host);
+    }
+    return host;
+  }
+
+  function shrinkInner(root){
+    nodes("svg,canvas,img", root).forEach(function(el){
+      el.style.width = "100%";
+      el.style.height = "auto";
+      el.style.maxWidth = "100%";
+    });
+  }
+
+  function run(){
+    const panel = pickPanel();
+    const original = pickLargePreview();
+    if(!panel || !original) return;
+
+    panel.style.position = "relative";
+    panel.style.overflow = "visible";
+    panel.style.paddingRight = "220px";
+    panel.style.minHeight = "240px";
+
+    const host = ensureHost(panel);
+    if(host.querySelector('[data-cb-mini-preview-clone="1"]')) return;
+
+    const clone = original.cloneNode(true);
+    clone.setAttribute("data-cb-mini-preview-clone","1");
+    host.appendChild(clone);
+    shrinkInner(clone);
+
+    original.style.display = "none";
+
+    const p = original.parentElement;
+    if(p && p !== panel){
+      const txt = norm(p.textContent);
+      if(txt.includes("정면 완성 미리보기") || txt.includes("업로드 1개 기준 기본 양면 인쇄")){
+        p.style.display = "none";
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", run);
+  setTimeout(run, 50);
+  setTimeout(run, 300);
+  setTimeout(run, 900);
+  setInterval(run, 1200);
+})();
+</script>
+<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V6</div>
 </body>
 </html>
+
 
 
 
