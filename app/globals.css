@@ -45,3 +45,33 @@ html, body {
 }
 /* CB_FULLWIDTH_V11_END */
 
+/* CB_SITE_WIDE_V12_START */
+:root {
+  --cb-site-gutter: 12px;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  body .container,
+  body [class*="max-w-"],
+  body main,
+  body section,
+  body article {
+    max-width: calc(100vw - (var(--cb-site-gutter) * 2)) !important;
+  }
+
+  body .container,
+  body [class*="max-w-"][class*="mx-auto"],
+  body main [class*="mx-auto"],
+  body section [class*="mx-auto"],
+  body article [class*="mx-auto"] {
+    width: calc(100vw - (var(--cb-site-gutter) * 2)) !important;
+    margin-left: var(--cb-site-gutter) !important;
+    margin-right: var(--cb-site-gutter) !important;
+  }
+}
+/* CB_SITE_WIDE_V12_END */
+
