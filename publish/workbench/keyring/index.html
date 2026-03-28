@@ -609,5 +609,64 @@ state.holes = [makeHole()];
 state.selectedHoleId = state.holes[0].id;
 render();
 </script>
+<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V3">
+  [data-cb-preview-docked="1"]{
+    position:absolute !important;
+    top:16px !important;
+    right:16px !important;
+    width:168px !important;
+    min-width:168px !important;
+    max-width:168px !important;
+    margin:0 !important;
+    z-index:40 !important;
+    transform:scale(.82) !important;
+    transform-origin:top right !important;
+    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
+    border-radius:18px !important;
+    background:rgba(15,23,42,.96) !important;
+  }
+</style>
+<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V3">
+(function(){
+  function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
+  function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
+  function findPreview(list){
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("PREVIEW") && (t.includes("작업 요약") || t.includes("양면") || t.includes("현재 포커스"))) return el;
+    }
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("PREVIEW")) return el;
+    }
+    return null;
+  }
+  function findWorkbench(list){
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("작업테이블") && t.includes("앞면") && t.includes("뒷면")) return el;
+    }
+    return null;
+  }
+  function run(){
+    const list = blocks();
+    const preview = findPreview(list);
+    const work = findWorkbench(list);
+    if(!preview || !work) return;
+    if(preview.getAttribute("data-cb-preview-docked")==="1") return;
+    if(getComputedStyle(work).position === "static") work.style.position = "relative";
+    work.style.overflow = "visible";
+    if(preview.parentElement !== work) work.appendChild(preview);
+    preview.setAttribute("data-cb-preview-docked","1");
+  }
+  document.addEventListener("DOMContentLoaded", run);
+  setTimeout(run, 50);
+  setTimeout(run, 300);
+  setTimeout(run, 900);
+  setInterval(run, 1200);
+})();
+</script>
+<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V3</div>
 </body>
 </html>
+
