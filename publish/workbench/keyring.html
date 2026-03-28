@@ -667,6 +667,104 @@ render();
 })();
 </script>
 <div style="display:none">CB_KEYRING_PREVIEW_DOCK_V3</div>
+<style data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V4">
+  [data-cb-preview-dock-host="1"]{
+    position:absolute !important;
+    top:18px !important;
+    right:18px !important;
+    width:172px !important;
+    min-width:172px !important;
+    max-width:172px !important;
+    z-index:60 !important;
+    pointer-events:auto !important;
+  }
+  [data-cb-preview-docked="1"]{
+    width:172px !important;
+    min-width:172px !important;
+    max-width:172px !important;
+    margin:0 !important;
+    transform:scale(.78) !important;
+    transform-origin:top right !important;
+    box-shadow:0 16px 28px rgba(0,0,0,.34) !important;
+    border-radius:18px !important;
+    background:rgba(15,23,42,.96) !important;
+  }
+</style>
+<script data-cb-preview-dock="CB_KEYRING_PREVIEW_DOCK_V4">
+(function(){
+  function norm(t){ return (t||"").replace(/\s+/g," ").trim(); }
+  function blocks(){ return Array.prototype.slice.call(document.querySelectorAll("div,section,article,aside")); }
+  function visible(el){ const s=getComputedStyle(el); return s.display!=="none" && s.visibility!=="hidden"; }
+  function area(el){ const r=el.getBoundingClientRect(); return Math.max(0,r.width*r.height); }
+  function pickPanel(list){
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("미리보기 1칸 토글 확인") && (t.includes("뒷면 보기") || t.includes("앞면 보기"))) return el;
+    }
+    for(const el of list){
+      const t = norm(el.textContent);
+      if(t.includes("완성 미리보기") && t.includes("뒷면 보기")) return el;
+    }
+    return null;
+  }
+  function pickPreview(list){
+    const hits = [];
+    for(const el of list){
+      const t = norm(el.textContent);
+      if((t.includes("정면 완성 미리보기") || t.includes("업로드 1개 기준 기본 양면 인쇄") || t.includes("뒷면 기준으로")) && visible(el)){
+        hits.push(el);
+      }
+    }
+    if(!hits.length) return null;
+    hits.sort(function(a,b){ return area(b)-area(a); });
+    return hits[0];
+  }
+  function ensureHost(panel){
+    let host = panel.querySelector('[data-cb-preview-dock-host="1"]');
+    if(!host){
+      host = document.createElement("div");
+      host.setAttribute("data-cb-preview-dock-host","1");
+      panel.appendChild(host);
+    }
+    return host;
+  }
+  function shrinkInner(preview){
+    Array.prototype.slice.call(preview.querySelectorAll("svg,canvas,img")).forEach(function(el){
+      el.style.width = "100%";
+      el.style.height = "auto";
+      el.style.maxWidth = "100%";
+    });
+  }
+  function run(){
+    const list = blocks();
+    const panel = pickPanel(list);
+    const preview = pickPreview(list);
+    if(!panel || !preview) return;
+    const srcParent = preview.parentElement;
+    panel.style.position = "relative";
+    panel.style.overflow = "visible";
+    panel.style.paddingRight = "220px";
+    panel.style.minHeight = "240px";
+    const host = ensureHost(panel);
+    if(preview.parentElement !== host){ host.appendChild(preview); }
+    preview.setAttribute("data-cb-preview-docked","1");
+    shrinkInner(preview);
+    if(srcParent && srcParent !== host && srcParent !== panel){
+      const txt = norm(srcParent.textContent);
+      if(txt.includes("정면 완성 미리보기") || txt.includes("업로드 1개 기준 기본 양면 인쇄") || txt.includes("뒷면 기준으로")){
+        srcParent.style.display = "none";
+      }
+    }
+  }
+  document.addEventListener("DOMContentLoaded", run);
+  setTimeout(run, 50);
+  setTimeout(run, 300);
+  setTimeout(run, 900);
+  setInterval(run, 1200);
+})();
+</script>
+<div style="display:none">CB_KEYRING_PREVIEW_DOCK_V4</div>
 </body>
 </html>
+
 

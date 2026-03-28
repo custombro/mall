@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+const MARKER = "CB_KEYRING_PREVIEW_DOCK_V4";
+
 function normalizeText(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -10,65 +12,121 @@ function findBlocks() {
   return Array.from(document.querySelectorAll<HTMLElement>("div, section, article, aside"));
 }
 
-function findPreviewBlock(blocks: HTMLElement[]) {
+function isVisible(el: HTMLElement) {
+  const style = window.getComputedStyle(el);
+  return style.display !== "none" && style.visibility !== "hidden";
+}
+
+function areaOf(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  return Math.max(0, rect.width * rect.height);
+}
+
+function pickPreviewPanel(blocks: HTMLElement[]) {
   for (const el of blocks) {
     const text = normalizeText(el.textContent);
-    if (text.includes("PREVIEW") && (text.includes("작업 요약") || text.includes("양면") || text.includes("현재 포커스"))) {
+    if (text.includes("미리보기 1칸 토글 확인") && (text.includes("뒷면 보기") || text.includes("앞면 보기"))) {
       return el;
     }
   }
 
   for (const el of blocks) {
     const text = normalizeText(el.textContent);
-    if (text.includes("PREVIEW")) return el;
+    if (text.includes("완성 미리보기") && text.includes("뒷면 보기")) {
+      return el;
+    }
   }
 
   return null;
 }
 
-function findWorkbenchCard(blocks: HTMLElement[]) {
+function pickPreviewBlock(blocks: HTMLElement[]) {
+  const hits: HTMLElement[] = [];
+
   for (const el of blocks) {
     const text = normalizeText(el.textContent);
-    if (text.includes("작업테이블") && text.includes("앞면") && text.includes("뒷면")) {
-      return el;
+    if (
+      isVisible(el) &&
+      (text.includes("정면 완성 미리보기") ||
+        text.includes("업로드 1개 기준 기본 양면 인쇄") ||
+        text.includes("뒷면 기준으로"))
+    ) {
+      hits.push(el);
     }
   }
-  return null;
+
+  hits.sort((a, b) => areaOf(b) - areaOf(a));
+  return hits[0] ?? null;
+}
+
+function ensureHost(panel: HTMLElement) {
+  let host = panel.querySelector<HTMLElement>('[data-cb-preview-dock-host="1"]');
+  if (!host) {
+    host = document.createElement("div");
+    host.setAttribute("data-cb-preview-dock-host", "1");
+    host.style.position = "absolute";
+    host.style.top = "18px";
+    host.style.right = "18px";
+    host.style.width = "172px";
+    host.style.minWidth = "172px";
+    host.style.maxWidth = "172px";
+    host.style.zIndex = "60";
+    panel.appendChild(host);
+  }
+  return host;
+}
+
+function shrinkInner(preview: HTMLElement) {
+  preview.querySelectorAll<HTMLElement>("svg, canvas, img").forEach((el) => {
+    el.style.width = "100%";
+    el.style.height = "auto";
+    el.style.maxWidth = "100%";
+  });
 }
 
 function dockPreview() {
   const blocks = findBlocks();
-  const preview = findPreviewBlock(blocks);
-  const workbench = findWorkbenchCard(blocks);
+  const panel = pickPreviewPanel(blocks);
+  const preview = pickPreviewBlock(blocks);
 
-  if (!preview || !workbench) return;
-  if (preview.dataset.cbPreviewDocked === "1") return;
+  if (!panel || !preview) return;
 
-  const computed = window.getComputedStyle(workbench);
-  if (computed.position === "static") {
-    workbench.style.position = "relative";
-  }
+  const sourceParent = preview.parentElement as HTMLElement | null;
 
-  workbench.style.overflow = "visible";
+  panel.style.position = "relative";
+  panel.style.overflow = "visible";
+  panel.style.paddingRight = "220px";
+  panel.style.minHeight = "240px";
 
-  if (preview.parentElement !== workbench) {
-    workbench.appendChild(preview);
+  const host = ensureHost(panel);
+
+  if (preview.parentElement !== host) {
+    host.appendChild(preview);
   }
 
   preview.dataset.cbPreviewDocked = "1";
-  preview.style.position = "absolute";
-  preview.style.top = "16px";
-  preview.style.right = "16px";
-  preview.style.width = "168px";
-  preview.style.minWidth = "168px";
-  preview.style.maxWidth = "168px";
+  preview.style.width = "172px";
+  preview.style.minWidth = "172px";
+  preview.style.maxWidth = "172px";
   preview.style.margin = "0";
-  preview.style.zIndex = "40";
-  preview.style.transform = "scale(0.82)";
+  preview.style.transform = "scale(0.78)";
   preview.style.transformOrigin = "top right";
   preview.style.boxShadow = "0 16px 28px rgba(0,0,0,.34)";
   preview.style.borderRadius = "18px";
   preview.style.background = "rgba(15,23,42,.96)";
+
+  shrinkInner(preview);
+
+  if (sourceParent && sourceParent !== host && sourceParent !== panel) {
+    const parentText = normalizeText(sourceParent.textContent);
+    if (
+      parentText.includes("정면 완성 미리보기") ||
+      parentText.includes("업로드 1개 기준 기본 양면 인쇄") ||
+      parentText.includes("뒷면 기준으로")
+    ) {
+      sourceParent.style.display = "none";
+    }
+  }
 }
 
 export function KeyringPreviewDock() {
@@ -87,5 +145,5 @@ export function KeyringPreviewDock() {
     };
   }, []);
 
-  return <span style={{ display: "none" }}>CB_KEYRING_PREVIEW_DOCK_V3</span>;
+  return <span style={{ display: "none" }}>{MARKER}</span>;
 }
