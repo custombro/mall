@@ -10,6 +10,10 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+function cbDistance(a: { x: number; y: number }, b: { x: number; y: number }) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
 function cbBuildClosedLinePath(points: Array<{ x: number; y: number }>) {
   if (!points.length) return "";
   return `${points
@@ -17,7 +21,80 @@ function cbBuildClosedLinePath(points: Array<{ x: number; y: number }>) {
     .join(" ")} Z`;
 }
 
-function cbChaikinSmoothClosed(points: Array<{ x: number; y: number }>, passes = 2) {
+function cbSimplifyClosedPoints(points: Array<{ x: number; y: number }>, minGap = 2.4) {
+  if (points.length < 3) return points.map((point) => ({ x: point.x, y: point.y }));
+
+  const simplified: Array<{ x: number; y: number }> = [];
+  let lastKept = points[0];
+  simplified.push({ x: lastKept.x, y: lastKept.y });
+
+  for (let i = 1; i < points.length; i += 1) {
+    const current = points[i];
+    if (cbDistance(lastKept, current) >= minGap) {
+      simplified.push({ x: current.x, y: current.y });
+      lastKept = current;
+    }
+  }
+
+  if (simplified.length >= 2 && cbDistance(simplified[0], simplified[simplified.length - 1]) < minGap) {
+    simplified.pop();
+  }
+
+  return simplified.length >= 3 ? simplified : points.map((point) => ({ x: point.x, y: point.y }));
+}
+
+function cbResampleClosedPoints(points: Array<{ x: number; y: number }>, targetCount = 48) {
+  if (points.length < 3) return points.map((point) => ({ x: point.x, y: point.y }));
+
+  let perimeter = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    perimeter += cbDistance(points[i], points[(i + 1) % points.length]);
+  }
+
+  if (perimeter <= 0) return points.map((point) => ({ x: point.x, y: point.y }));
+
+  const safeTargetCount = Math.max(24, Math.min(72, targetCount));
+  const step = perimeter / safeTargetCount;
+  const sampled: Array<{ x: number; y: number }> = [];
+
+  sampled.push({ x: points[0].x, y: points[0].y });
+
+  let edgeIndex = 0;
+  let edgeStart = { x: points[0].x, y: points[0].y };
+  let edgeEnd = { x: points[1 % points.length].x, y: points[1 % points.length].y };
+  let edgeLength = cbDistance(edgeStart, edgeEnd);
+  let distanceIntoEdge = 0;
+  let traveled = step;
+
+  while (sampled.length < safeTargetCount && edgeIndex < points.length * 3) {
+    while (distanceIntoEdge + edgeLength < traveled) {
+      traveled -= distanceIntoEdge + edgeLength;
+      edgeIndex += 1;
+      edgeStart = { x: points[edgeIndex % points.length].x, y: points[edgeIndex % points.length].y };
+      edgeEnd = { x: points[(edgeIndex + 1) % points.length].x, y: points[(edgeIndex + 1) % points.length].y };
+      edgeLength = cbDistance(edgeStart, edgeEnd);
+      distanceIntoEdge = 0;
+      if (edgeLength === 0) break;
+    }
+
+    if (edgeLength === 0) {
+      edgeIndex += 1;
+      continue;
+    }
+
+    const ratio = traveled / edgeLength;
+    sampled.push({
+      x: edgeStart.x + (edgeEnd.x - edgeStart.x) * ratio,
+      y: edgeStart.y + (edgeEnd.y - edgeStart.y) * ratio,
+    });
+
+    traveled += step;
+  }
+
+  return sampled.length >= 3 ? sampled : points.map((point) => ({ x: point.x, y: point.y }));
+}
+
+function cbChaikinSmoothClosed(points: Array<{ x: number; y: number }>, passes = 3) {
   let next = points.map((point) => ({ x: point.x, y: point.y }));
 
   for (let pass = 0; pass < passes; pass += 1) {
@@ -50,7 +127,11 @@ function cbBuildSmoothClosedPath(points: Array<{ x: number; y: number }>) {
   if (!points.length) return "";
   if (points.length < 3) return cbBuildClosedLinePath(points);
 
-  const smoothed = cbChaikinSmoothClosed(points, 2);
+  const simplified = cbSimplifyClosedPoints(points, 2.4);
+  const targetCount = Math.max(28, Math.min(56, Math.round(simplified.length * 0.45)));
+  const resampled = cbResampleClosedPoints(simplified, targetCount);
+  const smoothed = cbChaikinSmoothClosed(resampled, 3);
+
   if (smoothed.length < 3) return cbBuildClosedLinePath(smoothed);
 
   const midpoints = smoothed.map((point, index) => {
@@ -1350,5 +1431,6 @@ export default function KeyringWorkbenchPage() {
     </main>
   );
 }
+
 
 
