@@ -10,16 +10,25 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-type HolePosition = {
+type Point = {
   x: number;
   y: number;
 };
+
+type HolePosition = Point;
 
 type UploadState = {
   name: string;
   typeLabel: string;
   sizeLabel: string;
   previewUrl: string | null;
+};
+
+type AutoCutlineState = {
+  status: "idle" | "processing" | "ready" | "failed";
+  path: string | null;
+  points: Point[];
+  centroid: Point | null;
 };
 
 const VIEW_WIDTH = 560;
@@ -31,6 +40,9 @@ const ART_FRAME = {
   width: 368,
   height: 444,
 } as const;
+
+const ANALYSIS_WIDTH = 184;
+const ANALYSIS_HEIGHT = 222;
 
 const ELLIPSE = {
   cx: 280,
@@ -70,6 +82,17 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function normalize(x: number, y: number) {
+  const len = Math.hypot(x, y) || 1;
+  return { x: x / len, y: y / len };
+}
+
+function distanceSq(a: Point, b: Point) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return dx * dx + dy * dy;
+}
+
 function formatFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
@@ -91,7 +114,19 @@ function getHoleLimitLabel(holeSize: HoleSize) {
 function getShapeDescription(shapeMode: ShapeMode) {
   if (shapeMode === "원형") return "구멍은 생성된 외곽선에 붙어서 이동";
   if (shapeMode === "사각형") return "구멍은 생성된 외곽선에 붙어서 이동";
-  return "자동칼선은 현재 미구현 · 업로드 원본 위치만 확인";
+  return "업로드 기반 자동칼선 1차 생성";
+}
+
+function isForeground(r: number, g: number, b: number, a: number) {
+  if (a < 24) return false;
+  if (a < 250) return true;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const saturation = max === 0 ? 0 : (max - min) / max;
+  const luminance = (r + g + b) / 3;
+
+  return !(luminance > 244 && saturation < 0.08);
 }
 
 function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = false) {
@@ -147,11 +182,6 @@ function renderClipShape(shapeMode: ShapeMode) {
   }
 
   return <rect x={ART_FRAME.x} y={ART_FRAME.y} width={ART_FRAME.width} height={ART_FRAME.height} rx="28" />;
-}
-
-function normalize(x: number, y: number) {
-  const len = Math.hypot(x, y) || 1;
-  return { x: x / len, y: y / len };
 }
 
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
@@ -241,7 +271,59 @@ function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): Ho
   };
 }
 
-function projectHole(pointer: HolePosition, holeSize: HoleSize, shapeMode: ShapeMode): HolePosition {
+function projectPointToSegment(point: Point, a: Point, b: Point) {
+  const abx = b.x - a.x;
+  const aby = b.y - a.y;
+  const abLenSq = abx * abx + aby * aby || 1;
+  const apx = point.x - a.x;
+  const apy = point.y - a.y;
+  const t = clamp((apx * abx + apy * aby) / abLenSq, 0, 1);
+
+  return {
+    x: a.x + abx * t,
+    y: a.y + aby * t,
+  };
+}
+
+function projectHoleToPolyline(
+  pointer: HolePosition,
+  holeSize: HoleSize,
+  points: Point[],
+  centroid: Point | null,
+): HolePosition {
+  if (points.length < 2 || !centroid) {
+    return { x: 280, y: 108 };
+  }
+
+  let bestPoint = points[0];
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const candidate = projectPointToSegment(pointer, a, b);
+    const d = distanceSq(pointer, candidate);
+    if (d < bestDistance) {
+      bestDistance = d;
+      bestPoint = candidate;
+    }
+  }
+
+  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
+
+  return {
+    x: bestPoint.x + outward.x * holeOffset,
+    y: bestPoint.y + outward.y * holeOffset,
+  };
+}
+
+function projectHole(
+  pointer: HolePosition,
+  holeSize: HoleSize,
+  shapeMode: ShapeMode,
+  autoCutline: AutoCutlineState,
+): HolePosition {
   if (shapeMode === "원형") {
     return projectHoleToEllipse(pointer, holeSize);
   }
@@ -250,10 +332,198 @@ function projectHole(pointer: HolePosition, holeSize: HoleSize, shapeMode: Shape
     return projectHoleToRoundedRect(pointer, holeSize);
   }
 
-  return {
-    x: 280,
-    y: 108,
-  };
+  if (autoCutline.status === "ready") {
+    return projectHoleToPolyline(pointer, holeSize, autoCutline.points, autoCutline.centroid);
+  }
+
+  return { x: 280, y: 108 };
+}
+
+async function buildAutoCutlineFromImage(
+  url: string,
+): Promise<{ path: string; points: Point[]; centroid: Point } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = ANALYSIS_WIDTH;
+      canvas.height = ANALYSIS_HEIGHT;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+
+      ctx.clearRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+
+      const scale = Math.min(ANALYSIS_WIDTH / img.width, ANALYSIS_HEIGHT / img.height);
+      const drawWidth = img.width * scale;
+      const drawHeight = img.height * scale;
+      const drawX = (ANALYSIS_WIDTH - drawWidth) / 2;
+      const drawY = (ANALYSIS_HEIGHT - drawHeight) / 2;
+
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+      const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+      const data = imageData.data;
+
+      const mask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+        Array.from({ length: ANALYSIS_WIDTH }, () => false),
+      );
+
+      let count = 0;
+      let sumX = 0;
+      let sumY = 0;
+
+      for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+        for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const a = data[idx + 3];
+          const fg = isForeground(r, g, b, a);
+
+          if (fg) {
+            mask[y][x] = true;
+            count += 1;
+            sumX += x + 0.5;
+            sumY += y + 0.5;
+          }
+        }
+      }
+
+      if (count < 40) {
+        resolve(null);
+        return;
+      }
+
+      const centroidMask = {
+        x: sumX / count,
+        y: sumY / count,
+      };
+
+      const bins = 240;
+      const radial: Array<{ d: number; x: number; y: number }> = Array.from({ length: bins }, () => ({
+        d: -1,
+        x: 0,
+        y: 0,
+      }));
+
+      let boundaryCount = 0;
+
+      for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
+        for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
+          if (!mask[y][x]) continue;
+
+          const boundary =
+            !mask[y - 1][x] ||
+            !mask[y + 1][x] ||
+            !mask[y][x - 1] ||
+            !mask[y][x + 1] ||
+            !mask[y - 1][x - 1] ||
+            !mask[y - 1][x + 1] ||
+            !mask[y + 1][x - 1] ||
+            !mask[y + 1][x + 1];
+
+          if (!boundary) continue;
+
+          boundaryCount += 1;
+
+          const px = x + 0.5;
+          const py = y + 0.5;
+          const angle = Math.atan2(py - centroidMask.y, px - centroidMask.x);
+          const bin = Math.floor((((angle + Math.PI) / (Math.PI * 2)) * bins)) % bins;
+          const d = distanceSq({ x: px, y: py }, centroidMask);
+
+          if (d > radial[bin].d) {
+            radial[bin] = { d, x: px, y: py };
+          }
+        }
+      }
+
+      if (boundaryCount < 40) {
+        resolve(null);
+        return;
+      }
+
+      for (let i = 0; i < bins; i += 1) {
+        if (radial[i].d >= 0) continue;
+
+        let left = (i - 1 + bins) % bins;
+        while (left !== i && radial[left].d < 0) {
+          left = (left - 1 + bins) % bins;
+        }
+
+        let right = (i + 1) % bins;
+        while (right !== i && radial[right].d < 0) {
+          right = (right + 1) % bins;
+        }
+
+        if (radial[left].d >= 0 && radial[right].d >= 0) {
+          radial[i] = {
+            d: (radial[left].d + radial[right].d) / 2,
+            x: (radial[left].x + radial[right].x) / 2,
+            y: (radial[left].y + radial[right].y) / 2,
+          };
+        } else if (radial[left].d >= 0) {
+          radial[i] = radial[left];
+        } else if (radial[right].d >= 0) {
+          radial[i] = radial[right];
+        } else {
+          resolve(null);
+          return;
+        }
+      }
+
+      const rawPoints: Point[] = [];
+
+      for (let i = 0; i < bins; i += 1) {
+        const point = radial[i];
+        const svgPoint = {
+          x: ART_FRAME.x + (point.x / ANALYSIS_WIDTH) * ART_FRAME.width,
+          y: ART_FRAME.y + (point.y / ANALYSIS_HEIGHT) * ART_FRAME.height,
+        };
+
+        if (rawPoints.length === 0 || distanceSq(rawPoints[rawPoints.length - 1], svgPoint) > 3) {
+          rawPoints.push(svgPoint);
+        }
+      }
+
+      if (rawPoints.length < 24) {
+        resolve(null);
+        return;
+      }
+
+      const smoothPoints = rawPoints.map((point, index) => {
+        const prev = rawPoints[(index - 1 + rawPoints.length) % rawPoints.length];
+        const next = rawPoints[(index + 1) % rawPoints.length];
+        return {
+          x: (prev.x + point.x * 2 + next.x) / 4,
+          y: (prev.y + point.y * 2 + next.y) / 4,
+        };
+      });
+
+      const path = smoothPoints
+        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+        .join(" ") + " Z";
+
+      const centroidSvg = {
+        x: ART_FRAME.x + (centroidMask.x / ANALYSIS_WIDTH) * ART_FRAME.width,
+        y: ART_FRAME.y + (centroidMask.y / ANALYSIS_HEIGHT) * ART_FRAME.height,
+      };
+
+      resolve({
+        path,
+        points: smoothPoints,
+        centroid: centroidSvg,
+      });
+    };
+
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 function KeyringCanvas({
@@ -261,11 +531,13 @@ function KeyringCanvas({
   shapeMode,
   holeSize,
   imageUrl,
+  autoCutline,
 }: {
   hole: HolePosition;
   shapeMode: ShapeMode;
   holeSize: HoleSize;
   imageUrl: string | null;
+  autoCutline: AutoCutlineState;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
@@ -365,6 +637,7 @@ function KeyringCanvas({
             stroke="rgba(255,255,255,0.18)"
             strokeWidth="2"
           />
+
           {hasUpload ? (
             <image
               href={imageUrl!}
@@ -374,7 +647,20 @@ function KeyringCanvas({
               height={ART_FRAME.height}
               preserveAspectRatio="xMidYMid meet"
             />
-          ) : (
+          ) : null}
+
+          {autoCutline.status === "ready" && autoCutline.path ? (
+            <path
+              d={autoCutline.path}
+              fill="none"
+              stroke="#ff2b2b"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ) : null}
+
+          {!hasUpload ? (
             <>
               <text
                 x="280"
@@ -395,20 +681,27 @@ function KeyringCanvas({
                 fontSize="20"
                 fontWeight="500"
               >
-                자동칼선은 현재 미구현
-              </text>
-              <text
-                x="280"
-                y="420"
-                textAnchor="middle"
-                fill="rgba(255,255,255,0.64)"
-                fontSize="16"
-                fontWeight="600"
-              >
-                업로드 원본 위치만 확인
+                업로드 후 자동칼선 생성
               </text>
             </>
-          )}
+          ) : null}
+
+          <text
+            x="470"
+            y="108"
+            textAnchor="end"
+            fill="rgba(255,255,255,0.72)"
+            fontSize="12"
+            fontWeight="700"
+          >
+            {autoCutline.status === "ready"
+              ? "자동칼선 생성 완료"
+              : autoCutline.status === "processing"
+                ? "자동칼선 계산중"
+                : autoCutline.status === "failed"
+                  ? "자동칼선 생성 실패"
+                  : "업로드 대기"}
+          </text>
         </>
       )}
 
@@ -461,11 +754,81 @@ export default function KeyringWorkbenchPage() {
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 108 });
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+  const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
+    status: "idle",
+    path: null,
+    points: [],
+    centroid: null,
+  });
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode));
-  }, [holeSize, shapeMode]);
+    let cancelled = false;
+
+    if (shapeMode !== "자동칼선") {
+      setAutoCutline((prev) =>
+        prev.status === "idle"
+          ? prev
+          : {
+              status: "idle",
+              path: null,
+              points: [],
+              centroid: null,
+            },
+      );
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!uploadState?.previewUrl) {
+      setAutoCutline({
+        status: "idle",
+        path: null,
+        points: [],
+        centroid: null,
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setAutoCutline({
+      status: "processing",
+      path: null,
+      points: [],
+      centroid: null,
+    });
+
+    buildAutoCutlineFromImage(uploadState.previewUrl).then((result) => {
+      if (cancelled) return;
+
+      if (result) {
+        setAutoCutline({
+          status: "ready",
+          path: result.path,
+          points: result.points,
+          centroid: result.centroid,
+        });
+      } else {
+        setAutoCutline({
+          status: "failed",
+          path: null,
+          points: [],
+          centroid: null,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shapeMode, uploadState?.previewUrl]);
+
+  useEffect(() => {
+    setHole((prev) => projectHole(prev, holeSize, shapeMode, autoCutline));
+  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
 
   useEffect(() => {
     return () => {
@@ -485,19 +848,19 @@ export default function KeyringWorkbenchPage() {
   }, [holeSize, material, ring, shapeMode, thickness]);
 
   const totalPrice = unitPrice * quantity;
-  const autoCutlinePending = shapeMode === "자동칼선";
+  const autoCutlineLocked = shapeMode === "자동칼선" && autoCutline.status !== "ready";
 
   const updateHole = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (autoCutlinePending) return;
+    if (autoCutlineLocked) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(projectHole({ x, y }, holeSize, shapeMode));
+    setHole(projectHole({ x, y }, holeSize, shapeMode, autoCutline));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (autoCutlinePending) return;
+    if (autoCutlineLocked) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
@@ -505,7 +868,7 @@ export default function KeyringWorkbenchPage() {
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging || autoCutlinePending) return;
+    if (!dragging || autoCutlineLocked) return;
     updateHole(event);
   };
 
@@ -525,6 +888,12 @@ export default function KeyringWorkbenchPage() {
       return null;
     });
     setUploadGuide("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+    setAutoCutline({
+      status: "idle",
+      path: null,
+      points: [],
+      centroid: null,
+    });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -573,18 +942,18 @@ export default function KeyringWorkbenchPage() {
             <div className="max-w-[980px]">
               <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
               <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 외곽선 추종 구멍 배치
+                키링 제작 / 외곽선 추종 구멍 + 자동칼선 1차
               </h1>
               <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                업로드 후 작업판 글씨는 제거하고, 원형/사각형은 구멍이 외곽선에 붙어서 이동하도록 바꾼다.
-                자동칼선은 현재 미구현이며 업로드 원본 위치만 확인한다.
+                업로드 후 작업판 내부 글씨는 제거하고, 원형/사각형은 구멍이 외곽선에 붙어서 이동하도록 정리했다.
+                자동칼선은 업로드 이미지 기준으로 1차 빨간 칼선을 생성한다.
               </p>
             </div>
 
             <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
-              <div>업로드 후 작업판 글씨 제거</div>
+              <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선은 현재 미구현</div>
+              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
             </div>
           </div>
         </section>
@@ -674,9 +1043,9 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-              <div>업로드 후 작업판 글씨 제거</div>
+              <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선은 현재 미구현</div>
+              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
             </div>
           </aside>
 
@@ -690,7 +1059,7 @@ export default function KeyringWorkbenchPage() {
                 </h2>
                 <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
                   원형/사각형은 생성된 외곽선 기준으로 구멍이 따라 움직인다.
-                  자동칼선은 현재 미구현이라 주문을 막고 업로드 원본 위치만 확인한다.
+                  자동칼선은 업로드 이미지 기준으로 1차 빨간 칼선을 생성한다.
                 </p>
               </div>
 
@@ -724,7 +1093,7 @@ export default function KeyringWorkbenchPage() {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white/82">메인 작업대</div>
                 <div className="text-sm text-white/62">
-                  {autoCutlinePending ? "자동칼선은 현재 미구현" : "구멍은 외곽선에 붙어서 이동"}
+                  {autoCutlineLocked ? "자동칼선 계산 완료 후 구멍 이동 가능" : "구멍은 외곽선에 붙어서 이동"}
                 </div>
               </div>
 
@@ -734,6 +1103,7 @@ export default function KeyringWorkbenchPage() {
                   shapeMode={shapeMode}
                   holeSize={holeSize}
                   imageUrl={uploadState?.previewUrl ?? null}
+                  autoCutline={autoCutline}
                 />
               </div>
             </div>
@@ -784,6 +1154,11 @@ export default function KeyringWorkbenchPage() {
                   <div>형식: {uploadState.typeLabel}</div>
                   <div>크기: {uploadState.sizeLabel}</div>
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
+                  {shapeMode === "자동칼선" ? (
+                    <div>
+                      자동칼선 상태: {autoCutline.status === "ready" ? "생성 완료" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -828,9 +1203,9 @@ export default function KeyringWorkbenchPage() {
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
               <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
-              <div>업로드 후 작업판 글씨 제거</div>
+              <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선은 현재 미구현</div>
+              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
@@ -847,7 +1222,7 @@ export default function KeyringWorkbenchPage() {
               <div className="mb-2 text-sm font-semibold text-white/88">업로드 기준</div>
               <div>PNG / PSD / PDF / AI 권장</div>
               <div>가능하면 투명 배경, 300dpi 기준</div>
-              <div>자동칼선 계산은 이후 단계에서 별도 연결 예정</div>
+              <div>JPG/WEBP는 밝은 배경 제거 후 자동칼선 1차 추정</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
@@ -866,14 +1241,14 @@ export default function KeyringWorkbenchPage() {
               </button>
               <button
                 type="button"
-                disabled={autoCutlinePending}
+                disabled={autoCutlineLocked}
                 className={`rounded-2xl px-4 py-4 text-base font-extrabold transition ${
-                  autoCutlinePending
+                  autoCutlineLocked
                     ? "cursor-not-allowed border border-white/10 bg-white/[0.03] text-white/40"
                     : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                 }`}
               >
-                {autoCutlinePending ? "칼선 생성 후 주문" : "주문으로"}
+                {autoCutlineLocked ? "자동칼선 생성 후 주문" : "주문으로"}
               </button>
             </div>
           </aside>
