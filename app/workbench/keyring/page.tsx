@@ -32,11 +32,19 @@ const ART_FRAME = {
   height: 444,
 } as const;
 
-const HOLE_ZONE = {
-  x: 184,
-  y: 88,
-  width: 192,
-  height: 86,
+const ELLIPSE = {
+  cx: 280,
+  cy: 344,
+  rx: 170,
+  ry: 220,
+} as const;
+
+const ROUNDED_RECT = {
+  x: 122,
+  y: 126,
+  width: 316,
+  height: 430,
+  radius: 64,
 } as const;
 
 const PRICE_BASE = {
@@ -62,22 +70,14 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${bytes}B`;
+}
+
 function getHoleVisualRadius(holeSize: HoleSize) {
   return holeSize === 3 ? 14 : 12;
-}
-
-function clampHole(next: HolePosition, holeSize: HoleSize): HolePosition {
-  const radius = getHoleVisualRadius(holeSize) + 8;
-  return {
-    x: clamp(next.x, HOLE_ZONE.x + radius, HOLE_ZONE.x + HOLE_ZONE.width - radius),
-    y: clamp(next.y, HOLE_ZONE.y + radius, HOLE_ZONE.y + HOLE_ZONE.height - radius),
-  };
-}
-
-function getShapeDescription(shapeMode: ShapeMode) {
-  if (shapeMode === "원형") return "빠른 제작용 기본형 · 지름 기준";
-  if (shapeMode === "사각형") return "빠른 제작용 기본형 · 가로/세로 기준";
-  return "자동칼선 계산 전 · 현재는 업로드 원본 배치만 확인";
 }
 
 function getHoleLabel(holeSize: HoleSize) {
@@ -88,10 +88,10 @@ function getHoleLimitLabel(holeSize: HoleSize) {
   return holeSize === 2.5 ? "최대 1.25mm 돌출 허용" : "최대 1.5mm 돌출 허용";
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
-  return `${bytes}B`;
+function getShapeDescription(shapeMode: ShapeMode) {
+  if (shapeMode === "원형") return "구멍은 생성된 외곽선에 붙어서 이동";
+  if (shapeMode === "사각형") return "구멍은 생성된 외곽선에 붙어서 이동";
+  return "자동칼선은 현재 미구현 · 업로드 원본 위치만 확인";
 }
 
 function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = false) {
@@ -100,10 +100,10 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
   if (shapeMode === "원형") {
     return (
       <ellipse
-        cx="280"
-        cy="344"
-        rx="170"
-        ry="220"
+        cx={ELLIPSE.cx}
+        cy={ELLIPSE.cy}
+        rx={ELLIPSE.rx}
+        ry={ELLIPSE.ry}
         fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
@@ -114,11 +114,11 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
   if (shapeMode === "사각형") {
     return (
       <rect
-        x="122"
-        y="126"
-        width="316"
-        height="430"
-        rx="64"
+        x={ROUNDED_RECT.x}
+        y={ROUNDED_RECT.y}
+        width={ROUNDED_RECT.width}
+        height={ROUNDED_RECT.height}
+        rx={ROUNDED_RECT.radius}
         fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
@@ -129,12 +129,131 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
   return null;
 }
 
-function renderClipShape(shapeMode: Exclude<ShapeMode, "자동칼선">) {
+function renderClipShape(shapeMode: ShapeMode) {
   if (shapeMode === "원형") {
-    return <ellipse cx="280" cy="344" rx="170" ry="220" />;
+    return <ellipse cx={ELLIPSE.cx} cy={ELLIPSE.cy} rx={ELLIPSE.rx} ry={ELLIPSE.ry} />;
   }
 
-  return <rect x="122" y="126" width="316" height="430" rx="64" />;
+  if (shapeMode === "사각형") {
+    return (
+      <rect
+        x={ROUNDED_RECT.x}
+        y={ROUNDED_RECT.y}
+        width={ROUNDED_RECT.width}
+        height={ROUNDED_RECT.height}
+        rx={ROUNDED_RECT.radius}
+      />
+    );
+  }
+
+  return <rect x={ART_FRAME.x} y={ART_FRAME.y} width={ART_FRAME.width} height={ART_FRAME.height} rx="28" />;
+}
+
+function normalize(x: number, y: number) {
+  const len = Math.hypot(x, y) || 1;
+  return { x: x / len, y: y / len };
+}
+
+function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
+  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  let dx = pointer.x - ELLIPSE.cx;
+  let dy = pointer.y - ELLIPSE.cy;
+
+  if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) {
+    dx = 0;
+    dy = -1;
+  }
+
+  const scale = 1 / Math.sqrt((dx * dx) / (ELLIPSE.rx * ELLIPSE.rx) + (dy * dy) / (ELLIPSE.ry * ELLIPSE.ry));
+  const bx = ELLIPSE.cx + dx * scale;
+  const by = ELLIPSE.cy + dy * scale;
+
+  const n = normalize(
+    (bx - ELLIPSE.cx) / (ELLIPSE.rx * ELLIPSE.rx),
+    (by - ELLIPSE.cy) / (ELLIPSE.ry * ELLIPSE.ry),
+  );
+
+  return {
+    x: bx + n.x * holeOffset,
+    y: by + n.y * holeOffset,
+  };
+}
+
+function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): HolePosition {
+  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+
+  const halfW = ROUNDED_RECT.width / 2;
+  const halfH = ROUNDED_RECT.height / 2;
+  const innerW = halfW - ROUNDED_RECT.radius;
+  const innerH = halfH - ROUNDED_RECT.radius;
+  const cx = ROUNDED_RECT.x + halfW;
+  const cy = ROUNDED_RECT.y + halfH;
+
+  const px = pointer.x - cx;
+  const py = pointer.y - cy;
+  const ax = Math.abs(px);
+  const ay = Math.abs(py);
+  const sx = px >= 0 ? 1 : -1;
+  const sy = py >= 0 ? 1 : -1;
+
+  let anchorX = 0;
+  let anchorY = 0;
+  let normalX = 0;
+  let normalY = 0;
+
+  if (ax <= innerW && ay <= innerH) {
+    const distX = halfW - ax;
+    const distY = halfH - ay;
+    if (distY <= distX) {
+      anchorX = px;
+      anchorY = sy * halfH;
+      normalX = 0;
+      normalY = sy;
+    } else {
+      anchorX = sx * halfW;
+      anchorY = py;
+      normalX = sx;
+      normalY = 0;
+    }
+  } else if (ax <= innerW) {
+    anchorX = px;
+    anchorY = sy * halfH;
+    normalX = 0;
+    normalY = sy;
+  } else if (ay <= innerH) {
+    anchorX = sx * halfW;
+    anchorY = py;
+    normalX = sx;
+    normalY = 0;
+  } else {
+    const ccx = sx * innerW;
+    const ccy = sy * innerH;
+    const dir = normalize(px - ccx, py - ccy);
+    anchorX = ccx + dir.x * ROUNDED_RECT.radius;
+    anchorY = ccy + dir.y * ROUNDED_RECT.radius;
+    normalX = dir.x;
+    normalY = dir.y;
+  }
+
+  return {
+    x: cx + anchorX + normalX * holeOffset,
+    y: cy + anchorY + normalY * holeOffset,
+  };
+}
+
+function projectHole(pointer: HolePosition, holeSize: HoleSize, shapeMode: ShapeMode): HolePosition {
+  if (shapeMode === "원형") {
+    return projectHoleToEllipse(pointer, holeSize);
+  }
+
+  if (shapeMode === "사각형") {
+    return projectHoleToRoundedRect(pointer, holeSize);
+  }
+
+  return {
+    x: 280,
+    y: 108,
+  };
 }
 
 function KeyringCanvas({
@@ -151,7 +270,8 @@ function KeyringCanvas({
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
-  const isAutoCutline = shapeMode === "자동칼선";
+  const hasUpload = Boolean(imageUrl);
+  const autoCutlinePending = shapeMode === "자동칼선";
 
   return (
     <svg
@@ -165,106 +285,19 @@ function KeyringCanvas({
           <stop offset="0%" stopColor="#9fd0ff" stopOpacity="0.96" />
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
-        {!isAutoCutline ? <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath> : null}
+        <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
       </defs>
 
       <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
       <rect x="70" y="72" width="420" height="514" rx="28" fill="rgba(0,0,0,0.16)" />
 
-      <rect
-        x={HOLE_ZONE.x}
-        y={HOLE_ZONE.y}
-        width={HOLE_ZONE.width}
-        height={HOLE_ZONE.height}
-        rx="24"
-        fill="rgba(255,255,255,0.08)"
-        stroke="rgba(255,255,255,0.18)"
-        strokeWidth="2"
-      />
-
-      <text
-        x={HOLE_ZONE.x + HOLE_ZONE.width / 2}
-        y={HOLE_ZONE.y + 28}
-        textAnchor="middle"
-        fill="rgba(255,255,255,0.9)"
-        fontSize="15"
-        fontWeight="800"
-      >
-        키링 영역
-      </text>
-
-      <text
-        x={HOLE_ZONE.x + HOLE_ZONE.width / 2}
-        y={HOLE_ZONE.y + 54}
-        textAnchor="middle"
-        fill="rgba(255,255,255,0.62)"
-        fontSize="12"
-        fontWeight="600"
-      >
-        키링 구멍은 키링 영역에서만 이동
-      </text>
-
-      {isAutoCutline ? (
-        <>
-          <rect
-            x={ART_FRAME.x}
-            y={ART_FRAME.y}
-            width={ART_FRAME.width}
-            height={ART_FRAME.height}
-            rx="28"
-            fill="rgba(255,255,255,0.03)"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="2"
-          />
-          {imageUrl ? (
-            <image
-              href={imageUrl}
-              x={ART_FRAME.x}
-              y={ART_FRAME.y}
-              width={ART_FRAME.width}
-              height={ART_FRAME.height}
-              preserveAspectRatio="xMidYMid meet"
-            />
-          ) : null}
-          <text
-            x="280"
-            y="334"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.96)"
-            fontSize="34"
-            fontWeight="800"
-            letterSpacing="1.1"
-          >
-            자동칼선 작업판
-          </text>
-          <text
-            x="280"
-            y="384"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.78)"
-            fontSize="20"
-            fontWeight="500"
-          >
-            자동칼선은 아직 계산 전
-          </text>
-          <text
-            x="280"
-            y="420"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.64)"
-            fontSize="16"
-            fontWeight="600"
-          >
-            현재는 업로드 원본 위치만 확인
-          </text>
-        </>
-      ) : (
+      {!autoCutlinePending ? (
         <>
           {renderBodyShape(shapeMode, fillId)}
-          {imageUrl ? (
+          {hasUpload ? (
             <>
               <image
-                href={imageUrl}
+                href={imageUrl!}
                 x={ART_FRAME.x}
                 y={ART_FRAME.y}
                 width={ART_FRAME.width}
@@ -295,7 +328,7 @@ function KeyringCanvas({
                 fontSize="20"
                 fontWeight="500"
               >
-                구멍을 직접 드래그해서 조정
+                구멍은 외곽선에 붙어서 이동
               </text>
               <text
                 x="280"
@@ -316,6 +349,63 @@ function KeyringCanvas({
                 fontWeight="600"
               >
                 이미지 업로드 대기
+              </text>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <rect
+            x={ART_FRAME.x}
+            y={ART_FRAME.y}
+            width={ART_FRAME.width}
+            height={ART_FRAME.height}
+            rx="28"
+            fill="rgba(255,255,255,0.03)"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="2"
+          />
+          {hasUpload ? (
+            <image
+              href={imageUrl!}
+              x={ART_FRAME.x}
+              y={ART_FRAME.y}
+              width={ART_FRAME.width}
+              height={ART_FRAME.height}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          ) : (
+            <>
+              <text
+                x="280"
+                y="334"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.96)"
+                fontSize="34"
+                fontWeight="800"
+                letterSpacing="1.1"
+              >
+                자동칼선 작업판
+              </text>
+              <text
+                x="280"
+                y="384"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.78)"
+                fontSize="20"
+                fontWeight="500"
+              >
+                자동칼선은 현재 미구현
+              </text>
+              <text
+                x="280"
+                y="420"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.64)"
+                fontSize="16"
+                fontWeight="600"
+              >
+                업로드 원본 위치만 확인
               </text>
             </>
           )}
@@ -368,14 +458,14 @@ export default function KeyringWorkbenchPage() {
   const [holeSize, setHoleSize] = useState<HoleSize>(2.5);
   const [quantity, setQuantity] = useState(10);
   const [dragging, setDragging] = useState(false);
-  const [hole, setHole] = useState<HolePosition>({ x: 280, y: 124 });
+  const [hole, setHole] = useState<HolePosition>({ x: 280, y: 108 });
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setHole((prev) => clampHole(prev, holeSize));
-  }, [holeSize]);
+    setHole((prev) => projectHole(prev, holeSize, shapeMode));
+  }, [holeSize, shapeMode]);
 
   useEffect(() => {
     return () => {
@@ -398,13 +488,16 @@ export default function KeyringWorkbenchPage() {
   const autoCutlinePending = shapeMode === "자동칼선";
 
   const updateHole = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (autoCutlinePending) return;
+
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(clampHole({ x, y }, holeSize));
+    setHole(projectHole({ x, y }, holeSize, shapeMode));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (autoCutlinePending) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
@@ -412,7 +505,7 @@ export default function KeyringWorkbenchPage() {
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
+    if (!dragging || autoCutlinePending) return;
     updateHole(event);
   };
 
@@ -480,18 +573,18 @@ export default function KeyringWorkbenchPage() {
             <div className="max-w-[980px]">
               <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
               <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 업로드 작업판 정리
+                키링 제작 / 외곽선 추종 구멍 배치
               </h1>
               <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                업로드 후에는 작업판 중앙 글씨를 지우고, 원형/사각형은 업로드 원본만 바로 보여주도록 정리했다.
-                키링 구멍은 칼선과 무관하게 상단 키링 영역에서만 움직이고, 자동칼선은 아직 계산 전 상태로 고정한다.
+                업로드 후 작업판 글씨는 제거하고, 원형/사각형은 구멍이 외곽선에 붙어서 이동하도록 바꾼다.
+                자동칼선은 현재 미구현이며 업로드 원본 위치만 확인한다.
               </p>
             </div>
 
             <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
-              <div>업로드 후 중앙 글씨 자동 제거</div>
-              <div>키링 구멍은 키링 영역에서만 이동</div>
-              <div>자동칼선은 아직 계산 전 상태</div>
+              <div>업로드 후 작업판 글씨 제거</div>
+              <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
+              <div>자동칼선은 현재 미구현</div>
             </div>
           </div>
         </section>
@@ -581,9 +674,9 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-              <div>키링 구멍은 칼선과 무관하게 상단 키링 영역 내에서만 이동</div>
-              <div>업로드 후 작업판 중앙 글씨는 자동 제거</div>
-              <div>자동칼선은 아직 계산 전 상태</div>
+              <div>업로드 후 작업판 글씨 제거</div>
+              <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
+              <div>자동칼선은 현재 미구현</div>
             </div>
           </aside>
 
@@ -596,8 +689,8 @@ export default function KeyringWorkbenchPage() {
                   {shapeMode} 작업판
                 </h2>
                 <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
-                  원형/사각형은 업로드 후 원본만 보여주고, 자동칼선은 현재 계산 전 상태로만 안내한다.
-                  키링 구멍은 키링 영역에서만 이동하며 칼선과 직접 연결하지 않는다.
+                  원형/사각형은 생성된 외곽선 기준으로 구멍이 따라 움직인다.
+                  자동칼선은 현재 미구현이라 주문을 막고 업로드 원본 위치만 확인한다.
                 </p>
               </div>
 
@@ -630,7 +723,9 @@ export default function KeyringWorkbenchPage() {
             >
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white/82">메인 작업대</div>
-                <div className="text-sm text-white/62">키링 구멍은 상단 키링 영역에서만 이동</div>
+                <div className="text-sm text-white/62">
+                  {autoCutlinePending ? "자동칼선은 현재 미구현" : "구멍은 외곽선에 붙어서 이동"}
+                </div>
               </div>
 
               <div className="h-[700px] w-full">
@@ -733,9 +828,9 @@ export default function KeyringWorkbenchPage() {
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
               <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
-              <div>키링 구멍은 키링 영역에서만 이동</div>
-              <div>자동칼선은 아직 계산 전 상태</div>
-              <div>현재는 업로드 원본 위치만 확인</div>
+              <div>업로드 후 작업판 글씨 제거</div>
+              <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
+              <div>자동칼선은 현재 미구현</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
@@ -752,7 +847,7 @@ export default function KeyringWorkbenchPage() {
               <div className="mb-2 text-sm font-semibold text-white/88">업로드 기준</div>
               <div>PNG / PSD / PDF / AI 권장</div>
               <div>가능하면 투명 배경, 300dpi 기준</div>
-              <div>배경 포함 시 자동칼선 판정은 이후 계산 단계에서 처리</div>
+              <div>자동칼선 계산은 이후 단계에서 별도 연결 예정</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
@@ -778,7 +873,7 @@ export default function KeyringWorkbenchPage() {
                     : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                 }`}
               >
-                {autoCutlinePending ? "자동칼선 계산 후 주문" : "주문으로"}
+                {autoCutlinePending ? "칼선 생성 후 주문" : "주문으로"}
               </button>
             </div>
           </aside>
