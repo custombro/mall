@@ -25,6 +25,20 @@ type UploadState = {
 const VIEW_WIDTH = 560;
 const VIEW_HEIGHT = 640;
 
+const ART_FRAME = {
+  x: 96,
+  y: 118,
+  width: 368,
+  height: 444,
+} as const;
+
+const HOLE_ZONE = {
+  x: 184,
+  y: 88,
+  width: 192,
+  height: 86,
+} as const;
+
 const PRICE_BASE = {
   원형: 3200,
   사각형: 3400,
@@ -48,21 +62,22 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function clampHole(next: HolePosition): HolePosition {
-  return {
-    x: clamp(next.x, 186, 374),
-    y: clamp(next.y, 92, 176),
-  };
-}
-
 function getHoleVisualRadius(holeSize: HoleSize) {
   return holeSize === 3 ? 14 : 12;
+}
+
+function clampHole(next: HolePosition, holeSize: HoleSize): HolePosition {
+  const radius = getHoleVisualRadius(holeSize) + 8;
+  return {
+    x: clamp(next.x, HOLE_ZONE.x + radius, HOLE_ZONE.x + HOLE_ZONE.width - radius),
+    y: clamp(next.y, HOLE_ZONE.y + radius, HOLE_ZONE.y + HOLE_ZONE.height - radius),
+  };
 }
 
 function getShapeDescription(shapeMode: ShapeMode) {
   if (shapeMode === "원형") return "빠른 제작용 기본형 · 지름 기준";
   if (shapeMode === "사각형") return "빠른 제작용 기본형 · 가로/세로 기준";
-  return "자유형 제작 · 외곽 인식 / 생산 검증 연결";
+  return "자동칼선 계산 전 · 현재는 업로드 원본 배치만 확인";
 }
 
 function getHoleLabel(holeSize: HoleSize) {
@@ -111,29 +126,15 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
     );
   }
 
-  return (
-    <path
-      d="M136 214C148 156 208 122 280 118C348 114 418 142 432 214C446 284 424 310 430 372C436 426 406 510 338 538C304 552 256 554 218 542C154 522 120 474 128 404C134 350 116 298 136 214Z"
-      fill={fillValue}
-      stroke="rgba(255,255,255,0.88)"
-      strokeWidth="4"
-      strokeLinejoin="round"
-    />
-  );
+  return null;
 }
 
-function renderClipShape(shapeMode: ShapeMode) {
+function renderClipShape(shapeMode: Exclude<ShapeMode, "자동칼선">) {
   if (shapeMode === "원형") {
     return <ellipse cx="280" cy="344" rx="170" ry="220" />;
   }
 
-  if (shapeMode === "사각형") {
-    return <rect x="122" y="126" width="316" height="430" rx="64" />;
-  }
-
-  return (
-    <path d="M136 214C148 156 208 122 280 118C348 114 418 142 432 214C446 284 424 310 430 372C436 426 406 510 338 538C304 552 256 554 218 542C154 522 120 474 128 404C134 350 116 298 136 214Z" />
-  );
+  return <rect x="122" y="126" width="316" height="430" rx="64" />;
 }
 
 function KeyringCanvas({
@@ -150,6 +151,7 @@ function KeyringCanvas({
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
+  const isAutoCutline = shapeMode === "자동칼선";
 
   return (
     <svg
@@ -163,107 +165,166 @@ function KeyringCanvas({
           <stop offset="0%" stopColor="#9fd0ff" stopOpacity="0.96" />
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
-        <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
+        {!isAutoCutline ? <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath> : null}
       </defs>
 
       <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
-      {renderBodyShape(shapeMode, fillId)}
-
-      {imageUrl ? (
-        <>
-          <image
-            href={imageUrl}
-            x="98"
-            y="118"
-            width="364"
-            height="440"
-            preserveAspectRatio="xMidYMid slice"
-            clipPath={`url(#${clipId})`}
-          />
-          <rect
-            x="98"
-            y="118"
-            width="364"
-            height="440"
-            fill="rgba(255,255,255,0.08)"
-            clipPath={`url(#${clipId})`}
-          />
-          {renderBodyShape(shapeMode, fillId, true)}
-        </>
-      ) : null}
+      <rect x="70" y="72" width="420" height="514" rx="28" fill="rgba(0,0,0,0.16)" />
 
       <rect
-        x="168"
-        y="84"
-        width="224"
-        height="104"
-        rx="30"
+        x={HOLE_ZONE.x}
+        y={HOLE_ZONE.y}
+        width={HOLE_ZONE.width}
+        height={HOLE_ZONE.height}
+        rx="24"
         fill="rgba(255,255,255,0.08)"
         stroke="rgba(255,255,255,0.18)"
         strokeWidth="2"
       />
 
       <text
-        x="280"
-        y="126"
+        x={HOLE_ZONE.x + HOLE_ZONE.width / 2}
+        y={HOLE_ZONE.y + 28}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.86)"
-        fontSize="16"
-        fontWeight="700"
+        fill="rgba(255,255,255,0.9)"
+        fontSize="15"
+        fontWeight="800"
       >
-        홀 이동 가능 범위
+        키링 영역
       </text>
+
+      <text
+        x={HOLE_ZONE.x + HOLE_ZONE.width / 2}
+        y={HOLE_ZONE.y + 54}
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.62)"
+        fontSize="12"
+        fontWeight="600"
+      >
+        키링 구멍은 키링 영역에서만 이동
+      </text>
+
+      {isAutoCutline ? (
+        <>
+          <rect
+            x={ART_FRAME.x}
+            y={ART_FRAME.y}
+            width={ART_FRAME.width}
+            height={ART_FRAME.height}
+            rx="28"
+            fill="rgba(255,255,255,0.03)"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="2"
+          />
+          {imageUrl ? (
+            <image
+              href={imageUrl}
+              x={ART_FRAME.x}
+              y={ART_FRAME.y}
+              width={ART_FRAME.width}
+              height={ART_FRAME.height}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          ) : null}
+          <text
+            x="280"
+            y="334"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.96)"
+            fontSize="34"
+            fontWeight="800"
+            letterSpacing="1.1"
+          >
+            자동칼선 작업판
+          </text>
+          <text
+            x="280"
+            y="384"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.78)"
+            fontSize="20"
+            fontWeight="500"
+          >
+            자동칼선은 아직 계산 전
+          </text>
+          <text
+            x="280"
+            y="420"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.64)"
+            fontSize="16"
+            fontWeight="600"
+          >
+            현재는 업로드 원본 위치만 확인
+          </text>
+        </>
+      ) : (
+        <>
+          {renderBodyShape(shapeMode, fillId)}
+          {imageUrl ? (
+            <>
+              <image
+                href={imageUrl}
+                x={ART_FRAME.x}
+                y={ART_FRAME.y}
+                width={ART_FRAME.width}
+                height={ART_FRAME.height}
+                preserveAspectRatio="xMidYMid slice"
+                clipPath={`url(#${clipId})`}
+              />
+              {renderBodyShape(shapeMode, fillId, true)}
+            </>
+          ) : (
+            <>
+              <text
+                x="280"
+                y="334"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.96)"
+                fontSize="34"
+                fontWeight="800"
+                letterSpacing="1.1"
+              >
+                {shapeMode} 작업판
+              </text>
+              <text
+                x="280"
+                y="384"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.78)"
+                fontSize="20"
+                fontWeight="500"
+              >
+                구멍을 직접 드래그해서 조정
+              </text>
+              <text
+                x="280"
+                y="420"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.64)"
+                fontSize="16"
+                fontWeight="600"
+              >
+                {getHoleLabel(holeSize)}
+              </text>
+              <text
+                x="280"
+                y="470"
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.42)"
+                fontSize="16"
+                fontWeight="600"
+              >
+                이미지 업로드 대기
+              </text>
+            </>
+          )}
+        </>
+      )}
 
       <circle cx={hole.x} cy={hole.y} r={holeRadius + 8} fill="rgba(255,210,60,0.94)" />
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
       <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
-
-      <text
-        x="280"
-        y="334"
-        textAnchor="middle"
-        fill="rgba(255,255,255,0.96)"
-        fontSize="34"
-        fontWeight="800"
-        letterSpacing="1.1"
-      >
-        {shapeMode} 작업판
-      </text>
-
-      <text
-        x="280"
-        y="384"
-        textAnchor="middle"
-        fill="rgba(255,255,255,0.78)"
-        fontSize="20"
-        fontWeight="500"
-      >
-        {imageUrl ? "업로드 이미지 기준으로 즉시 반영" : "구멍을 직접 드래그해서 조정"}
-      </text>
-
-      <text
-        x="280"
-        y="420"
-        textAnchor="middle"
-        fill="rgba(255,255,255,0.64)"
-        fontSize="16"
-        fontWeight="600"
-      >
-        {imageUrl ? "업로드 상태 / 작업판 반영 완료" : getHoleLabel(holeSize)}
-      </text>
-
-      {!imageUrl ? (
-        <text
-          x="280"
-          y="470"
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.42)"
-          fontSize="16"
-          fontWeight="600"
-        >
-          이미지 업로드 대기
-        </text>
-      ) : null}
     </svg>
   );
 }
@@ -313,6 +374,10 @@ export default function KeyringWorkbenchPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    setHole((prev) => clampHole(prev, holeSize));
+  }, [holeSize]);
+
+  useEffect(() => {
     return () => {
       if (uploadState?.previewUrl) {
         URL.revokeObjectURL(uploadState.previewUrl);
@@ -330,12 +395,13 @@ export default function KeyringWorkbenchPage() {
   }, [holeSize, material, ring, shapeMode, thickness]);
 
   const totalPrice = unitPrice * quantity;
+  const autoCutlinePending = shapeMode === "자동칼선";
 
   const updateHole = (event: ReactPointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(clampHole({ x, y }));
+    setHole(clampHole({ x, y }, holeSize));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -414,18 +480,18 @@ export default function KeyringWorkbenchPage() {
             <div className="max-w-[980px]">
               <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
               <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 업로드 작업판 연결
+                키링 제작 / 업로드 작업판 정리
               </h1>
               <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                이번 단계에서는 업로드 상태를 우측에 고정하고, 실시간 미리보기 가능 형식은 중앙 작업판에 바로 반영되도록 연결했다.
-                중복 미리보기는 넣지 않고, 업로드 → 작업판 → 주문 흐름만 유지한다.
+                업로드 후에는 작업판 중앙 글씨를 지우고, 원형/사각형은 업로드 원본만 바로 보여주도록 정리했다.
+                키링 구멍은 칼선과 무관하게 상단 키링 영역에서만 움직이고, 자동칼선은 아직 계산 전 상태로 고정한다.
               </p>
             </div>
 
             <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
-              <div>기본 인쇄: 업로드 1개 → 기본 양면 인쇄</div>
-              <div>작업판: 정면 기준 1개만 유지</div>
-              <div>실시간 미리보기 가능 형식: PNG / JPG / WEBP</div>
+              <div>업로드 후 중앙 글씨 자동 제거</div>
+              <div>키링 구멍은 키링 영역에서만 이동</div>
+              <div>자동칼선은 아직 계산 전 상태</div>
             </div>
           </div>
         </section>
@@ -514,21 +580,11 @@ export default function KeyringWorkbenchPage() {
               </div>
             </div>
 
-            {shapeMode === "자동칼선" ? (
-              <div className="rounded-[20px] border border-[#7fbaff]/22 bg-[#08142d] p-4 text-sm leading-6 text-white/72">
-                <div className="mb-2 text-[11px] font-bold tracking-[0.18em] text-[#8fc0ff]">자동칼선 3단 검증</div>
-                <div>1. 업로드 원본 · 입력 준비</div>
-                <div>2. 추출 실루엣 · 외곽 인식 확인</div>
-                <div>3. 최종 생산 칼선 · 제작 가능 판정</div>
-                <div className="mt-3 text-white/56">실제 자동 생성 엔진은 아직 TODO이며, 현재는 구조 연결 단계다.</div>
-              </div>
-            ) : (
-              <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-                <div>중앙 작업판 1개만 유지</div>
-                <div>우측에 업로드 상태와 기준 고정</div>
-                <div>중복 미리보기 대신 실제 업로드 반영 우선</div>
-              </div>
-            )}
+            <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
+              <div>키링 구멍은 칼선과 무관하게 상단 키링 영역 내에서만 이동</div>
+              <div>업로드 후 작업판 중앙 글씨는 자동 제거</div>
+              <div>자동칼선은 아직 계산 전 상태</div>
+            </div>
           </aside>
 
           <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
@@ -540,8 +596,8 @@ export default function KeyringWorkbenchPage() {
                   {shapeMode} 작업판
                 </h2>
                 <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
-                  업로드 이미지는 작업판에 바로 반영되고, 구멍 위치와 형태 모드 조정은 중앙에서 끝낸다.
-                  실시간 미리보기 가능 형식은 PNG / JPG / WEBP 우선으로 처리한다.
+                  원형/사각형은 업로드 후 원본만 보여주고, 자동칼선은 현재 계산 전 상태로만 안내한다.
+                  키링 구멍은 키링 영역에서만 이동하며 칼선과 직접 연결하지 않는다.
                 </p>
               </div>
 
@@ -574,7 +630,7 @@ export default function KeyringWorkbenchPage() {
             >
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white/82">메인 작업대</div>
-                <div className="text-sm text-white/62">구멍을 잡고 드래그해서 위치를 조정</div>
+                <div className="text-sm text-white/62">키링 구멍은 상단 키링 영역에서만 이동</div>
               </div>
 
               <div className="h-[700px] w-full">
@@ -676,6 +732,13 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
+              <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
+              <div>키링 구멍은 키링 영역에서만 이동</div>
+              <div>자동칼선은 아직 계산 전 상태</div>
+              <div>현재는 업로드 원본 위치만 확인</div>
+            </div>
+
+            <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
               <div className="mb-2 text-sm font-semibold text-white/88">제작 정보</div>
               <div>형태: {shapeMode}</div>
               <div>자재: {material}</div>
@@ -689,7 +752,7 @@ export default function KeyringWorkbenchPage() {
               <div className="mb-2 text-sm font-semibold text-white/88">업로드 기준</div>
               <div>PNG / PSD / PDF / AI 권장</div>
               <div>가능하면 투명 배경, 300dpi 기준</div>
-              <div>배경 포함 시 자동칼선 판정에서 보정 또는 제작 불가 처리 가능</div>
+              <div>배경 포함 시 자동칼선 판정은 이후 계산 단계에서 처리</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
@@ -708,9 +771,14 @@ export default function KeyringWorkbenchPage() {
               </button>
               <button
                 type="button"
-                className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-base font-extrabold text-white transition hover:bg-white/[0.08]"
+                disabled={autoCutlinePending}
+                className={`rounded-2xl px-4 py-4 text-base font-extrabold transition ${
+                  autoCutlinePending
+                    ? "cursor-not-allowed border border-white/10 bg-white/[0.03] text-white/40"
+                    : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                }`}
               >
-                주문으로
+                {autoCutlinePending ? "자동칼선 계산 후 주문" : "주문으로"}
               </button>
             </div>
           </aside>
