@@ -10,6 +10,7 @@ type HolePosition = {
 
 const VIEW_WIDTH = 560;
 const VIEW_HEIGHT = 640;
+
 const PRICE_BASE = {
   원형: 3200,
   사각형: 3400,
@@ -100,20 +101,14 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
 
 function KeyringCanvas({
   hole,
-  mirrored,
-  mini = false,
   shapeMode,
   holeSize,
 }: {
   hole: HolePosition;
-  mirrored: boolean;
-  mini?: boolean;
   shapeMode: ShapeMode;
   holeSize: HoleSize;
 }) {
-  const displayX = mirrored ? VIEW_WIDTH - hole.x : hole.x;
-  const title = mirrored ? "뒷면 반전 미리보기" : "정면 미리보기";
-  const fillId = `${mini ? "cb_fill_mini" : "cb_fill_main"}_${shapeMode}`;
+  const fillId = `cb_fill_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
 
   return (
@@ -121,7 +116,7 @@ function KeyringCanvas({
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
       className="h-full w-full"
       role="img"
-      aria-label={title}
+      aria-label="정면 작업판"
     >
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
@@ -149,74 +144,49 @@ function KeyringCanvas({
         y="126"
         textAnchor="middle"
         fill="rgba(255,255,255,0.86)"
-        fontSize={mini ? "13" : "16"}
+        fontSize="16"
         fontWeight="700"
       >
         홀 이동 가능 범위
       </text>
 
-      <circle cx={displayX} cy={hole.y} r={holeRadius + 8} fill="rgba(255,210,60,0.94)" />
-      <circle cx={displayX} cy={hole.y} r={holeRadius} fill="#263247" />
-      <circle cx={displayX} cy={hole.y} r="4" fill="#08111f" />
+      <circle cx={hole.x} cy={hole.y} r={holeRadius + 8} fill="rgba(255,210,60,0.94)" />
+      <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
+      <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
 
-      {!mini ? (
-        <>
-          <text
-            x="280"
-            y="334"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.96)"
-            fontSize="34"
-            fontWeight="800"
-            letterSpacing="1.1"
-          >
-            {shapeMode} 작업판
-          </text>
-          <text
-            x="280"
-            y="384"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.78)"
-            fontSize="20"
-            fontWeight="500"
-          >
-            {mirrored ? "뒷면은 좌우 반전 기준으로 확인" : "구멍을 직접 드래그해서 조정"}
-          </text>
-          <text
-            x="280"
-            y="420"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.64)"
-            fontSize="16"
-            fontWeight="600"
-          >
-            {getHoleLabel(holeSize)}
-          </text>
-        </>
-      ) : (
-        <>
-          <text
-            x="280"
-            y="54"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.95)"
-            fontSize="21"
-            fontWeight="800"
-          >
-            보조 미리보기
-          </text>
-          <text
-            x="280"
-            y="84"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.66)"
-            fontSize="13"
-            fontWeight="600"
-          >
-            {mirrored ? "뒷면 반전 보기" : "정면 동기화 보기"}
-          </text>
-        </>
-      )}
+      <text
+        x="280"
+        y="334"
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.96)"
+        fontSize="34"
+        fontWeight="800"
+        letterSpacing="1.1"
+      >
+        {shapeMode} 작업판
+      </text>
+
+      <text
+        x="280"
+        y="384"
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.78)"
+        fontSize="20"
+        fontWeight="500"
+      >
+        구멍을 직접 드래그해서 조정
+      </text>
+
+      <text
+        x="280"
+        y="420"
+        textAnchor="middle"
+        fill="rgba(255,255,255,0.64)"
+        fontSize="16"
+        fontWeight="600"
+      >
+        {getHoleLabel(holeSize)}
+      </text>
     </svg>
   );
 }
@@ -259,7 +229,6 @@ export default function KeyringWorkbenchPage() {
   const [ring, setRing] = useState<Ring>("실버 링");
   const [holeSize, setHoleSize] = useState<HoleSize>(2.5);
   const [quantity, setQuantity] = useState(10);
-  const [frontView, setFrontView] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 124 });
 
@@ -314,19 +283,18 @@ export default function KeyringWorkbenchPage() {
             <div className="max-w-[980px]">
               <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
               <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 형태·구멍 규격 1차 구조화
+                키링 제작 / 작업판 단일화
               </h1>
               <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                큰 미리보기는 우측 보조 카드로 축소하고, 좌측은 제작 세팅, 중앙은 작업판,
-                우측은 주문 흐름으로 다시 고정했다. 이번 1차에서는 원형 / 사각형 / 자동칼선
-                3모드와 구멍 2.5mm / 3mm 선택을 연결했다.
+                이번 단계에서는 중복 미리보기를 제거하고, 중앙 작업판 1개만 남겨 제작과 주문 흐름을 정리했다.
+                우측 영역은 제작 정보, 업로드 기준, 수량과 주문 중심으로 재구성했다.
               </p>
             </div>
 
             <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
               <div>기본 인쇄: 업로드 1개 → 기본 양면 인쇄</div>
-              <div>구멍 위치: 중앙 작업판에서 직접 드래그</div>
-              <div>미리보기: 우측 상단 보조 카드에서 즉시 확인</div>
+              <div>작업판: 정면 기준 1개만 유지</div>
+              <div>우측 영역: 제작 정보 / 업로드 기준 / 주문 중심</div>
             </div>
           </div>
         </section>
@@ -425,15 +393,16 @@ export default function KeyringWorkbenchPage() {
               </div>
             ) : (
               <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-                <div>미리보기는 보조 카드로 축소</div>
-                <div>중앙 작업판이 실제 조정 본체</div>
-                <div>뒷면 보기에서는 구멍 위치가 좌우 반전</div>
+                <div>미리보기는 현재 단계에서 제거</div>
+                <div>중앙 작업판 1개만 유지</div>
+                <div>우측은 제작 정보와 주문 전용</div>
               </div>
             )}
           </aside>
 
           <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
             <div className="mb-2 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">CENTER / 중앙 작업판</div>
+
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="min-w-0 flex-1">
                 <h2 className="text-[42px] font-extrabold leading-none tracking-tight text-white">
@@ -441,33 +410,12 @@ export default function KeyringWorkbenchPage() {
                 </h2>
                 <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
                   점선 안내는 제거하고, 실제 조절이 필요한 중앙 작업판만 크게 남겼다.
-                  형태 모드와 구멍 규격에 따라 제작 기준이 달라지며, 구멍은 상단 허용 범위 안에서 직접 움직인다.
+                  작업판은 정면 기준으로 고정하고, 선택과 조정 흐름을 한 화면에서 끝내는 쪽으로 정리했다.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFrontView(true)}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                    frontView
-                      ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/72 hover:bg-white/[0.08]"
-                  }`}
-                >
-                  정면 보기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFrontView(false)}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                    !frontView
-                      ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/72 hover:bg-white/[0.08]"
-                  }`}
-                >
-                  뒷면 보기
-                </button>
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/72">
+                정면 기준 작업판
               </div>
             </div>
 
@@ -501,7 +449,6 @@ export default function KeyringWorkbenchPage() {
               <div className="h-[700px] w-full">
                 <KeyringCanvas
                   hole={hole}
-                  mirrored={!frontView}
                   shapeMode={shapeMode}
                   holeSize={holeSize}
                 />
@@ -510,30 +457,9 @@ export default function KeyringWorkbenchPage() {
           </section>
 
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 미리보기 · 주문</div>
+            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 제작 정보 · 주문</div>
 
-            <div className="overflow-hidden rounded-[22px] border border-[#7fbaff]/30 bg-[#081630] shadow-[0_16px_36px_rgba(0,0,0,0.28)]">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                <div>
-                  <div className="text-[11px] font-bold tracking-[0.16em] text-[#8fc0ff]">보조 미리보기</div>
-                  <div className="mt-1 text-sm font-semibold text-white">우측 상단 고정 확인 카드</div>
-                </div>
-                <div className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-white/74">
-                  LIVE
-                </div>
-              </div>
-              <div className="h-[148px] p-2">
-                <KeyringCanvas
-                  hole={hole}
-                  mirrored={!frontView}
-                  mini
-                  shapeMode={shapeMode}
-                  holeSize={holeSize}
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
               <div className="mb-3 text-sm font-semibold text-white/86">수량</div>
               <div className="flex items-center gap-3">
                 <button
@@ -572,6 +498,7 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
+              <div className="mb-2 text-sm font-semibold text-white/88">제작 정보</div>
               <div>형태: {shapeMode}</div>
               <div>자재: {material}</div>
               <div>두께: {thickness}</div>
@@ -581,6 +508,14 @@ export default function KeyringWorkbenchPage() {
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
+              <div className="mb-2 text-sm font-semibold text-white/88">업로드 기준</div>
+              <div>PNG / PSD / PDF / AI 권장</div>
+              <div>가능하면 투명 배경, 300dpi 기준</div>
+              <div>배경 포함 시 자동칼선 판정에서 보정 또는 제작 불가 처리 가능</div>
+            </div>
+
+            <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
+              <div className="mb-2 text-sm font-semibold text-white/88">운영 규칙</div>
               <div>기본 포장 포함</div>
               <div>수량 / 규격에 따라 자동 반영</div>
               <div>운영 규칙 적용</div>
