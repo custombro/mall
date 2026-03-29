@@ -782,17 +782,26 @@ function KeyringCanvas({
   holeSize,
   imageUrl,
   autoCutline,
+  artScale,
 }: {
   hole: HolePosition;
   shapeMode: ShapeMode;
   holeSize: HoleSize;
   imageUrl: string | null;
   autoCutline: AutoCutlineState;
+  artScale: number;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
   const hasUpload = Boolean(imageUrl);
+  const scaledArtFrame = {
+    width: ART_FRAME.width * artScale,
+    height: ART_FRAME.height * artScale,
+    x: ART_FRAME.x + (ART_FRAME.width - ART_FRAME.width * artScale) / 2,
+    y: ART_FRAME.y + (ART_FRAME.height - ART_FRAME.height * artScale) / 2,
+  };
+
   const autoCutlinePending = shapeMode === "자동칼선";
 
   return (
@@ -820,10 +829,10 @@ function KeyringCanvas({
             <>
               <image
                 href={imageUrl!}
-                x={ART_FRAME.x}
-                y={ART_FRAME.y}
-                width={ART_FRAME.width}
-                height={ART_FRAME.height}
+                x={scaledArtFrame.x}
+                y={scaledArtFrame.y}
+                width={scaledArtFrame.width}
+                height={scaledArtFrame.height}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -891,10 +900,10 @@ function KeyringCanvas({
           {hasUpload ? (
             <image
               href={imageUrl!}
-              x={ART_FRAME.x}
-              y={ART_FRAME.y}
-              width={ART_FRAME.width}
-              height={ART_FRAME.height}
+              x={scaledArtFrame.x}
+              y={scaledArtFrame.y}
+              width={scaledArtFrame.width}
+              height={scaledArtFrame.height}
               preserveAspectRatio="xMidYMid meet"
             />
           ) : null}
@@ -1004,6 +1013,7 @@ export default function KeyringWorkbenchPage() {
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 108 });
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+  const [artScale, setArtScale] = useState(1);
   const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
     status: "idle",
     path: null,
@@ -1325,6 +1335,44 @@ export default function KeyringWorkbenchPage() {
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
                 현재 규격: {getHoleLabel(holeSize)}
               </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/72">
+                <div className="mb-2 flex items-center justify-between text-[11px] text-white/65">
+                  <span>데이터 크기</span>
+                  <span>{Math.round(artScale * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="70"
+                  max="130"
+                  step="1"
+                  value={Math.round(artScale * 100)}
+                  onChange={(e) => setArtScale(Number(e.target.value) / 100)}
+                  className="w-full accent-white"
+                />
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setArtScale((prev) => Math.max(0.7, Number((prev - 0.05).toFixed(2))))}
+                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
+                  >
+                    -5%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArtScale(1)}
+                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
+                  >
+                    기본
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArtScale((prev) => Math.min(1.3, Number((prev + 0.05).toFixed(2))))}
+                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
+                  >
+                    +5%
+                  </button>
+                </div>
+              </div>
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
                 현재 형태: {shapeMode}
               </div>
@@ -1354,6 +1402,7 @@ export default function KeyringWorkbenchPage() {
                   holeSize={holeSize}
                   imageUrl={uploadState?.previewUrl ?? null}
                   autoCutline={autoCutline}
+                artScale={artScale}
                 />
               </div>
             </div>
@@ -1507,5 +1556,4 @@ export default function KeyringWorkbenchPage() {
     </main>
   );
 }
-
 
