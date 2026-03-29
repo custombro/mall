@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -460,25 +460,101 @@ function projectHoleToPolyline(
   };
 }
 
+function cbBuildCirclePolyline(
+  frame: { x: number; y: number; width: number; height: number },
+  segments = 72,
+) {
+  const cx = frame.x + frame.width / 2;
+  const cy = frame.y + frame.height / 2;
+  const rx = frame.width / 2;
+  const ry = frame.height / 2;
+
+  return Array.from({ length: segments }, (_, index) => {
+    const angle = -Math.PI / 2 + (index / segments) * Math.PI * 2;
+    return {
+      x: cx + Math.cos(angle) * rx,
+      y: cy + Math.sin(angle) * ry,
+    };
+  });
+}
+
+function cbBuildRoundedRectPolyline(
+  frame: { x: number; y: number; width: number; height: number },
+  radius = 44,
+  arcSegments = 12,
+) {
+  const maxRadius = Math.min(frame.width, frame.height) / 2;
+  const r = Math.max(0, Math.min(radius, maxRadius));
+  const left = frame.x;
+  const top = frame.y;
+  const right = frame.x + frame.width;
+  const bottom = frame.y + frame.height;
+
+  const pushArc = (
+    points: Array<{ x: number; y: number }>,
+    cx: number,
+    cy: number,
+    startAngle: number,
+    endAngle: number,
+  ) => {
+    for (let i = 0; i <= arcSegments; i += 1) {
+      const t = i / arcSegments;
+      const angle = startAngle + (endAngle - startAngle) * t;
+      points.push({
+        x: cx + Math.cos(angle) * r,
+        y: cy + Math.sin(angle) * r,
+      });
+    }
+  };
+
+  const points: Array<{ x: number; y: number }> = [];
+  pushArc(points, right - r, top + r, -Math.PI / 2, 0);
+  pushArc(points, right - r, bottom - r, 0, Math.PI / 2);
+  pushArc(points, left + r, bottom - r, Math.PI / 2, Math.PI);
+  pushArc(points, left + r, top + r, Math.PI, (Math.PI * 3) / 2);
+
+  return points;
+}
+
 function projectHole(
-  pointer: HolePosition,
-  holeSize: HoleSize,
-  shapeMode: ShapeMode,
+  pointer: { x: number; y: number },
+  holeSize: 2.5 | 3,
+  shapeMode: string,
   autoCutline: AutoCutlineState,
-): HolePosition {
-  if (shapeMode === "원형") {
-    return projectHoleToEllipse(pointer, holeSize);
-  }
+) {
+  const frameCentroid = {
+    x: ART_FRAME.x + ART_FRAME.width / 2,
+    y: ART_FRAME.y + ART_FRAME.height / 2,
+  };
 
-  if (shapeMode === "사각형") {
-    return projectHoleToRoundedRect(pointer, holeSize);
-  }
-
-  if (autoCutline.status === "ready") {
+  if (shapeMode === "자동칼선" && autoCutline.status === "ready") {
     return projectHoleToPolyline(pointer, holeSize, autoCutline.points, autoCutline.centroid);
   }
 
-  return { x: 280, y: 108 };
+  if (shapeMode === "원형") {
+    return projectHoleToPolyline(
+      pointer,
+      holeSize,
+      cbBuildCirclePolyline(ART_FRAME, 72),
+      frameCentroid,
+    );
+  }
+
+  if (shapeMode === "사각형") {
+    return projectHoleToPolyline(
+      pointer,
+      holeSize,
+      cbBuildRoundedRectPolyline(ART_FRAME, 44, 12),
+      frameCentroid,
+    );
+  }
+
+  return projectHoleToPolyline(
+    pointer,
+    holeSize,
+    cbBuildCirclePolyline(ART_FRAME, 72),
+    frameCentroid,
+  );
 }
 
 async function buildAutoCutlineFromImage(
@@ -1431,6 +1507,5 @@ export default function KeyringWorkbenchPage() {
     </main>
   );
 }
-
 
 
