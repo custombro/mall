@@ -1,11 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 type HolePosition = {
   x: number;
   y: number;
+};
+
+type UploadState = {
+  name: string;
+  typeLabel: string;
+  sizeLabel: string;
+  previewUrl: string | null;
 };
 
 const VIEW_WIDTH = 560;
@@ -22,6 +36,7 @@ const MATERIALS = ["투명 아크릴", "반투명 아크릴"] as const;
 const THICKNESSES = ["3T", "5T"] as const;
 const RINGS = ["실버 링", "골드 링", "볼체인"] as const;
 const HOLE_SIZES = [2.5, 3] as const;
+const PREVIEWABLE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type ShapeMode = (typeof SHAPE_MODES)[number];
 type Material = (typeof MATERIALS)[number];
@@ -58,7 +73,15 @@ function getHoleLimitLabel(holeSize: HoleSize) {
   return holeSize === 2.5 ? "최대 1.25mm 돌출 허용" : "최대 1.5mm 돌출 허용";
 }
 
-function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${bytes}B`;
+}
+
+function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = false) {
+  const fillValue = strokeOnly ? "transparent" : `url(#${fillId})`;
+
   if (shapeMode === "원형") {
     return (
       <ellipse
@@ -66,7 +89,7 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
         cy="344"
         rx="170"
         ry="220"
-        fill={`url(#${fillId})`}
+        fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
       />
@@ -81,7 +104,7 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
         width="316"
         height="430"
         rx="64"
-        fill={`url(#${fillId})`}
+        fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
       />
@@ -91,7 +114,7 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
   return (
     <path
       d="M136 214C148 156 208 122 280 118C348 114 418 142 432 214C446 284 424 310 430 372C436 426 406 510 338 538C304 552 256 554 218 542C154 522 120 474 128 404C134 350 116 298 136 214Z"
-      fill={`url(#${fillId})`}
+      fill={fillValue}
       stroke="rgba(255,255,255,0.88)"
       strokeWidth="4"
       strokeLinejoin="round"
@@ -99,16 +122,33 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string) {
   );
 }
 
+function renderClipShape(shapeMode: ShapeMode) {
+  if (shapeMode === "원형") {
+    return <ellipse cx="280" cy="344" rx="170" ry="220" />;
+  }
+
+  if (shapeMode === "사각형") {
+    return <rect x="122" y="126" width="316" height="430" rx="64" />;
+  }
+
+  return (
+    <path d="M136 214C148 156 208 122 280 118C348 114 418 142 432 214C446 284 424 310 430 372C436 426 406 510 338 538C304 552 256 554 218 542C154 522 120 474 128 404C134 350 116 298 136 214Z" />
+  );
+}
+
 function KeyringCanvas({
   hole,
   shapeMode,
   holeSize,
+  imageUrl,
 }: {
   hole: HolePosition;
   shapeMode: ShapeMode;
   holeSize: HoleSize;
+  imageUrl: string | null;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
+  const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
 
   return (
@@ -123,10 +163,34 @@ function KeyringCanvas({
           <stop offset="0%" stopColor="#9fd0ff" stopOpacity="0.96" />
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
+        <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
       </defs>
 
       <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
       {renderBodyShape(shapeMode, fillId)}
+
+      {imageUrl ? (
+        <>
+          <image
+            href={imageUrl}
+            x="98"
+            y="118"
+            width="364"
+            height="440"
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#${clipId})`}
+          />
+          <rect
+            x="98"
+            y="118"
+            width="364"
+            height="440"
+            fill="rgba(255,255,255,0.08)"
+            clipPath={`url(#${clipId})`}
+          />
+          {renderBodyShape(shapeMode, fillId, true)}
+        </>
+      ) : null}
 
       <rect
         x="168"
@@ -174,7 +238,7 @@ function KeyringCanvas({
         fontSize="20"
         fontWeight="500"
       >
-        구멍을 직접 드래그해서 조정
+        {imageUrl ? "업로드 이미지 기준으로 즉시 반영" : "구멍을 직접 드래그해서 조정"}
       </text>
 
       <text
@@ -185,8 +249,21 @@ function KeyringCanvas({
         fontSize="16"
         fontWeight="600"
       >
-        {getHoleLabel(holeSize)}
+        {imageUrl ? "업로드 상태 / 작업판 반영 완료" : getHoleLabel(holeSize)}
       </text>
+
+      {!imageUrl ? (
+        <text
+          x="280"
+          y="470"
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.42)"
+          fontSize="16"
+          fontWeight="600"
+        >
+          이미지 업로드 대기
+        </text>
+      ) : null}
     </svg>
   );
 }
@@ -231,6 +308,17 @@ export default function KeyringWorkbenchPage() {
   const [quantity, setQuantity] = useState(10);
   const [dragging, setDragging] = useState(false);
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 124 });
+  const [uploadState, setUploadState] = useState<UploadState | null>(null);
+  const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (uploadState?.previewUrl) {
+        URL.revokeObjectURL(uploadState.previewUrl);
+      }
+    };
+  }, [uploadState]);
 
   const unitPrice = useMemo(() => {
     let next = PRICE_BASE[shapeMode];
@@ -266,6 +354,49 @@ export default function KeyringWorkbenchPage() {
     setDragging(false);
   };
 
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const clearUpload = () => {
+    setUploadState((prev) => {
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return null;
+    });
+    setUploadGuide("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const previewable = PREVIEWABLE_TYPES.includes(file.type as (typeof PREVIEWABLE_TYPES)[number]);
+    const nextPreviewUrl = previewable ? URL.createObjectURL(file) : null;
+
+    setUploadState((prev) => {
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return {
+        name: file.name,
+        typeLabel: file.type || "알 수 없는 형식",
+        sizeLabel: formatFileSize(file.size),
+        previewUrl: nextPreviewUrl,
+      };
+    });
+
+    setUploadGuide(
+      previewable
+        ? "업로드 상태: 작업판에 즉시 반영됨"
+        : "PDF / AI / PSD는 업로드 기록만 유지하고 실시간 미리보기는 생략"
+    );
+  };
+
   return (
     <main className="min-h-screen bg-[#041129] text-white">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-5">
@@ -283,18 +414,18 @@ export default function KeyringWorkbenchPage() {
             <div className="max-w-[980px]">
               <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
               <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 작업판 단일화
+                키링 제작 / 업로드 작업판 연결
               </h1>
               <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                이번 단계에서는 중복 미리보기를 제거하고, 중앙 작업판 1개만 남겨 제작과 주문 흐름을 정리했다.
-                우측 영역은 제작 정보, 업로드 기준, 수량과 주문 중심으로 재구성했다.
+                이번 단계에서는 업로드 상태를 우측에 고정하고, 실시간 미리보기 가능 형식은 중앙 작업판에 바로 반영되도록 연결했다.
+                중복 미리보기는 넣지 않고, 업로드 → 작업판 → 주문 흐름만 유지한다.
               </p>
             </div>
 
             <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
               <div>기본 인쇄: 업로드 1개 → 기본 양면 인쇄</div>
               <div>작업판: 정면 기준 1개만 유지</div>
-              <div>우측 영역: 제작 정보 / 업로드 기준 / 주문 중심</div>
+              <div>실시간 미리보기 가능 형식: PNG / JPG / WEBP</div>
             </div>
           </div>
         </section>
@@ -393,9 +524,9 @@ export default function KeyringWorkbenchPage() {
               </div>
             ) : (
               <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-                <div>미리보기는 현재 단계에서 제거</div>
                 <div>중앙 작업판 1개만 유지</div>
-                <div>우측은 제작 정보와 주문 전용</div>
+                <div>우측에 업로드 상태와 기준 고정</div>
+                <div>중복 미리보기 대신 실제 업로드 반영 우선</div>
               </div>
             )}
           </aside>
@@ -409,13 +540,13 @@ export default function KeyringWorkbenchPage() {
                   {shapeMode} 작업판
                 </h2>
                 <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
-                  점선 안내는 제거하고, 실제 조절이 필요한 중앙 작업판만 크게 남겼다.
-                  작업판은 정면 기준으로 고정하고, 선택과 조정 흐름을 한 화면에서 끝내는 쪽으로 정리했다.
+                  업로드 이미지는 작업판에 바로 반영되고, 구멍 위치와 형태 모드 조정은 중앙에서 끝낸다.
+                  실시간 미리보기 가능 형식은 PNG / JPG / WEBP 우선으로 처리한다.
                 </p>
               </div>
 
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/72">
-                정면 기준 작업판
+                {uploadState ? `업로드 파일: ${uploadState.name}` : "업로드 파일 대기"}
               </div>
             </div>
 
@@ -451,15 +582,62 @@ export default function KeyringWorkbenchPage() {
                   hole={hole}
                   shapeMode={shapeMode}
                   holeSize={holeSize}
+                  imageUrl={uploadState?.previewUrl ?? null}
                 />
               </div>
             </div>
           </section>
 
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 제작 정보 · 주문</div>
+            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 업로드 · 제작 정보 · 주문</div>
 
             <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
+              <div className="mb-2 text-sm font-semibold text-white/88">업로드 상태</div>
+              <div className="mb-3 text-sm leading-6 text-white/70">{uploadGuide}</div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,.pdf,.ai,.psd"
+                className="hidden"
+                onChange={handleUploadChange}
+              />
+
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={openFilePicker}
+                  className="rounded-2xl bg-[#a9d7ff] px-4 py-4 text-base font-extrabold text-[#0a1730] transition hover:brightness-105"
+                >
+                  파일 선택
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearUpload}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-base font-extrabold text-white transition hover:bg-white/[0.08]"
+                >
+                  업로드 비우기
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-[#000923] p-4 text-sm leading-7 text-white/72">
+                <div>실시간 미리보기 가능 형식: PNG / JPG / WEBP</div>
+                <div>PDF / AI / PSD는 업로드 기록만 유지</div>
+                <div>가능하면 투명 배경, 300dpi 기준</div>
+              </div>
+
+              {uploadState ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-white/72">
+                  <div>파일명: {uploadState.name}</div>
+                  <div>형식: {uploadState.typeLabel}</div>
+                  <div>크기: {uploadState.sizeLabel}</div>
+                  <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
               <div className="mb-3 text-sm font-semibold text-white/86">수량</div>
               <div className="flex items-center gap-3">
                 <button
