@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -398,6 +398,38 @@ async function buildAutoCutlineFromImage(
         resolve(null);
         return;
       }
+  const autoCutlineMarginPx = Math.max(
+    6,
+    Math.round((ANALYSIS_WIDTH / Math.max(1, ART_FRAME.width)) * 2.25),
+  );
+
+  if (autoCutlineMarginPx > 0) {
+    const expandedMask = mask.map((row) => [...row]);
+
+    for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+      for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+        if (!mask[y][x]) continue;
+
+        for (let oy = -autoCutlineMarginPx; oy <= autoCutlineMarginPx; oy += 1) {
+          const ny = y + oy;
+          if (ny < 0 || ny >= ANALYSIS_HEIGHT) continue;
+
+          for (let ox = -autoCutlineMarginPx; ox <= autoCutlineMarginPx; ox += 1) {
+            const nx = x + ox;
+            if (nx < 0 || nx >= ANALYSIS_WIDTH) continue;
+            if (ox * ox + oy * oy > autoCutlineMarginPx * autoCutlineMarginPx) continue;
+            expandedMask[ny][nx] = true;
+          }
+        }
+      }
+    }
+
+    for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+      for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+        mask[y][x] = expandedMask[y][x];
+      }
+    }
+  }
 
       const centroidMask = {
         x: sumX / count,
