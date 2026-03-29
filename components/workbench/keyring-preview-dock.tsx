@@ -26,16 +26,16 @@ function copyCanvasBitmaps(sourceRoot: HTMLElement, clonedRoot: HTMLElement) {
         ctx.drawImage(sourceCanvas, 0, 0);
       }
     } catch {
-      // ignore canvas copy failures and keep the rest of the clone alive
+      // ignore copy issues
     }
   }
 }
 
-export function KeyringPreviewDock({
+export default function KeyringPreviewDock({
   anchorSelector = "[data-keyring-main-preview]",
   title = "보조 미리보기",
   className = "",
-  emptyMessage = "미리보기를 불러오는 중입니다.",
+  emptyMessage = "중앙 작업대와 동기화 중입니다.",
 }: KeyringPreviewDockProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [ready, setReady] = useState(false);
@@ -43,7 +43,7 @@ export function KeyringPreviewDock({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    let rafId = 0;
+    let frame = 0;
     let observer: MutationObserver | null = null;
 
     const sync = () => {
@@ -58,7 +58,6 @@ export function KeyringPreviewDock({
       }
 
       const clone = source.cloneNode(true) as HTMLElement;
-      clone.removeAttribute("data-keyring-main-preview");
       clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
       clone.querySelectorAll("[data-keyring-main-preview]").forEach((node) => node.removeAttribute("data-keyring-main-preview"));
       clone.style.pointerEvents = "none";
@@ -71,8 +70,8 @@ export function KeyringPreviewDock({
     };
 
     const schedule = () => {
-      cancelAnimationFrame(rafId);
-      rafId = window.requestAnimationFrame(sync);
+      cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(sync);
     };
 
     schedule();
@@ -88,26 +87,25 @@ export function KeyringPreviewDock({
     window.addEventListener("resize", schedule);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", schedule);
       observer?.disconnect();
     };
   }, [anchorSelector]);
 
   return (
-    <aside className={`cb-keyring-preview-dock hidden xl:block ${className}`.trim()} aria-label={title}>
+    <div className={`cb-keyring-preview-dock ${className}`.trim()} aria-label={title}>
       <div className="cb-keyring-preview-dock__card">
         <div className="cb-keyring-preview-dock__head">
           <span>{title}</span>
           <span className="cb-keyring-preview-dock__badge">LIVE</span>
         </div>
+
         <div className="cb-keyring-preview-dock__viewportWrap">
           <div ref={hostRef} className="cb-keyring-preview-dock__viewport" />
           {!ready ? <div className="cb-keyring-preview-dock__empty">{emptyMessage}</div> : null}
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
-
-export default KeyringPreviewDock;

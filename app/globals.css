@@ -145,3 +145,74 @@ html, body {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.46);
 }
+
+/* CB_KEYRING_PREVIEW_INLINE_V2 */
+.cb-keyring-preview-dock {
+  display: block;
+  width: 100%;
+}
+
+.cb-keyring-preview-dock--inline {
+  margin-left: auto;
+}
+
+.cb-keyring-preview-dock__card {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 18px;
+  background: rgba(7,12,24,0.92);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+}
+
+.cb-keyring-preview-dock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.92);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.cb-keyring-preview-dock__badge {
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.10);
+  padding: 3px 8px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.72);
+}
+
+.cb-keyring-preview-dock__viewportWrap {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(4,9,24,0.96), rgba(7,14,34,0.96));
+}
+
+.cb-keyring-preview-dock__viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.cb-keyring-preview-dock__viewport > * {
+  transform: scale(0.24);
+  transform-origin: top left;
+  width: calc(100% / 0.24) !important;
+  max-width: none !important;
+}
+
+.cb-keyring-preview-dock__empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  color: rgba(255,255,255,0.60);
+  font-size: 12px;
+}

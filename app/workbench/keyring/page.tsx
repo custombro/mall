@@ -581,13 +581,23 @@ export default function Page() {
                       CENTER / 완성품 미리보기
                     </p>
                     <h2 className="mt-2 text-2xl font-semibold text-white">
-                      미리보기 1칸 토글 확인
+                      중앙 작업대 + 보조 미리보기
                     </h2>
                     <p className="mt-2 text-sm leading-6 text-slate-300">
                       미리보기를 메인에 과하게 두지 않고 1칸만 유지합니다.
                       현재 {previewSide === "front" ? "정면" : "배면"} 기준으로 확인 중이며,
                       배면에서는 타공 위치가 좌우 반전되어 보입니다.
                     </p>
+          <div className="mt-4 flex justify-end">
+            <div className="w-[220px] shrink-0">
+              <KeyringPreviewDock
+                anchorSelector="[data-keyring-main-preview]"
+                title="보조 미리보기"
+                emptyMessage="중앙 작업대와 동기화 중입니다."
+                className="cb-keyring-preview-dock--inline"
+              />
+            </div>
+          </div>
                   </div>
 
                   <button
@@ -867,12 +877,7 @@ export default function Page() {
         <p className="text-[11px] font-semibold tracking-[0.08em] text-neutral-500">
         </p>
       </div>
-
-      <KeyringPreviewDock
-        anchorSelector="[data-keyring-main-preview]"
-        title="보조 미리보기"
-        emptyMessage="중앙 작업대 미리보기를 불러오는 중입니다."
-      /></main>
+</main>
 
             <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
               <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
@@ -965,6 +970,7 @@ export default function Page() {
     </div>
   );
 }
+
 
 
 
