@@ -10,6 +10,67 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+function cbBuildClosedLinePath(points: Array<{ x: number; y: number }>) {
+  if (!points.length) return "";
+  return `${points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ")} Z`;
+}
+
+function cbChaikinSmoothClosed(points: Array<{ x: number; y: number }>, passes = 2) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 3) return next;
+
+    const refined: Array<{ x: number; y: number }> = [];
+
+    for (let i = 0; i < next.length; i += 1) {
+      const current = next[i];
+      const following = next[(i + 1) % next.length];
+
+      refined.push({
+        x: current.x * 0.75 + following.x * 0.25,
+        y: current.y * 0.75 + following.y * 0.25,
+      });
+
+      refined.push({
+        x: current.x * 0.25 + following.x * 0.75,
+        y: current.y * 0.25 + following.y * 0.75,
+      });
+    }
+
+    next = refined;
+  }
+
+  return next;
+}
+
+function cbBuildSmoothClosedPath(points: Array<{ x: number; y: number }>) {
+  if (!points.length) return "";
+  if (points.length < 3) return cbBuildClosedLinePath(points);
+
+  const smoothed = cbChaikinSmoothClosed(points, 2);
+  if (smoothed.length < 3) return cbBuildClosedLinePath(smoothed);
+
+  const midpoints = smoothed.map((point, index) => {
+    const next = smoothed[(index + 1) % smoothed.length];
+    return {
+      x: (point.x + next.x) / 2,
+      y: (point.y + next.y) / 2,
+    };
+  });
+
+  let d = `M ${midpoints[0].x} ${midpoints[0].y}`;
+
+  for (let i = 0; i < smoothed.length; i += 1) {
+    const control = smoothed[(i + 1) % smoothed.length];
+    const end = midpoints[(i + 1) % midpoints.length];
+    d += ` Q ${control.x} ${control.y} ${end.x} ${end.y}`;
+  }
+
+  return `${d} Z`;
+}
 type Point = {
   x: number;
   y: number;
@@ -683,7 +744,7 @@ function KeyringCanvas({
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={autoCutline.path}
+              d={cbBuildSmoothClosedPath(autoCutline.points)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1289,3 +1350,5 @@ export default function KeyringWorkbenchPage() {
     </main>
   );
 }
+
+
