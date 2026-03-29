@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import {
 useEffect,
   useMemo,
@@ -8,7 +7,8 @@ useEffect,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-
+import Link from "next/link";
+import KeyringPreviewDock from "@/components/workbench/keyring-preview-dock";
 
 type PreviewSide = "front" | "back";
 type HoleSizeMm = 2 | 2.5 | 3;
@@ -573,7 +573,7 @@ export default function Page() {
               </section>
             </aside>
 
-            <main className="space-y-4">
+            <main data-cb-keyring-workbench="1" className="space-y-4">
               <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                   <div>
@@ -602,11 +602,11 @@ export default function Page() {
                 </div>
 
                 <div className="mt-4 rounded-[28px] border border-white/10 bg-slate-950/80 p-4">
-                  <ProductPreviewSvg
+                  <div data-keyring-main-preview className="cb-keyring-main-preview-anchor"><ProductPreviewSvg
                     holes={holes}
                     side={previewSide}
                     className="h-[340px] w-full"
-                  />
+                  /></div>
                 </div>
 
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-6 text-slate-300">
@@ -867,7 +867,12 @@ export default function Page() {
         <p className="text-[11px] font-semibold tracking-[0.08em] text-neutral-500">
         </p>
       </div>
-</main>
+
+      <KeyringPreviewDock
+        anchorSelector="[data-keyring-main-preview]"
+        title="보조 미리보기"
+        emptyMessage="중앙 작업대 미리보기를 불러오는 중입니다."
+      /></main>
 
             <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
               <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
@@ -960,5 +965,8 @@ export default function Page() {
     </div>
   );
 }
+
+
+
 
 
