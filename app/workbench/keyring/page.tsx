@@ -846,25 +846,12 @@ function KeyringCanvas({
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
   const hasUpload = Boolean(imageUrl);
-  const scaledArtFrame = (() => {
-  const baseWidth = ART_FRAME.width * artScale;
-  const baseHeight = ART_FRAME.height * artScale;
-  const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
-  const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
-  const autoDataMarginPx =
-    shapeMode === "자동칼선"
-      ? Math.max(baseWidth, baseHeight) >= 240
-        ? 18
-        : 14.5
-      : 0;
-
-  return {
-    width: Math.max(24, baseWidth - autoDataMarginPx * 2),
-    height: Math.max(24, baseHeight - autoDataMarginPx * 2),
-    x: baseX + autoDataMarginPx,
-    y: baseY + autoDataMarginPx,
-  };
-})();
+  const scaledArtFrame = {
+  width: ART_FRAME.width * artScale,
+  height: ART_FRAME.height * artScale,
+  x: ART_FRAME.x + (ART_FRAME.width - ART_FRAME.width * artScale) / 2,
+  y: ART_FRAME.y + (ART_FRAME.height - ART_FRAME.height * artScale) / 2,
+};
 
 const autoCutlinePending = shapeMode === "자동칼선";
 
@@ -1086,57 +1073,12 @@ export default function KeyringWorkbenchPage() {
   });
 
   const effectiveAutoCutline = useMemo(() => {
-  if (autoCutline.status !== "ready" || !autoCutline.points.length) {
-    return autoCutline;
-  }
-
-  const centerX = ART_FRAME.x + ART_FRAME.width / 2;
-  const centerY = ART_FRAME.y + ART_FRAME.height / 2;
-
-  const scaledPoints = autoCutline.points.map((point) => ({
-    x: centerX + (point.x - centerX) * artScale,
-    y: centerY + (point.y - centerY) * artScale,
-  }));
-
-  const centroid = autoCutline.centroid
-    ? {
-        x: centerX + (autoCutline.centroid.x - centerX) * artScale,
-        y: centerY + (autoCutline.centroid.y - centerY) * artScale,
-      }
-    : {
-        x: centerX,
-        y: centerY,
-      };
-
-  return {
-    ...autoCutline,
-    path: cbBuildSmoothClosedPath(scaledPoints),
-    points: scaledPoints,
-    centroid,
-  };
-}, [autoCutline, artScale]);
+  return autoCutline;
+}, [autoCutline]);
 
 const effectiveHoleAutoCutline = useMemo(() => {
-  if (effectiveAutoCutline.status !== "ready" || !effectiveAutoCutline.points.length) {
-    return effectiveAutoCutline;
-  }
-
-  const bounds = cbGetClosedBounds(effectiveAutoCutline.points);
-  const centroid = effectiveAutoCutline.centroid ?? {
-    x: bounds.left + bounds.width / 2,
-    y: bounds.top + bounds.height / 2,
-  };
-
-  const outerRidePx = Math.max(4, getHoleVisualRadius(holeSize) * 0.9);
-  const ridePoints = cbExpandClosedPoints(effectiveAutoCutline.points, centroid, outerRidePx);
-
-  return {
-    ...effectiveAutoCutline,
-    path: cbBuildSmoothClosedPath(ridePoints),
-    points: ridePoints,
-    centroid,
-  };
-}, [effectiveAutoCutline, holeSize]);
+  return effectiveAutoCutline;
+}, [effectiveAutoCutline]);
 
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1183,12 +1125,23 @@ const effectiveHoleAutoCutline = useMemo(() => {
       if (cancelled) return;
 
       if (result) {
+        
+const rawBounds = cbGetClosedBounds(result.points);
+        const largestSize = Math.max(rawBounds.width, rawBounds.height);
+        const autoMarginPx = largestSize >= 240 ? 18 : 14.5;
+        const rawCentroid = result.centroid ?? {
+          x: rawBounds.left + rawBounds.width / 2,
+          y: rawBounds.top + rawBounds.height / 2,
+        };
+        const expandedPoints = cbExpandClosedPoints(result.points, rawCentroid, autoMarginPx);
+
         setAutoCutline({
           status: "ready",
-          path: result.path,
-          points: result.points,
-          centroid: result.centroid,
+          path: cbBuildSmoothClosedPath(expandedPoints),
+          points: expandedPoints,
+          centroid: rawCentroid,
         });
+
       } else {
         setAutoCutline({
           status: "failed",
@@ -1205,8 +1158,8 @@ const effectiveHoleAutoCutline = useMemo(() => {
   }, [shapeMode, uploadState?.previewUrl]);
 
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode, effectiveHoleAutoCutline));
-  }, [holeSize, shapeMode, effectiveHoleAutoCutline.status, effectiveHoleAutoCutline.path, artScale]);
+    setHole((prev) => projectHole(prev, holeSize, shapeMode, autoCutline));
+  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
 
   useEffect(() => {
     return () => {
