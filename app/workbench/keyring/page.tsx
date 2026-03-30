@@ -854,8 +854,8 @@ function KeyringCanvas({
   const autoInsetPx =
     shapeMode === "자동칼선"
       ? Math.max(baseWidth, baseHeight) >= 240
-        ? 18
-        : 14.5
+        ? 24
+        : 20
       : 0;
 
   return {
@@ -1141,7 +1141,7 @@ const effectiveHoleAutoCutline = useMemo(() => {
         
 const rawBounds = cbGetClosedBounds(result.points);
         const largestSize = Math.max(rawBounds.width, rawBounds.height);
-        const autoMarginPx = largestSize >= 240 ? 18 : 14.5;
+        const autoMarginPx = largestSize >= 240 ? 24 : 20;
         const rawCentroid = result.centroid ?? {
           x: rawBounds.left + rawBounds.width / 2,
           y: rawBounds.top + rawBounds.height / 2,
