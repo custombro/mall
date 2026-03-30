@@ -1021,6 +1021,27 @@ export default function KeyringWorkbenchPage() {
     centroid: null,
   });
 
+  const effectiveAutoCutline = useMemo(() => {
+    if (autoCutline.status !== "ready" || artScale === 1) {
+      return autoCutline;
+    }
+
+    const centerX = ART_FRAME.x + ART_FRAME.width / 2;
+    const centerY = ART_FRAME.y + ART_FRAME.height / 2;
+
+    const scalePoint = (point: Point): Point => ({
+      x: centerX + (point.x - centerX) * artScale,
+      y: centerY + (point.y - centerY) * artScale,
+    });
+
+    return {
+      ...autoCutline,
+      points: autoCutline.points.map(scalePoint),
+      centroid: autoCutline.centroid ? scalePoint(autoCutline.centroid) : null,
+    };
+  }, [autoCutline, artScale]);
+
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -1087,8 +1108,8 @@ export default function KeyringWorkbenchPage() {
   }, [shapeMode, uploadState?.previewUrl]);
 
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode, autoCutline));
-  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
+    setHole((prev) => projectHole(prev, holeSize, shapeMode, effectiveAutoCutline));
+  }, [holeSize, shapeMode, effectiveAutoCutline.status, effectiveAutoCutline.path, artScale]);
 
   useEffect(() => {
     return () => {
@@ -1401,7 +1422,7 @@ export default function KeyringWorkbenchPage() {
                   shapeMode={shapeMode}
                   holeSize={holeSize}
                   imageUrl={uploadState?.previewUrl ?? null}
-                  autoCutline={autoCutline}
+                  autoCutline={effectiveAutoCutline}
                 artScale={artScale}
                 />
               </div>
