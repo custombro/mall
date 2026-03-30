@@ -846,14 +846,27 @@ function KeyringCanvas({
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
   const hasUpload = Boolean(imageUrl);
-  const scaledArtFrame = {
-    width: ART_FRAME.width * artScale,
-    height: ART_FRAME.height * artScale,
-    x: ART_FRAME.x + (ART_FRAME.width - ART_FRAME.width * artScale) / 2,
-    y: ART_FRAME.y + (ART_FRAME.height - ART_FRAME.height * artScale) / 2,
-  };
+  const scaledArtFrame = (() => {
+  const baseWidth = ART_FRAME.width * artScale;
+  const baseHeight = ART_FRAME.height * artScale;
+  const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
+  const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
+  const autoDataMarginPx =
+    shapeMode === "자동칼선"
+      ? Math.max(baseWidth, baseHeight) >= 240
+        ? 18
+        : 14.5
+      : 0;
 
-  const autoCutlinePending = shapeMode === "자동칼선";
+  return {
+    width: Math.max(24, baseWidth - autoDataMarginPx * 2),
+    height: Math.max(24, baseHeight - autoDataMarginPx * 2),
+    x: baseX + autoDataMarginPx,
+    y: baseY + autoDataMarginPx,
+  };
+})();
+
+const autoCutlinePending = shapeMode === "자동칼선";
 
   return (
     <svg
@@ -1085,27 +1098,20 @@ export default function KeyringWorkbenchPage() {
     y: centerY + (point.y - centerY) * artScale,
   }));
 
-  const scaledCentroid = autoCutline.centroid
+  const centroid = autoCutline.centroid
     ? {
         x: centerX + (autoCutline.centroid.x - centerX) * artScale,
         y: centerY + (autoCutline.centroid.y - centerY) * artScale,
       }
-    : null;
-
-  const bounds = cbGetClosedBounds(scaledPoints);
-  const largestSize = Math.max(bounds.width, bounds.height);
-  const targetMarginPx = largestSize >= 240 ? 18 : 14.5;
-  const centroid = scaledCentroid ?? {
-    x: bounds.left + bounds.width / 2,
-    y: bounds.top + bounds.height / 2,
-  };
-
-  const expandedPoints = cbExpandClosedPoints(scaledPoints, centroid, targetMarginPx);
+    : {
+        x: centerX,
+        y: centerY,
+      };
 
   return {
     ...autoCutline,
-    path: cbBuildSmoothClosedPath(expandedPoints),
-    points: expandedPoints,
+    path: cbBuildSmoothClosedPath(scaledPoints),
+    points: scaledPoints,
     centroid,
   };
 }, [autoCutline, artScale]);
@@ -1121,8 +1127,8 @@ const effectiveHoleAutoCutline = useMemo(() => {
     y: bounds.top + bounds.height / 2,
   };
 
-  const holeRideOffsetPx = getHoleVisualRadius(holeSize) * 0.6 + 2;
-  const ridePoints = cbExpandClosedPoints(effectiveAutoCutline.points, centroid, holeRideOffsetPx);
+  const outerRidePx = Math.max(4, getHoleVisualRadius(holeSize) * 0.9);
+  const ridePoints = cbExpandClosedPoints(effectiveAutoCutline.points, centroid, outerRidePx);
 
   return {
     ...effectiveAutoCutline,
