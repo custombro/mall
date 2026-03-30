@@ -846,12 +846,25 @@ function KeyringCanvas({
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
   const hasUpload = Boolean(imageUrl);
-  const scaledArtFrame = {
-  width: ART_FRAME.width * artScale,
-  height: ART_FRAME.height * artScale,
-  x: ART_FRAME.x + (ART_FRAME.width - ART_FRAME.width * artScale) / 2,
-  y: ART_FRAME.y + (ART_FRAME.height - ART_FRAME.height * artScale) / 2,
-};
+  const scaledArtFrame = (() => {
+  const baseWidth = ART_FRAME.width * artScale;
+  const baseHeight = ART_FRAME.height * artScale;
+  const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
+  const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
+  const autoInsetPx =
+    shapeMode === "자동칼선"
+      ? Math.max(baseWidth, baseHeight) >= 240
+        ? 18
+        : 14.5
+      : 0;
+
+  return {
+    width: Math.max(24, baseWidth - autoInsetPx * 2),
+    height: Math.max(24, baseHeight - autoInsetPx * 2),
+    x: baseX + autoInsetPx,
+    y: baseY + autoInsetPx,
+  };
+})();
 
 const autoCutlinePending = shapeMode === "자동칼선";
 
