@@ -516,6 +516,57 @@ function cbBuildRoundedRectPolyline(
   return points;
 }
 
+function cbGetClosedBounds(points: Array<{ x: number; y: number }>) {
+  if (!points.length) {
+    return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
+  }
+
+  let left = points[0].x;
+  let right = points[0].x;
+  let top = points[0].y;
+  let bottom = points[0].y;
+
+  for (const point of points) {
+    if (point.x < left) left = point.x;
+    if (point.x > right) right = point.x;
+    if (point.y < top) top = point.y;
+    if (point.y > bottom) bottom = point.y;
+  }
+
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function cbExpandClosedPoints(
+  points: Array<{ x: number; y: number }>,
+  centroid: { x: number; y: number },
+  outwardPx: number,
+) {
+  if (!points.length || outwardPx === 0) return points.map((point) => ({ x: point.x, y: point.y }));
+
+  return points.map((point) => {
+    const dx = point.x - centroid.x;
+    const dy = point.y - centroid.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance <= 0.0001) {
+      return { x: point.x, y: point.y };
+    }
+
+    const ratio = (distance + outwardPx) / distance;
+    return {
+      x: centroid.x + dx * ratio,
+      y: centroid.y + dy * ratio,
+    };
+  });
+}
+
 function projectHole(
   pointer: { x: number; y: number },
   holeSize: 2.5 | 3,
@@ -1022,24 +1073,64 @@ export default function KeyringWorkbenchPage() {
   });
 
   const effectiveAutoCutline = useMemo(() => {
-    if (autoCutline.status !== "ready" || artScale === 1) {
-      return autoCutline;
-    }
+  if (autoCutline.status !== "ready" || !autoCutline.points.length) {
+    return autoCutline;
+  }
 
-    const centerX = ART_FRAME.x + ART_FRAME.width / 2;
-    const centerY = ART_FRAME.y + ART_FRAME.height / 2;
+  const centerX = ART_FRAME.x + ART_FRAME.width / 2;
+  const centerY = ART_FRAME.y + ART_FRAME.height / 2;
 
-    const scalePoint = (point: Point): Point => ({
-      x: centerX + (point.x - centerX) * artScale,
-      y: centerY + (point.y - centerY) * artScale,
-    });
+  const scaledPoints = autoCutline.points.map((point) => ({
+    x: centerX + (point.x - centerX) * artScale,
+    y: centerY + (point.y - centerY) * artScale,
+  }));
 
-    return {
-      ...autoCutline,
-      points: autoCutline.points.map(scalePoint),
-      centroid: autoCutline.centroid ? scalePoint(autoCutline.centroid) : null,
-    };
-  }, [autoCutline, artScale]);
+  const scaledCentroid = autoCutline.centroid
+    ? {
+        x: centerX + (autoCutline.centroid.x - centerX) * artScale,
+        y: centerY + (autoCutline.centroid.y - centerY) * artScale,
+      }
+    : null;
+
+  const bounds = cbGetClosedBounds(scaledPoints);
+  const largestSize = Math.max(bounds.width, bounds.height);
+  const targetMarginPx = largestSize >= 240 ? 18 : 14.5;
+  const centroid = scaledCentroid ?? {
+    x: bounds.left + bounds.width / 2,
+    y: bounds.top + bounds.height / 2,
+  };
+
+  const expandedPoints = cbExpandClosedPoints(scaledPoints, centroid, targetMarginPx);
+
+  return {
+    ...autoCutline,
+    path: cbBuildSmoothClosedPath(expandedPoints),
+    points: expandedPoints,
+    centroid,
+  };
+}, [autoCutline, artScale]);
+
+const effectiveHoleAutoCutline = useMemo(() => {
+  if (effectiveAutoCutline.status !== "ready" || !effectiveAutoCutline.points.length) {
+    return effectiveAutoCutline;
+  }
+
+  const bounds = cbGetClosedBounds(effectiveAutoCutline.points);
+  const centroid = effectiveAutoCutline.centroid ?? {
+    x: bounds.left + bounds.width / 2,
+    y: bounds.top + bounds.height / 2,
+  };
+
+  const holeRideOffsetPx = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  const ridePoints = cbExpandClosedPoints(effectiveAutoCutline.points, centroid, holeRideOffsetPx);
+
+  return {
+    ...effectiveAutoCutline,
+    path: cbBuildSmoothClosedPath(ridePoints),
+    points: ridePoints,
+    centroid,
+  };
+}, [effectiveAutoCutline, holeSize]);
 
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1108,8 +1199,8 @@ export default function KeyringWorkbenchPage() {
   }, [shapeMode, uploadState?.previewUrl]);
 
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode, effectiveAutoCutline));
-  }, [holeSize, shapeMode, effectiveAutoCutline.status, effectiveAutoCutline.path, artScale]);
+    setHole((prev) => projectHole(prev, holeSize, shapeMode, effectiveHoleAutoCutline));
+  }, [holeSize, shapeMode, effectiveHoleAutoCutline.status, effectiveHoleAutoCutline.path, artScale]);
 
   useEffect(() => {
     return () => {
