@@ -267,6 +267,10 @@ function getAutoCutlineMarginVisualPx() {
   return 24;
 }
 
+function getHoleOuterCutlineRadius(holeSize: HoleSize) {
+  return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPx();
+}
+
 function getAdjustedAutoCutlinePoints(points: Point[], centroid: Point | null) {
   if (!centroid || points.length === 0) return points;
   const extraPx = getAutoCutlineMarginVisualPx();
@@ -364,7 +368,7 @@ function renderClipShape(shapeMode: ShapeMode) {
 }
 
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
-  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
   let dx = pointer.x - ELLIPSE.cx;
   let dy = pointer.y - ELLIPSE.cy;
 
@@ -389,7 +393,7 @@ function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePo
 }
 
 function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): HolePosition {
-  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
 
   const halfW = ROUNDED_RECT.width / 2;
   const halfH = ROUNDED_RECT.height / 2;
@@ -488,7 +492,7 @@ function projectHoleToPolyline(
     }
   }
 
-  const holeOffset = getHoleVisualRadius(holeSize) * 0.6 + 2;
+  const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
   const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
 
   return {
@@ -1071,7 +1075,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
   <circle
     cx={hole.x}
     cy={hole.y}
-    r={holeRadius + 8}
+    r={getHoleOuterCutlineRadius(holeSize)}
     fill="none"
     stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
     strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
@@ -1170,7 +1174,7 @@ useEffect(() => {
     '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">레이저 커팅 시 잉크 타는 것을 막기 위해 이미지 외곽선 바깥 2~2.5mm 안전 여백을 조절합니다.</div>' +
     '<div style="display:flex;gap:8px;margin-top:10px;">' + buttons + '</div>' +
     '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>' +
-    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(248,250,252,0.94);">최종 제작: 외곽/키링 빨강 · 구멍 검정 · 선두께 0.01mm</div>';
+    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(248,250,252,0.94);">최종 제작: 외곽/키링 빨강 · 구멍 검정 · 선두께 0.01mm · 구멍 외곽 링도 선택 여백값에 연동</div>';
 
   const handleClick = (event: Event) => {
     const target = event.target as HTMLElement | null;
