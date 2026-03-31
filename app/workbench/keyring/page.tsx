@@ -1142,6 +1142,7 @@ useEffect(() => {
   if (typeof document === "undefined") return;
 
   const controlId = "cb-auto-cutline-margin-control";
+  const sliderId = "cb-auto-cutline-margin-slider";
   const existing = document.getElementById(controlId);
 
   if (shapeMode !== "자동칼선") {
@@ -1152,48 +1153,48 @@ useEffect(() => {
   const root = existing ?? document.createElement("div");
   root.id = controlId;
   root.style.position = "fixed";
-  root.style.left = "20px";
-  root.style.bottom = "20px";
-  root.style.zIndex = "70";
-  root.style.width = "220px";
-  root.style.padding = "12px";
-  root.style.borderRadius = "18px";
-  root.style.border = "1px solid rgba(255,255,255,0.16)";
-  root.style.background = "rgba(6,15,42,0.94)";
-  root.style.boxShadow = "0 18px 48px rgba(0,0,0,0.34)";
+  root.style.left = "50%";
+  root.style.bottom = "18px";
+  root.style.transform = "translateX(-50%)";
+  root.style.zIndex = "99999";
+  root.style.width = "340px";
+  root.style.maxWidth = "calc(100vw - 24px)";
+  root.style.padding = "12px 14px 10px";
+  root.style.borderRadius = "16px";
+  root.style.border = "1px solid rgba(15,23,42,0.14)";
+  root.style.background = "rgba(255,255,255,0.98)";
+  root.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
   root.style.backdropFilter = "blur(12px)";
-
-  const buttons = AUTO_CUTLINE_MARGIN_OPTIONS.map((value) => {
-    const active = autoCutlineMarginMm === value;
-    const label = formatAutoCutlineMarginMm(value);
-    return '<button type="button" data-cutline-margin-mm="' + value + '" style="flex:1;border:1px solid ' + (active ? 'rgba(147,197,253,0.95)' : 'rgba(255,255,255,0.12)') + ';background:' + (active ? 'rgba(191,219,254,0.95)' : 'rgba(15,23,42,0.92)') + ';color:' + (active ? '#0f172a' : '#ffffff') + ';border-radius:12px;padding:10px 8px;font-size:12px;font-weight:700;cursor:pointer;">' + label + 'mm</button>';
-  }).join("");
+  root.style.color = "#0f172a";
+  root.style.pointerEvents = "auto";
 
   root.innerHTML =
-    '<div style="font-size:12px;font-weight:800;color:#ffffff;">칼선 여백</div>' +
-    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">레이저 커팅 시 잉크 타는 것을 막기 위해 이미지 외곽선 바깥 2~2.5mm 안전 여백을 조절합니다.</div>' +
-    '<div style="display:flex;gap:8px;margin-top:10px;">' + buttons + '</div>' +
-    '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>' +
-    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(248,250,252,0.94);">최종 제작: 외곽/키링 빨강 · 구멍 검정 · 선두께 0.01mm · 구멍 외곽 링도 선택 여백값에 연동</div>';
+    '<div style="font-size:12px;font-weight:800;">칼선 여백 조절</div>' +
+    '<div style="margin-top:4px;font-size:11px;line-height:1.45;color:#334155;">이미지 외곽선 기준 2mm 시작 · 2~2.5mm 조절</div>' +
+    '<input id="' + sliderId + '" type="range" min="2" max="2.5" step="0.25" value="' + autoCutlineMarginMm + '" style="width:100%;margin-top:10px;accent-color:#0f172a;" />' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;color:#475569;">' +
+      '<span>2.0mm</span>' +
+      '<strong style="font-size:12px;color:#0f172a;">현재 ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</strong>' +
+      '<span>2.5mm</span>' +
+    '</div>' +
+    '<div style="margin-top:6px;font-size:11px;line-height:1.45;color:#475569;">외곽/키링 빨강 · 구멍 검정 · 0.01mm</div>';
 
-  const handleClick = (event: Event) => {
-    const target = event.target as HTMLElement | null;
-    const button = target?.closest("[data-cutline-margin-mm]") as HTMLElement | null;
-    if (!button) return;
-
-    const next = Number(button.getAttribute("data-cutline-margin-mm"));
+  const slider = root.querySelector("#" + sliderId) as HTMLInputElement | null;
+  const handleInput = (event: Event) => {
+    const next = Number((event.target as HTMLInputElement).value);
     if (next === 2 || next === 2.25 || next === 2.5) {
       setAutoCutlineMarginMm(next as AutoCutlineMarginMm);
     }
   };
 
-  root.addEventListener("click", handleClick);
+  slider?.addEventListener("input", handleInput);
+
   if (!existing) {
     document.body.appendChild(root);
   }
 
   return () => {
-    root.removeEventListener("click", handleClick);
+    slider?.removeEventListener("input", handleInput);
     if (shapeMode !== "자동칼선") {
       root.remove();
     }
