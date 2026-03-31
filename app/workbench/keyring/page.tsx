@@ -1887,7 +1887,44 @@ const rawBounds = cbGetClosedBounds(result.points);
           </aside>
         </section>
       </div>
-    </main>
+    
+      {shapeMode === "자동칼선" ? (
+        <div
+          data-testid="cutline-margin-slider-panel"
+          className="fixed bottom-4 left-1/2 z-[99999] w-[340px] max-w-[calc(100vw-24px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-3 text-slate-900 shadow-2xl backdrop-blur"
+        >
+          <div className="text-[12px] font-extrabold">칼선 여백 조절</div>
+          <div className="mt-1 text-[11px] leading-5 text-slate-600">
+            이미지 외곽선 기준 2mm 시작 · 2~2.5mm 조절
+          </div>
+          <input
+            data-testid="cutline-margin-slider-input"
+            type="range"
+            min={2}
+            max={2.5}
+            step={0.25}
+            value={autoCutlineMarginMm}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              if (next === 2 || next === 2.25 || next === 2.5) {
+                setAutoCutlineMarginMm(next as AutoCutlineMarginMm);
+              }
+            }}
+            className="mt-3 w-full accent-slate-900"
+          />
+          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600">
+            <span>2.0mm</span>
+            <strong className="text-[12px] font-extrabold text-slate-900">
+              현재 {formatAutoCutlineMarginMm(autoCutlineMarginMm)}mm
+            </strong>
+            <span>2.5mm</span>
+          </div>
+          <div className="mt-2 text-[11px] leading-5 text-slate-600">
+            외곽/키링 빨강 · 구멍 검정 · 0.01mm
+          </div>
+        </div>
+      ) : null}
+</main>
   );
 }
 
