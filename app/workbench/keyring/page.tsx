@@ -222,7 +222,7 @@ type Ring = (typeof RINGS)[number];
 type HoleSize = (typeof HOLE_SIZES)[number];
 type AutoCutlineMarginMm = (typeof AUTO_CUTLINE_MARGIN_OPTIONS)[number];
 
-let autoCutlineMarginMmLive: AutoCutlineMarginMm = 2.25;
+let autoCutlineMarginMmLive: AutoCutlineMarginMm = 2.5;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -258,7 +258,9 @@ function getHoleLimitLabel(holeSize: HoleSize) {
 }
 
 function getAutoCutlineMarginVisualPx() {
-  return (getHoleVisualRadius(2.5) / 2.5) * autoCutlineMarginMmLive;
+  if (autoCutlineMarginMmLive === 2) return 16;
+  if (autoCutlineMarginMmLive === 2.25) return 20;
+  return 24;
 }
 
 function getAdjustedAutoCutlinePoints(points: Point[], centroid: Point | null) {
@@ -707,7 +709,7 @@ async function buildAutoCutlineFromImage(
       }
   const autoCutlineMarginPx = Math.max(
       Math.round(Math.max(img.width, img.height) * 0.03),
-      14,
+      getAutoCutlineMarginVisualPx(),
     );
 
   if (autoCutlineMarginPx > 0) {
@@ -1105,7 +1107,7 @@ export default function KeyringWorkbenchPage() {
   const [thickness, setThickness] = useState<Thickness>("3T");
   const [ring, setRing] = useState<Ring>("실버 링");
   const [holeSize, setHoleSize] = useState<HoleSize>(2.5);
-const [autoCutlineMarginMm, setAutoCutlineMarginMm] = useState<AutoCutlineMarginMm>(2.25);
+const [autoCutlineMarginMm, setAutoCutlineMarginMm] = useState<AutoCutlineMarginMm>(2.5);
 
 useEffect(() => {
   autoCutlineMarginMmLive = autoCutlineMarginMm;
@@ -1144,7 +1146,7 @@ useEffect(() => {
 
   root.innerHTML =
     '<div style="font-size:12px;font-weight:800;color:#ffffff;">칼선 여백</div>' +
-    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">이미지 외곽선 기준 바깥 2~2.5mm 범위를 바로 조절합니다.</div>' +
+    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">레이저 커팅 시 잉크 타는 것을 막기 위해 이미지 외곽선 바깥 2~2.5mm 안전 여백을 조절합니다.</div>' +
     '<div style="display:flex;gap:8px;margin-top:10px;">' + buttons + '</div>' +
     '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>';
 
