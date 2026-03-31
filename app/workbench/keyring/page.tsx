@@ -668,9 +668,9 @@ async function buildAutoCutlineFromImage(
         return;
       }
   const autoCutlineMarginPx = Math.max(
-    6,
-    Math.round((ANALYSIS_WIDTH / Math.max(1, ART_FRAME.width)) * 2.25),
-  );
+      Math.round(Math.max(img.width, img.height) * 0.03),
+      14,
+    );
 
   if (autoCutlineMarginPx > 0) {
     const expandedMask = mask.map((row) => [...row]);
@@ -851,12 +851,7 @@ function KeyringCanvas({
   const baseHeight = ART_FRAME.height * artScale;
   const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
   const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
-  const autoInsetPx =
-    shapeMode === "자동칼선"
-      ? Math.max(baseWidth, baseHeight) >= 240
-        ? 24
-        : 20
-      : 0;
+  const autoInsetPx = 0;
 
   return {
     width: Math.max(24, baseWidth - autoInsetPx * 2),
