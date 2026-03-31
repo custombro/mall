@@ -212,6 +212,7 @@ const MATERIALS = ["투명 아크릴", "반투명 아크릴"] as const;
 const THICKNESSES = ["3T", "5T"] as const;
 const RINGS = ["실버 링", "골드 링", "볼체인"] as const;
 const HOLE_SIZES = [2.5, 3] as const;
+const AUTO_CUTLINE_MARGIN_OPTIONS = [2, 2.25, 2.5] as const;
 const PREVIEWABLE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type ShapeMode = (typeof SHAPE_MODES)[number];
@@ -219,6 +220,9 @@ type Material = (typeof MATERIALS)[number];
 type Thickness = (typeof THICKNESSES)[number];
 type Ring = (typeof RINGS)[number];
 type HoleSize = (typeof HOLE_SIZES)[number];
+type AutoCutlineMarginMm = (typeof AUTO_CUTLINE_MARGIN_OPTIONS)[number];
+
+let autoCutlineMarginMmLive: AutoCutlineMarginMm = 2.25;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -251,6 +255,33 @@ function getHoleLabel(holeSize: HoleSize) {
 
 function getHoleLimitLabel(holeSize: HoleSize) {
   return holeSize === 2.5 ? "최대 1.25mm 돌출 허용" : "최대 1.5mm 돌출 허용";
+}
+
+function getAutoCutlineMarginVisualPx() {
+  return (getHoleVisualRadius(2.5) / 2.5) * autoCutlineMarginMmLive;
+}
+
+function getAdjustedAutoCutlinePoints(points: Point[], centroid: Point | null) {
+  if (!centroid || points.length === 0) return points;
+  const extraPx = getAutoCutlineMarginVisualPx();
+  if (extraPx <= 0) return points;
+
+  return points.map((point) => {
+    const dx = point.x - centroid.x;
+    const dy = point.y - centroid.y;
+    const len = Math.hypot(dx, dy) || 1;
+
+    return {
+      x: point.x + (dx / len) * extraPx,
+      y: point.y + (dy / len) * extraPx,
+    };
+  });
+}
+
+function formatAutoCutlineMarginMm(value: number) {
+  return Number.isInteger(value)
+    ? value.toFixed(0)
+    : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function getShapeDescription(shapeMode: ShapeMode) {
@@ -579,7 +610,14 @@ function projectHole(
   };
 
   if (shapeMode === "자동칼선" && autoCutline.status === "ready") {
-    return projectHoleToPolyline(pointer, holeSize, autoCutline.points, autoCutline.centroid);
+    return autoCutline.centroid
+      ? projectHoleToPolyline(
+          pointer,
+          holeSize,
+          getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid),
+          autoCutline.centroid,
+        )
+      : pointer;
   }
 
   if (shapeMode === "원형") {
@@ -969,7 +1007,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={cbBuildSmoothClosedPath(autoCutline.points)}
+              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid) : autoCutline.points)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1067,6 +1105,72 @@ export default function KeyringWorkbenchPage() {
   const [thickness, setThickness] = useState<Thickness>("3T");
   const [ring, setRing] = useState<Ring>("실버 링");
   const [holeSize, setHoleSize] = useState<HoleSize>(2.5);
+const [autoCutlineMarginMm, setAutoCutlineMarginMm] = useState<AutoCutlineMarginMm>(2.25);
+
+useEffect(() => {
+  autoCutlineMarginMmLive = autoCutlineMarginMm;
+}, [autoCutlineMarginMm]);
+
+useEffect(() => {
+  if (typeof document === "undefined") return;
+
+  const controlId = "cb-auto-cutline-margin-control";
+  const existing = document.getElementById(controlId);
+
+  if (shapeMode !== "자동칼선") {
+    existing?.remove();
+    return;
+  }
+
+  const root = existing ?? document.createElement("div");
+  root.id = controlId;
+  root.style.position = "fixed";
+  root.style.left = "20px";
+  root.style.bottom = "20px";
+  root.style.zIndex = "70";
+  root.style.width = "220px";
+  root.style.padding = "12px";
+  root.style.borderRadius = "18px";
+  root.style.border = "1px solid rgba(255,255,255,0.16)";
+  root.style.background = "rgba(6,15,42,0.94)";
+  root.style.boxShadow = "0 18px 48px rgba(0,0,0,0.34)";
+  root.style.backdropFilter = "blur(12px)";
+
+  const buttons = AUTO_CUTLINE_MARGIN_OPTIONS.map((value) => {
+    const active = autoCutlineMarginMm === value;
+    const label = formatAutoCutlineMarginMm(value);
+    return '<button type="button" data-cutline-margin-mm="' + value + '" style="flex:1;border:1px solid ' + (active ? 'rgba(147,197,253,0.95)' : 'rgba(255,255,255,0.12)') + ';background:' + (active ? 'rgba(191,219,254,0.95)' : 'rgba(15,23,42,0.92)') + ';color:' + (active ? '#0f172a' : '#ffffff') + ';border-radius:12px;padding:10px 8px;font-size:12px;font-weight:700;cursor:pointer;">' + label + 'mm</button>';
+  }).join("");
+
+  root.innerHTML =
+    '<div style="font-size:12px;font-weight:800;color:#ffffff;">칼선 여백</div>' +
+    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">이미지 외곽선 기준 바깥 2~2.5mm 범위를 바로 조절합니다.</div>' +
+    '<div style="display:flex;gap:8px;margin-top:10px;">' + buttons + '</div>' +
+    '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>';
+
+  const handleClick = (event: Event) => {
+    const target = event.target as HTMLElement | null;
+    const button = target?.closest("[data-cutline-margin-mm]") as HTMLElement | null;
+    if (!button) return;
+
+    const next = Number(button.getAttribute("data-cutline-margin-mm"));
+    if (next === 2 || next === 2.25 || next === 2.5) {
+      setAutoCutlineMarginMm(next as AutoCutlineMarginMm);
+    }
+  };
+
+  root.addEventListener("click", handleClick);
+  if (!existing) {
+    document.body.appendChild(root);
+  }
+
+  return () => {
+    root.removeEventListener("click", handleClick);
+    if (shapeMode !== "자동칼선") {
+      root.remove();
+    }
+  };
+}, [shapeMode, autoCutlineMarginMm]);
   const [quantity, setQuantity] = useState(10);
   const [dragging, setDragging] = useState(false);
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 108 });
