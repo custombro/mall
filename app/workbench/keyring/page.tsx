@@ -1515,44 +1515,6 @@ const rawBounds = cbGetClosedBounds(result.points);
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
                 현재 규격: {getHoleLabel(holeSize)}
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/72">
-                <div className="mb-2 flex items-center justify-between text-[11px] text-white/65">
-                  <span>데이터 크기</span>
-                  <span>{Math.round(artScale * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="70"
-                  max="130"
-                  step="1"
-                  value={Math.round(artScale * 100)}
-                  onChange={(e) => setArtScale(Number(e.target.value) / 100)}
-                  className="w-full accent-white"
-                />
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setArtScale((prev) => Math.max(0.7, Number((prev - 0.05).toFixed(2))))}
-                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                  >
-                    -5%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArtScale(1)}
-                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                  >
-                    기본
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArtScale((prev) => Math.min(1.3, Number((prev + 0.05).toFixed(2))))}
-                    className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                  >
-                    +5%
-                  </button>
-                </div>
-              </div>
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
                 현재 형태: {shapeMode}
               </div>
@@ -1602,44 +1564,6 @@ const rawBounds = cbGetClosedBounds(result.points);
             </div>
             {/* DATA_SIZE_INLINE_UI_END */}
 
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/72">
-              <div className="mb-2 flex items-center justify-between text-[12px] text-white/70">
-                <span>데이터 크기</span>
-                <span>{Math.round(artScale * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min="70"
-                max="130"
-                step="1"
-                value={Math.round(artScale * 100)}
-                onChange={(e) => setArtScale(Number(e.target.value) / 100)}
-                className="w-full accent-white"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setArtScale((prev) => Math.max(0.7, Number((prev - 0.05).toFixed(2))))}
-                  className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                >
-                  -5%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setArtScale(1)}
-                  className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                >
-                  기본
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setArtScale((prev) => Math.min(1.3, Number((prev + 0.05).toFixed(2))))}
-                  className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-white/75 transition hover:border-white/20 hover:text-white"
-                >
-                  +5%
-                </button>
-              </div>
-            </div>
 
             <div
               className={`mt-4 overflow-hidden rounded-[28px] border ${
