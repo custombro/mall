@@ -213,6 +213,10 @@ const THICKNESSES = ["3T", "5T"] as const;
 const RINGS = ["실버 링", "골드 링", "볼체인"] as const;
 const HOLE_SIZES = [2.5, 3] as const;
 const AUTO_CUTLINE_MARGIN_OPTIONS = [2, 2.25, 2.5] as const;
+const PRODUCTION_OUTER_CUTLINE_COLOR = "#ff0000";
+const PRODUCTION_HOLE_CUTLINE_COLOR = "#000000";
+const PRODUCTION_CUTLINE_STROKE_MM = 0.01;
+const PREVIEW_CUTLINE_STROKE_PX = 2;
 const PREVIEWABLE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type ShapeMode = (typeof SHAPE_MODES)[number];
@@ -1063,7 +1067,24 @@ const autoCutlinePending = shapeMode === "자동칼선";
         </>
       )}
 
-      <circle cx={hole.x} cy={hole.y} r={holeRadius + 8} fill="rgba(255,210,60,0.94)" />
+      <g>
+  <circle
+    cx={hole.x}
+    cy={hole.y}
+    r={holeRadius + 8}
+    fill="none"
+    stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+    strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
+  />
+  <circle
+    cx={hole.x}
+    cy={hole.y}
+    r={holeRadius}
+    fill="none"
+    stroke={PRODUCTION_HOLE_CUTLINE_COLOR}
+    strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
+  />
+</g>
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
       <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
     </svg>
@@ -1148,7 +1169,8 @@ useEffect(() => {
     '<div style="font-size:12px;font-weight:800;color:#ffffff;">칼선 여백</div>' +
     '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(226,232,240,0.88);">레이저 커팅 시 잉크 타는 것을 막기 위해 이미지 외곽선 바깥 2~2.5mm 안전 여백을 조절합니다.</div>' +
     '<div style="display:flex;gap:8px;margin-top:10px;">' + buttons + '</div>' +
-    '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>';
+    '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:rgba(191,219,254,0.96);">현재 적용: ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</div>' +
+    '<div style="margin-top:6px;font-size:11px;line-height:1.5;color:rgba(248,250,252,0.94);">최종 제작: 외곽/키링 빨강 · 구멍 검정 · 선두께 0.01mm</div>';
 
   const handleClick = (event: Event) => {
     const target = event.target as HTMLElement | null;
