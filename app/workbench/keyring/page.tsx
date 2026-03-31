@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -1347,26 +1347,18 @@ const rawBounds = cbGetClosedBounds(result.points);
           </Link>
         </div>
 
-        <section className="mb-4 rounded-[28px] border border-white/10 bg-[#030b24] px-5 py-5 shadow-[0_20px_50px_rgba(0,0,0,0.25)]">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-[980px]">
-              <div className="mb-2 text-[11px] font-semibold tracking-[0.18em] text-[#8fb7ff]">상태창</div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-white">
-                키링 제작 / 외곽선 추종 구멍 + 자동칼선 1차
-              </h1>
-              <p className="mt-4 max-w-[980px] text-base leading-7 text-white/78">
-                업로드 후 작업판 내부 글씨는 제거하고, 원형/사각형은 구멍이 외곽선에 붙어서 이동하도록 정리했다.
-                자동칼선은 업로드 이미지 기준으로 1차 빨간 칼선을 생성한다.
-              </p>
-            </div>
-
-            <div className="grid w-full max-w-[340px] gap-2 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm text-white/76">
-              <div>업로드 후 작업판 내부 글씨 제거</div>
-              <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
-            </div>
-          </div>
-        </section>
+        <section className="rounded-2xl border border-slate-800 bg-[#09142b] px-5 py-4">
+  <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="min-w-0">
+      <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / AUTO CUTLINE</p>
+      <h1 className="mt-1 text-[22px] font-semibold text-white">자동칼선 작업판</h1>
+      <p className="mt-1 text-sm text-slate-300">업로드한 이미지를 기준으로 구멍 위치와 자동칼선을 바로 잡는 간소화 작업대</p>
+    </div>
+    <div className="rounded-full border border-slate-700 bg-[#0b1730] px-3 py-1 text-xs text-slate-300">
+      기본 포장 포함 · 수량/규격 자동 반영
+    </div>
+  </div>
+</section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
@@ -1744,4 +1736,5 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
