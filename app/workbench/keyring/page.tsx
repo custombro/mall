@@ -1507,6 +1507,36 @@ const rawBounds = cbGetClosedBounds(result.points);
             </div>
 
             <div className="mb-6">
+
+          <div data-testid="left-cutline-margin-panel-v3" className="mt-8">
+            <div className="text-sm font-semibold text-white/82">칼선 여백</div>
+            <div className="mt-2 text-xs leading-5 text-white/58">
+              자동칼선 전용 · 이미지 외곽선 기준 바깥 2 ~ 2.5mm
+            </div>
+            <div className="mt-3 grid gap-3">
+              {AUTO_CUTLINE_MARGIN_OPTIONS.map((marginMm) => (
+                <OptionButton
+                  key={`cutline-margin-v3-${marginMm}`}
+                  active={shapeMode === "자동칼선" && autoCutlineMarginMm === marginMm}
+                  label={`${formatAutoCutlineMarginMm(marginMm)}mm`}
+                  description={
+                    shapeMode === "자동칼선"
+                      ? `이미지 외곽선 기준 바깥 ${formatAutoCutlineMarginMm(marginMm)}mm`
+                      : "자동칼선 모드에서 적용"
+                  }
+                  compact
+                  onClick={() => {
+                    if (shapeMode === "자동칼선") {
+                      setAutoCutlineMarginMm(marginMm);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            <div className="mt-2 text-xs leading-5 text-white/58">
+              레이저 커팅 보호 여백 · 외곽/키링 빨강 · 구멍 검정 · 0.01mm
+            </div>
+          </div>
               <div className="mb-3 text-sm font-semibold text-white/86">구멍 규격</div>
               <div className="grid gap-2">
                 {HOLE_SIZES.map((item) => (
