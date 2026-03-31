@@ -1139,6 +1139,70 @@ useEffect(() => {
 }, [autoCutlineMarginMm]);
 
 useEffect(() => {
+  if (typeof document === "undefined") return;
+
+  document.getElementById("cb-auto-cutline-margin-control")?.remove();
+
+  const panelId = "cb-cutline-margin-fallback-v2";
+  const existing = document.getElementById(panelId);
+
+  if (shapeMode !== "자동칼선") {
+    existing?.remove();
+    return;
+  }
+
+  const panel = existing ?? document.createElement("div");
+  panel.id = panelId;
+  panel.style.position = "fixed";
+  panel.style.left = "20px";
+  panel.style.bottom = "20px";
+  panel.style.zIndex = "2147483647";
+  panel.style.width = "340px";
+  panel.style.maxWidth = "calc(100vw - 40px)";
+  panel.style.padding = "14px";
+  panel.style.borderRadius = "18px";
+  panel.style.border = "2px solid rgba(15,23,42,0.16)";
+  panel.style.background = "rgba(255,255,255,0.98)";
+  panel.style.boxShadow = "0 22px 56px rgba(0,0,0,0.34)";
+  panel.style.backdropFilter = "blur(12px)";
+  panel.style.color = "#0f172a";
+  panel.style.fontFamily = "inherit";
+  panel.style.pointerEvents = "auto";
+
+  panel.innerHTML =
+    '<div style="font-size:13px;font-weight:800;">칼선 여백 조절</div>' +
+    '<div style="margin-top:4px;font-size:11px;line-height:1.5;color:#475569;">이미지 외곽선 기준 2mm 시작 · 2~2.5mm 조절</div>' +
+    '<input id="cb-cutline-margin-fallback-v2-input" type="range" min="2" max="2.5" step="0.25" value="' + autoCutlineMarginMm + '" style="width:100%;margin-top:10px;accent-color:#0f172a;" />' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:#475569;">' +
+      '<span>2.0mm</span>' +
+      '<strong style="font-size:12px;color:#0f172a;">현재 ' + formatAutoCutlineMarginMm(autoCutlineMarginMm) + 'mm</strong>' +
+      '<span>2.5mm</span>' +
+    '</div>' +
+    '<div style="margin-top:8px;font-size:11px;line-height:1.5;color:#475569;">외곽/키링 빨강 · 구멍 검정 · 0.01mm</div>';
+
+  const input = panel.querySelector("#cb-cutline-margin-fallback-v2-input") as HTMLInputElement | null;
+  const handleInput = (event: Event) => {
+    const next = Number((event.target as HTMLInputElement).value);
+    if (next === 2 || next === 2.25 || next === 2.5) {
+      setAutoCutlineMarginMm(next as AutoCutlineMarginMm);
+    }
+  };
+
+  input?.addEventListener("input", handleInput);
+
+  if (!existing) {
+    document.body.appendChild(panel);
+  }
+
+  return () => {
+    input?.removeEventListener("input", handleInput);
+    if (shapeMode !== "자동칼선") {
+      panel.remove();
+    }
+  };
+}, [shapeMode, autoCutlineMarginMm]);
+
+useEffect(() => {
   if (typeof document !== "undefined") {
     document.getElementById("cb-auto-cutline-margin-control")?.remove();
   }
