@@ -1365,8 +1365,25 @@ const autoCutlinePending = shapeMode === "자동칼선";
         </>
       )}
 
-              <g />
-      <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
+                      <g>
+          <circle
+            cx={hole.x}
+            cy={hole.y}
+            r={getHoleOuterCutlineRadius(holeSize) + 1.5}
+            fill="none"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth={4.6}
+          />
+          <circle
+            cx={hole.x}
+            cy={hole.y}
+            r={getHoleOuterCutlineRadius(holeSize)}
+            fill="none"
+            stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+            strokeWidth={2.2}
+          />
+        </g>
+        $1
       <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
     </svg>
   );
