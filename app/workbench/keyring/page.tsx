@@ -1512,12 +1512,39 @@ const rawBounds = cbGetClosedBounds(result.points);
                 <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
                   현재 형태 {shapeMode}
                 </div>
-                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
-                  칼선 여백 후보 2 / 2.25 / 2.5mm
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  <span className="font-semibold text-cyan-100">
+                    현재 칼선 여백 {formatAutoCutlineMarginMm(autoCutlineMarginMm)}mm
+                  </span>
+                  {AUTO_CUTLINE_MARGIN_OPTIONS.map((marginMm) => {
+                    const active = autoCutlineMarginMm === marginMm;
+                    const disabled = shapeMode !== "자동칼선";
+                    return (
+                      <button
+                        key={`hud-cutline-margin-${marginMm}`}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          if (!disabled) {
+                            setAutoCutlineMarginMm(marginMm);
+                          }
+                        }}
+                        className={[
+                          "rounded-lg border px-2 py-1 text-[10px] font-semibold transition",
+                          active
+                            ? "border-cyan-300/40 bg-cyan-400/[0.14] text-cyan-100"
+                            : "border-white/10 bg-white/[0.03] text-white/72 hover:border-white/20 hover:text-white",
+                          disabled ? "cursor-not-allowed opacity-45" : ""
+                        ].join(" ")}
+                      >
+                        {formatAutoCutlineMarginMm(marginMm)}mm
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 칼선 여백은 좌측 mm 버튼에서 선택
+                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 칼선 여백은 여기 또는 좌측 mm 버튼에서 동일 조절
               </div>
             </div>
 
@@ -1802,6 +1829,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
