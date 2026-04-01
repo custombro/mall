@@ -275,6 +275,10 @@ function getAutoCutlineGuideOuterRadius(holeSize: HoleSize, marginMm: AutoCutlin
   return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(marginMm);
 }
 
+function getHolePrintSafeRadius(holeSize: HoleSize) {
+  return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
+}
+
 function getHoleOuterCutlineRadius(holeSize: HoleSize) {
   return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPx();
 }
@@ -985,12 +989,26 @@ function KeyringCanvas({
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
     getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[AUTO_CUTLINE_MARGIN_OPTIONS.length - 1]);
+  const holePrintSafeRadius = getHolePrintSafeRadius(holeSize);
+  const frameCenter = {
+    x: ART_FRAME.x + ART_FRAME.width / 2,
+    y: ART_FRAME.y + ART_FRAME.height / 2,
+  };
+  const bridgeDirection = normalize(frameCenter.x - hole.x, frameCenter.y - hole.y);
+  const bridgeStart = {
+    x: hole.x + bridgeDirection.x * Math.max(holeRadius + 6, getHoleOuterCutlineRadius(holeSize) - 2),
+    y: hole.y + bridgeDirection.y * Math.max(holeRadius + 6, getHoleOuterCutlineRadius(holeSize) - 2),
+  };
+  const bridgeEnd = {
+    x: hole.x + bridgeDirection.x * (getHoleOuterCutlineRadius(holeSize) + 18),
+    y: hole.y + bridgeDirection.y * (getHoleOuterCutlineRadius(holeSize) + 18),
+  };
   const scaledArtFrame = (() => {
   const baseWidth = ART_FRAME.width * artScale;
   const baseHeight = ART_FRAME.height * artScale;
   const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
   const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
-  const autoInsetPx = 0;
+  const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
 
   return {
     width: Math.max(24, baseWidth - autoInsetPx * 2),
@@ -1202,6 +1220,32 @@ const autoCutlinePending = shapeMode === "자동칼선";
             최소 2mm 가이드
           </text>
         </>
+        {hasUpload ? (
+          <circle
+            cx={hole.x}
+            cy={hole.y}
+            r={holePrintSafeRadius}
+            fill="rgba(238,244,255,0.96)"
+          />
+        ) : null}
+        <line
+          x1={bridgeStart.x}
+          y1={bridgeStart.y}
+          x2={bridgeEnd.x}
+          y2={bridgeEnd.y}
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 6}
+          strokeLinecap="round"
+        />
+        <line
+          x1={bridgeStart.x}
+          y1={bridgeStart.y}
+          x2={bridgeEnd.x}
+          y2={bridgeEnd.y}
+          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 2}
+          strokeLinecap="round"
+        />
         <circle
           cx={hole.x}
           cy={hole.y}
@@ -1706,7 +1750,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                작업대 좌표는 px · 규격/눈금/칼선 가이드는 mm 기준 · 모든 형태에서 최소/최대 칼선 가이드 표시
+                작업대 좌표는 px · 이미지는 외곽 칼선/구멍 내경에서 2mm 이격 · 구멍 인쇄 보호 2mm · 가이드는 mm 기준
               </div>
             </div>
 
@@ -2001,6 +2045,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
