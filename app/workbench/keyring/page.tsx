@@ -1392,7 +1392,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
             fontSize="12"
             fontWeight="700"
           >
-            최대 2.5mm 가이드
+            
           </text>
           <text
             x={Math.min(VIEW_WIDTH - 12, hole.x + minGuideOuterRadius + 18)}
@@ -1401,7 +1401,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
             fontSize="12"
             fontWeight="700"
           >
-            최소 2mm 가이드
+            
           </text>
         </>
         {hasUpload ? (
