@@ -779,6 +779,53 @@ async function buildAutoCutlineFromImage(
         const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
         const data = imageData.data;
 
+        const borderSamples: { r: number; g: number; b: number; a: number }[] = [];
+        const sampleStep = 3;
+
+        const pushSample = (x: number, y: number) => {
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const a = data[idx + 3];
+          if (a <= 12) return;
+          borderSamples.push({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2],
+            a,
+          });
+        };
+
+        for (let x = 0; x < ANALYSIS_WIDTH; x += sampleStep) {
+          pushSample(x, 0);
+          pushSample(x, ANALYSIS_HEIGHT - 1);
+        }
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += sampleStep) {
+          pushSample(0, y);
+          pushSample(ANALYSIS_WIDTH - 1, y);
+        }
+
+        const borderAvg =
+          borderSamples.length > 0
+            ? borderSamples.reduce(
+                (acc, sample) => ({
+                  r: acc.r + sample.r,
+                  g: acc.g + sample.g,
+                  b: acc.b + sample.b,
+                }),
+                { r: 0, g: 0, b: 0 },
+              )
+            : { r: 245 * 8, g: 245 * 8, b: 245 * 8 };
+
+        const borderCount = Math.max(1, borderSamples.length);
+        const avgBorder = {
+          r: borderAvg.r / borderCount,
+          g: borderAvg.g / borderCount,
+          b: borderAvg.b / borderCount,
+        };
+        const avgBorderBrightness = (avgBorder.r + avgBorder.g + avgBorder.b) / 3;
+
+        const colorDistance = (r: number, g: number, b: number) =>
+          Math.hypot(r - avgBorder.r, g - avgBorder.g, b - avgBorder.b);
+
         const bgCandidate: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
           Array.from({ length: ANALYSIS_WIDTH }, () => false),
         );
@@ -794,11 +841,17 @@ async function buildAutoCutlineFromImage(
             const minChannel = Math.min(r, g, b);
             const brightness = (r + g + b) / 3;
             const chroma = maxChannel - minChannel;
+            const dist = colorDistance(r, g, b);
 
-            bgCandidate[y][x] =
-              a <= 20 ||
-              (a >= 220 && brightness >= 244 && chroma <= 18) ||
-              (a >= 245 && brightness >= 232 && chroma <= 8);
+            const transparentLike = a <= 20;
+            const whiteLike = a >= 220 && brightness >= 236 && chroma <= 26;
+            const edgeColorLike =
+              a >= 180 &&
+              dist <= 34 &&
+              Math.abs(brightness - avgBorderBrightness) <= 26 &&
+              chroma <= 42;
+
+            bgCandidate[y][x] = transparentLike || whiteLike || edgeColorLike;
           }
         }
 
@@ -827,11 +880,15 @@ async function buildAutoCutlineFromImage(
           pushBg(ANALYSIS_WIDTH - 1, y);
         }
 
-        const dirs4 = [
+        const dirs8 = [
           [1, 0],
           [-1, 0],
           [0, 1],
           [0, -1],
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1],
         ] as const;
 
         while (head < queueX.length) {
@@ -839,7 +896,7 @@ async function buildAutoCutlineFromImage(
           const y = queueY[head];
           head += 1;
 
-          for (const [dx, dy] of dirs4) {
+          for (const [dx, dy] of dirs8) {
             pushBg(x + dx, y + dy);
           }
         }
@@ -861,7 +918,7 @@ async function buildAutoCutlineFromImage(
             const minChannel = Math.min(r, g, b);
             const chroma = maxChannel - minChannel;
 
-            const definitelyInk = a > 38 && !(brightness >= 248 && chroma <= 6);
+            const definitelyInk = a > 34 && !(brightness >= 247 && chroma <= 10);
             const isForeground = definitelyInk && !bgVisited[y][x];
 
             if (isForeground) {
@@ -896,6 +953,13 @@ async function buildAutoCutlineFromImage(
           ys.push(y);
           points.push({ x, y });
         };
+
+        const dirs4 = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const;
 
         for (let startY = 0; startY < ANALYSIS_HEIGHT; startY += 1) {
           for (let startX = 0; startX < ANALYSIS_WIDTH; startX += 1) {
@@ -2115,7 +2179,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
