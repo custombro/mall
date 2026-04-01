@@ -453,6 +453,52 @@ function renderPreviewOuterCutlineShape(shapeMode: ShapeMode) {
   return null;
 }
 
+function projectHoleToAutoCutlineHalfOutside(
+  pointer: HolePosition,
+  points: Point[],
+): HolePosition {
+  if (points.length < 2) {
+    return pointer;
+  }
+
+  const projectToSegment = (p: Point, a: Point, b: Point): Point => {
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const lenSq = abx * abx + aby * aby;
+
+    if (lenSq <= 0.0001) {
+      return { x: a.x, y: a.y };
+    }
+
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * abx + (p.y - a.y) * aby) / lenSq));
+
+    return {
+      x: a.x + abx * t,
+      y: a.y + aby * t,
+    };
+  };
+
+  let bestPoint = points[0];
+  let bestDist = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const projected = projectToSegment(pointer, a, b);
+    const dist = Math.hypot(projected.x - pointer.x, projected.y - pointer.y);
+
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestPoint = projected;
+    }
+  }
+
+  return {
+    x: bestPoint.x,
+    y: bestPoint.y,
+  };
+}
+
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
   const holeInset = getHoleOuterCutlineRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
   const holeInsideBias = Math.max(10, getHoleOuterCutlineRadius(holeSize) * 0.92);
@@ -711,16 +757,12 @@ function projectHole(
     y: ART_FRAME.y + ART_FRAME.height / 2,
   };
 
-  if (shapeMode === "자동칼선" && autoCutline.status === "ready") {
-    return autoCutline.centroid
-      ? projectHoleToPolyline(
-          pointer,
-          holeSize,
-          getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid),
-          autoCutline.centroid,
-        )
-      : pointer;
-  }
+  if (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) {
+      return projectHoleToAutoCutlineHalfOutside(
+        pointer,
+        autoCutline.points,
+      );
+    }
 
   if (shapeMode === "원형") {
     return projectHoleToPolyline(
