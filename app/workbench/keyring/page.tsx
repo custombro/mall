@@ -1168,36 +1168,37 @@ function KeyringCanvas({
     y: ART_FRAME.y + ART_FRAME.height / 2,
   };
   const bridgeDirection = normalize(frameCenter.x - hole.x, frameCenter.y - hole.y);
+  const bridgeNeckInset = Math.max(4, getHoleOuterCutlineRadius(holeSize) * 0.16);
   const bridgeStart = {
-    x: hole.x + bridgeDirection.x * Math.max(holeRadius + 6, getHoleOuterCutlineRadius(holeSize) - 2),
-    y: hole.y + bridgeDirection.y * Math.max(holeRadius + 6, getHoleOuterCutlineRadius(holeSize) - 2),
+    x: hole.x + bridgeDirection.x * (holeRadius + 2),
+    y: hole.y + bridgeDirection.y * (holeRadius + 2),
   };
   const bridgeEnd = {
-    x: hole.x + bridgeDirection.x * (getHoleOuterCutlineRadius(holeSize) + 18),
-    y: hole.y + bridgeDirection.y * (getHoleOuterCutlineRadius(holeSize) + 18),
+    x: hole.x + bridgeDirection.x * (getHoleOuterCutlineRadius(holeSize) + bridgeNeckInset),
+    y: hole.y + bridgeDirection.y * (getHoleOuterCutlineRadius(holeSize) + bridgeNeckInset),
   };
   const scaledArtFrame = (() => {
   const baseWidth = ART_FRAME.width * artScale;
   const baseHeight = ART_FRAME.height * artScale;
-  const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
-  const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
   const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
-  const printSafeShiftPx = getAutoCutlineMarginVisualPxByMm(2) * 2.4;
   const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
   const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
-  const shiftedX = baseX + autoInsetPx - bridgeDirection.x * printSafeShiftPx;
-  const shiftedY = baseY + autoInsetPx - bridgeDirection.y * printSafeShiftPx;
+  const holeCompensationPx = getHoleOuterCutlineRadius(holeSize) * 0.58;
+  const centeredX =
+    ART_FRAME.x + (ART_FRAME.width - safeWidth) / 2 - bridgeDirection.x * holeCompensationPx;
+  const centeredY =
+    ART_FRAME.y + (ART_FRAME.height - safeHeight) / 2 - bridgeDirection.y * holeCompensationPx;
 
   return {
     width: safeWidth,
     height: safeHeight,
     x: Math.max(
       ART_FRAME.x + autoInsetPx,
-      Math.min(ART_FRAME.x + ART_FRAME.width - autoInsetPx - safeWidth, shiftedX),
+      Math.min(ART_FRAME.x + ART_FRAME.width - autoInsetPx - safeWidth, centeredX),
     ),
     y: Math.max(
       ART_FRAME.y + autoInsetPx,
-      Math.min(ART_FRAME.y + ART_FRAME.height - autoInsetPx - safeHeight, shiftedY),
+      Math.min(ART_FRAME.y + ART_FRAME.height - autoInsetPx - safeHeight, centeredY),
     ),
   };
 })();
