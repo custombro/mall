@@ -1009,12 +1009,23 @@ function KeyringCanvas({
   const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
   const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
   const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
+  const printSafeShiftPx = getAutoCutlineMarginVisualPxByMm(2) * 0.85;
+  const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
+  const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
+  const shiftedX = baseX + autoInsetPx - bridgeDirection.x * printSafeShiftPx;
+  const shiftedY = baseY + autoInsetPx - bridgeDirection.y * printSafeShiftPx;
 
   return {
-    width: Math.max(24, baseWidth - autoInsetPx * 2),
-    height: Math.max(24, baseHeight - autoInsetPx * 2),
-    x: baseX + autoInsetPx,
-    y: baseY + autoInsetPx,
+    width: safeWidth,
+    height: safeHeight,
+    x: Math.max(
+      ART_FRAME.x + autoInsetPx,
+      Math.min(ART_FRAME.x + ART_FRAME.width - autoInsetPx - safeWidth, shiftedX),
+    ),
+    y: Math.max(
+      ART_FRAME.y + autoInsetPx,
+      Math.min(ART_FRAME.y + ART_FRAME.height - autoInsetPx - safeHeight, shiftedY),
+    ),
   };
 })();
 
@@ -1221,29 +1232,44 @@ const autoCutlinePending = shapeMode === "자동칼선";
           </text>
         </>
         {hasUpload ? (
-          <circle
-            cx={hole.x}
-            cy={hole.y}
-            r={holePrintSafeRadius}
-            fill="rgba(238,244,255,0.96)"
-          />
+          <>
+            <circle
+              data-hole-print-safe="2mm"
+              cx={hole.x}
+              cy={hole.y}
+              r={holePrintSafeRadius}
+              fill="rgba(238,244,255,0.98)"
+            />
+            <line
+              data-bridge-preview="cutline-bridge"
+              x1={bridgeStart.x}
+              y1={bridgeStart.y}
+              x2={bridgeEnd.x}
+              y2={bridgeEnd.y}
+              stroke="rgba(238,244,255,0.98)"
+              strokeWidth={holePrintSafeRadius * 1.22}
+              strokeLinecap="round"
+            />
+          </>
         ) : null}
         <line
+          data-bridge-preview="cutline-bridge"
           x1={bridgeStart.x}
           y1={bridgeStart.y}
           x2={bridgeEnd.x}
           y2={bridgeEnd.y}
           stroke="rgba(255,255,255,0.22)"
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 6}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 8}
           strokeLinecap="round"
         />
         <line
+          data-bridge-preview="cutline-bridge"
           x1={bridgeStart.x}
           y1={bridgeStart.y}
           x2={bridgeEnd.x}
           y2={bridgeEnd.y}
           stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 2}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 3}
           strokeLinecap="round"
         />
         <circle
@@ -1750,7 +1776,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                작업대 좌표는 px · 이미지는 외곽 칼선/구멍 내경에서 2mm 이격 · 구멍 인쇄 보호 2mm · 가이드는 mm 기준
+                작업대 좌표는 px · 이미지는 외곽/구멍 보호영역에서 2mm 이격 · 구멍 브리지 연결 · 가이드는 mm 기준
               </div>
             </div>
 
@@ -2045,6 +2071,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
