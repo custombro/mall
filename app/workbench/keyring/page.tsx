@@ -261,10 +261,18 @@ function getHoleLimitLabel(holeSize: HoleSize) {
   return holeSize === 2.5 ? "최대 1.25mm 돌출 허용" : "최대 1.5mm 돌출 허용";
 }
 
-function getAutoCutlineMarginVisualPx() {
-  if (autoCutlineMarginMmLive === 2) return 16;
-  if (autoCutlineMarginMmLive === 2.25) return 20;
+function getAutoCutlineMarginVisualPxByMm(value: AutoCutlineMarginMm) {
+  if (value === 2) return 16;
+  if (value === 2.25) return 20;
   return 24;
+}
+
+function getAutoCutlineMarginVisualPx() {
+  return getAutoCutlineMarginVisualPxByMm(autoCutlineMarginMmLive);
+}
+
+function getAutoCutlineGuideOuterRadius(holeSize: HoleSize, marginMm: AutoCutlineMarginMm) {
+  return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(marginMm);
 }
 
 function getHoleOuterCutlineRadius(holeSize: HoleSize) {
@@ -894,6 +902,9 @@ function KeyringCanvas({
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
   const hasUpload = Boolean(imageUrl);
+  const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
+  const maxGuideOuterRadius =
+    getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[AUTO_CUTLINE_MARGIN_OPTIONS.length - 1]);
   const scaledArtFrame = (() => {
   const baseWidth = ART_FRAME.width * artScale;
   const baseHeight = ART_FRAME.height * artScale;
@@ -1072,23 +1083,63 @@ const autoCutlinePending = shapeMode === "자동칼선";
       )}
 
       <g>
-  <circle
-    cx={hole.x}
-    cy={hole.y}
-    r={getHoleOuterCutlineRadius(holeSize)}
-    fill="none"
-    stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
-    strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
-  />
-  <circle
-    cx={hole.x}
-    cy={hole.y}
-    r={holeRadius}
-    fill="none"
-    stroke={PRODUCTION_HOLE_CUTLINE_COLOR}
-    strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
-  />
-</g>
+        {shapeMode === "자동칼선" ? (
+          <>
+            <circle
+              cx={hole.x}
+              cy={hole.y}
+              r={minGuideOuterRadius}
+              fill="none"
+              stroke="rgba(255,214,102,0.78)"
+              strokeWidth="1.5"
+              strokeDasharray="8 8"
+            />
+            <circle
+              cx={hole.x}
+              cy={hole.y}
+              r={maxGuideOuterRadius}
+              fill="none"
+              stroke="rgba(102,217,255,0.76)"
+              strokeWidth="1.5"
+              strokeDasharray="10 10"
+            />
+            <text
+              x={Math.min(VIEW_WIDTH - 12, hole.x + maxGuideOuterRadius + 18)}
+              y={Math.max(18, hole.y - 12)}
+              fill="rgba(102,217,255,0.88)"
+              fontSize="12"
+              fontWeight="700"
+            >
+              최대 2.5mm 가이드
+            </text>
+            <text
+              x={Math.min(VIEW_WIDTH - 12, hole.x + minGuideOuterRadius + 18)}
+              y={Math.min(VIEW_HEIGHT - 12, hole.y + 14)}
+              fill="rgba(255,214,102,0.88)"
+              fontSize="12"
+              fontWeight="700"
+            >
+              최소 2mm 가이드
+            </text>
+          </>
+        ) : null}
+        <circle
+          cx={hole.x}
+          cy={hole.y}
+          r={getHoleOuterCutlineRadius(holeSize)}
+          fill="none"
+          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
+        />
+        <circle
+          cx={hole.x}
+          cy={hole.y}
+          r={holeRadius}
+          fill="none"
+          stroke={PRODUCTION_HOLE_CUTLINE_COLOR}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
+        />
+      </g>
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
       <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
     </svg>
@@ -1544,7 +1595,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 칼선 여백은 여기 또는 좌측 mm 버튼에서 동일 조절
+                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 자동칼선 모드에서 최소/최대 칼선 가이드 표시
               </div>
             </div>
 
@@ -1829,6 +1880,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
