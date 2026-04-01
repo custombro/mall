@@ -216,7 +216,7 @@ const AUTO_CUTLINE_MARGIN_OPTIONS = [2, 2.25, 2.5] as const;
 const PRODUCTION_OUTER_CUTLINE_COLOR = "#ff0000";
 const PRODUCTION_HOLE_CUTLINE_COLOR = "#000000";
 const PRODUCTION_CUTLINE_STROKE_MM = 0.01;
-const PREVIEW_CUTLINE_STROKE_PX = 2;
+const PREVIEW_CUTLINE_STROKE_PX = 3;
 const PREVIEWABLE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type ShapeMode = (typeof SHAPE_MODES)[number];
@@ -322,14 +322,19 @@ function isForeground(r: number, g: number, b: number, a: number) {
 
 function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = false) {
   const fillValue = strokeOnly ? "transparent" : `url(#${fillId})`;
+  const previewCx = ART_FRAME.x + ART_FRAME.width / 2;
+  const previewCy = ART_FRAME.y + ART_FRAME.height / 2;
+  const previewRx = ART_FRAME.width / 2;
+  const previewRy = ART_FRAME.height / 2;
+  const previewRadius = 28;
 
   if (shapeMode === "원형") {
     return (
       <ellipse
-        cx={ELLIPSE.cx}
-        cy={ELLIPSE.cy}
-        rx={ELLIPSE.rx}
-        ry={ELLIPSE.ry}
+        cx={previewCx}
+        cy={previewCy}
+        rx={previewRx}
+        ry={previewRy}
         fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
@@ -340,11 +345,11 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
   if (shapeMode === "사각형") {
     return (
       <rect
-        x={ROUNDED_RECT.x}
-        y={ROUNDED_RECT.y}
-        width={ROUNDED_RECT.width}
-        height={ROUNDED_RECT.height}
-        rx={ROUNDED_RECT.radius}
+        x={ART_FRAME.x}
+        y={ART_FRAME.y}
+        width={ART_FRAME.width}
+        height={ART_FRAME.height}
+        rx={previewRadius}
         fill={fillValue}
         stroke="rgba(255,255,255,0.88)"
         strokeWidth="4"
@@ -356,18 +361,24 @@ function renderBodyShape(shapeMode: ShapeMode, fillId: string, strokeOnly = fals
 }
 
 function renderClipShape(shapeMode: ShapeMode) {
+  const previewCx = ART_FRAME.x + ART_FRAME.width / 2;
+  const previewCy = ART_FRAME.y + ART_FRAME.height / 2;
+  const previewRx = ART_FRAME.width / 2;
+  const previewRy = ART_FRAME.height / 2;
+  const previewRadius = 28;
+
   if (shapeMode === "원형") {
-    return <ellipse cx={ELLIPSE.cx} cy={ELLIPSE.cy} rx={ELLIPSE.rx} ry={ELLIPSE.ry} />;
+    return <ellipse cx={previewCx} cy={previewCy} rx={previewRx} ry={previewRy} />;
   }
 
   if (shapeMode === "사각형") {
     return (
       <rect
-        x={ROUNDED_RECT.x}
-        y={ROUNDED_RECT.y}
-        width={ROUNDED_RECT.width}
-        height={ROUNDED_RECT.height}
-        rx={ROUNDED_RECT.radius}
+        x={ART_FRAME.x}
+        y={ART_FRAME.y}
+        width={ART_FRAME.width}
+        height={ART_FRAME.height}
+        rx={previewRadius}
       />
     );
   }
@@ -375,23 +386,91 @@ function renderClipShape(shapeMode: ShapeMode) {
   return <rect x={ART_FRAME.x} y={ART_FRAME.y} width={ART_FRAME.width} height={ART_FRAME.height} rx="28" />;
 }
 
+function renderPreviewOuterCutlineShape(shapeMode: ShapeMode) {
+  const marginPx = getAutoCutlineMarginVisualPx();
+  const previewCx = ART_FRAME.x + ART_FRAME.width / 2;
+  const previewCy = ART_FRAME.y + ART_FRAME.height / 2;
+  const previewRx = ART_FRAME.width / 2 + marginPx;
+  const previewRy = ART_FRAME.height / 2 + marginPx;
+  const previewRadius = 28 + marginPx * 0.55;
+
+  if (shapeMode === "원형") {
+    return (
+      <>
+        <ellipse
+          cx={previewCx}
+          cy={previewCy}
+          rx={previewRx}
+          ry={previewRy}
+          fill="none"
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 2}
+        />
+        <ellipse
+          cx={previewCx}
+          cy={previewCy}
+          rx={previewRx}
+          ry={previewRy}
+          fill="none"
+          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 1}
+        />
+      </>
+    );
+  }
+
+  if (shapeMode === "사각형") {
+    return (
+      <>
+        <rect
+          x={ART_FRAME.x - marginPx}
+          y={ART_FRAME.y - marginPx}
+          width={ART_FRAME.width + marginPx * 2}
+          height={ART_FRAME.height + marginPx * 2}
+          rx={previewRadius}
+          fill="none"
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 2}
+        />
+        <rect
+          x={ART_FRAME.x - marginPx}
+          y={ART_FRAME.y - marginPx}
+          width={ART_FRAME.width + marginPx * 2}
+          height={ART_FRAME.height + marginPx * 2}
+          rx={previewRadius}
+          fill="none"
+          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 1}
+        />
+      </>
+    );
+  }
+
+  return null;
+}
+
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
   const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
-  let dx = pointer.x - ELLIPSE.cx;
-  let dy = pointer.y - ELLIPSE.cy;
+  const cx = ART_FRAME.x + ART_FRAME.width / 2;
+  const cy = ART_FRAME.y + ART_FRAME.height / 2;
+  const rx = ART_FRAME.width / 2;
+  const ry = ART_FRAME.height / 2;
+
+  let dx = pointer.x - cx;
+  let dy = pointer.y - cy;
 
   if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) {
     dx = 0;
     dy = -1;
   }
 
-  const scale = 1 / Math.sqrt((dx * dx) / (ELLIPSE.rx * ELLIPSE.rx) + (dy * dy) / (ELLIPSE.ry * ELLIPSE.ry));
-  const bx = ELLIPSE.cx + dx * scale;
-  const by = ELLIPSE.cy + dy * scale;
+  const scale = 1 / Math.sqrt((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry));
+  const bx = cx + dx * scale;
+  const by = cy + dy * scale;
 
   const n = normalize(
-    (bx - ELLIPSE.cx) / (ELLIPSE.rx * ELLIPSE.rx),
-    (by - ELLIPSE.cy) / (ELLIPSE.ry * ELLIPSE.ry),
+    (bx - cx) / (rx * rx),
+    (by - cy) / (ry * ry),
   );
 
   return {
@@ -403,12 +482,13 @@ function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePo
 function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): HolePosition {
   const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
 
-  const halfW = ROUNDED_RECT.width / 2;
-  const halfH = ROUNDED_RECT.height / 2;
-  const innerW = halfW - ROUNDED_RECT.radius;
-  const innerH = halfH - ROUNDED_RECT.radius;
-  const cx = ROUNDED_RECT.x + halfW;
-  const cy = ROUNDED_RECT.y + halfH;
+  const previewRadius = 28;
+  const halfW = ART_FRAME.width / 2;
+  const halfH = ART_FRAME.height / 2;
+  const innerW = halfW - previewRadius;
+  const innerH = halfH - previewRadius;
+  const cx = ART_FRAME.x + halfW;
+  const cy = ART_FRAME.y + halfH;
 
   const px = pointer.x - cx;
   const py = pointer.y - cy;
@@ -942,6 +1022,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
       {!autoCutlinePending ? (
         <>
+          {renderPreviewOuterCutlineShape(shapeMode)}
           {renderBodyShape(shapeMode, fillId)}
           {hasUpload ? (
             <>
@@ -1920,6 +2001,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
