@@ -1083,46 +1083,44 @@ const autoCutlinePending = shapeMode === "자동칼선";
       )}
 
       <g>
-        {shapeMode === "자동칼선" ? (
-          <>
-            <circle
-              cx={hole.x}
-              cy={hole.y}
-              r={minGuideOuterRadius}
-              fill="none"
-              stroke="rgba(255,214,102,0.78)"
-              strokeWidth="1.5"
-              strokeDasharray="8 8"
-            />
-            <circle
-              cx={hole.x}
-              cy={hole.y}
-              r={maxGuideOuterRadius}
-              fill="none"
-              stroke="rgba(102,217,255,0.76)"
-              strokeWidth="1.5"
-              strokeDasharray="10 10"
-            />
-            <text
-              x={Math.min(VIEW_WIDTH - 12, hole.x + maxGuideOuterRadius + 18)}
-              y={Math.max(18, hole.y - 12)}
-              fill="rgba(102,217,255,0.88)"
-              fontSize="12"
-              fontWeight="700"
-            >
-              최대 2.5mm 가이드
-            </text>
-            <text
-              x={Math.min(VIEW_WIDTH - 12, hole.x + minGuideOuterRadius + 18)}
-              y={Math.min(VIEW_HEIGHT - 12, hole.y + 14)}
-              fill="rgba(255,214,102,0.88)"
-              fontSize="12"
-              fontWeight="700"
-            >
-              최소 2mm 가이드
-            </text>
-          </>
-        ) : null}
+        <>
+          <circle
+            cx={hole.x}
+            cy={hole.y}
+            r={minGuideOuterRadius}
+            fill="none"
+            stroke="rgba(255,214,102,0.78)"
+            strokeWidth="1.5"
+            strokeDasharray="8 8"
+          />
+          <circle
+            cx={hole.x}
+            cy={hole.y}
+            r={maxGuideOuterRadius}
+            fill="none"
+            stroke="rgba(102,217,255,0.76)"
+            strokeWidth="1.5"
+            strokeDasharray="10 10"
+          />
+          <text
+            x={Math.min(VIEW_WIDTH - 12, hole.x + maxGuideOuterRadius + 18)}
+            y={Math.max(18, hole.y - 12)}
+            fill="rgba(102,217,255,0.88)"
+            fontSize="12"
+            fontWeight="700"
+          >
+            최대 2.5mm 가이드
+          </text>
+          <text
+            x={Math.min(VIEW_WIDTH - 12, hole.x + minGuideOuterRadius + 18)}
+            y={Math.min(VIEW_HEIGHT - 12, hole.y + 14)}
+            fill="rgba(255,214,102,0.88)"
+            fontSize="12"
+            fontWeight="700"
+          >
+            최소 2mm 가이드
+          </text>
+        </>
         <circle
           cx={hole.x}
           cy={hole.y}
@@ -1595,7 +1593,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 자동칼선 모드에서 최소/최대 칼선 가이드 표시
+                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 모든 형태에서 최소/최대 칼선 가이드 표시
               </div>
             </div>
 
@@ -1880,6 +1878,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
