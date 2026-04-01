@@ -943,6 +943,134 @@ function cbBuildAutoCutlineUnionPreviewPath(
 
   return cbBuildSmoothClosedPath(outlinePoints);
 }
+function cbBuildBaseShapeUnionPreviewPath(
+  shapeMode: ShapeMode,
+  hole: HolePosition,
+  holeSize: HoleSize,
+) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = VIEW_WIDTH;
+  canvas.height = VIEW_HEIGHT;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  ctx.fillStyle = "#000";
+
+  if (shapeMode === "원형") {
+    ctx.beginPath();
+    ctx.ellipse(
+      ART_FRAME.x + ART_FRAME.width / 2,
+      ART_FRAME.y + ART_FRAME.height / 2,
+      ART_FRAME.width / 2,
+      ART_FRAME.height / 2,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.closePath();
+    ctx.fill();
+  } else if (shapeMode === "사각형") {
+    const x = ART_FRAME.x;
+    const y = ART_FRAME.y;
+    const w = ART_FRAME.width;
+    const h = ART_FRAME.height;
+    const r = 28;
+
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    return null;
+  }
+
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, getHoleOuterCutlineRadius(holeSize), 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  const image = ctx.getImageData(0, 0, VIEW_WIDTH, VIEW_HEIGHT).data;
+  const mask: boolean[][] = Array.from({ length: VIEW_HEIGHT }, () =>
+    Array.from({ length: VIEW_WIDTH }, () => false),
+  );
+
+  let count = 0;
+  let sumX = 0;
+  let sumY = 0;
+
+  for (let y = 0; y < VIEW_HEIGHT; y += 1) {
+    for (let x = 0; x < VIEW_WIDTH; x += 1) {
+      const idx = (y * VIEW_WIDTH + x) * 4 + 3;
+      if (image[idx] > 16) {
+        mask[y][x] = true;
+        count += 1;
+        sumX += x;
+        sumY += y;
+      }
+    }
+  }
+
+  if (count < 48) return null;
+
+  const centroid = { x: sumX / count, y: sumY / count };
+  const sectorCount = 160;
+  const buckets = Array.from(
+    { length: sectorCount },
+    () => null as { x: number; y: number; dist: number } | null,
+  );
+
+  for (let y = 1; y < VIEW_HEIGHT - 1; y += 1) {
+    for (let x = 1; x < VIEW_WIDTH - 1; x += 1) {
+      if (!mask[y][x]) continue;
+
+      const isBoundary =
+        !mask[y][x - 1] ||
+        !mask[y][x + 1] ||
+        !mask[y - 1][x] ||
+        !mask[y + 1][x];
+
+      if (!isBoundary) continue;
+
+      const dx = x - centroid.x;
+      const dy = y - centroid.y;
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += Math.PI * 2;
+
+      const sector = Math.min(
+        sectorCount - 1,
+        Math.floor((angle / (Math.PI * 2)) * sectorCount),
+      );
+      const dist = Math.hypot(dx, dy);
+      const prev = buckets[sector];
+
+      if (!prev || dist > prev.dist) {
+        buckets[sector] = { x, y, dist };
+      }
+    }
+  }
+
+  const outlinePoints = buckets
+    .filter((bucket): bucket is { x: number; y: number; dist: number } => Boolean(bucket))
+    .map((bucket) => ({ x: bucket.x, y: bucket.y }));
+
+  if (outlinePoints.length < 24) return null;
+
+  return cbBuildSmoothClosedPath(outlinePoints);
+}
 async function buildAutoCutlineFromImage(
   url: string,
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> {
@@ -1320,6 +1448,10 @@ function KeyringCanvas({
     shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
       ? cbBuildAutoCutlineUnionPreviewPath(autoCutlinePreviewPoints, hole, holeSize)
       : null;
+  const baseShapeUnionPreviewPath =
+    shapeMode === "원형" || shapeMode === "사각형"
+      ? cbBuildBaseShapeUnionPreviewPath(shapeMode, hole, holeSize)
+      : null;
 
 const autoCutlinePending = shapeMode === "자동칼선";
 
@@ -1343,7 +1475,18 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
       {!autoCutlinePending ? (
         <>
-          {renderPreviewOuterCutlineShape(shapeMode)}
+                    {shapeMode === "원형" || shapeMode === "사각형" ? (
+            <path
+              d={baseShapeUnionPreviewPath ?? ""}
+              fill="none"
+              stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ) : (
+            renderPreviewOuterCutlineShape(shapeMode)
+          )}
           {renderBodyShape(shapeMode, fillId)}
           {hasUpload ? (
             <>
@@ -1482,7 +1625,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
                   : "업로드 대기"}
           </text>
         </>
-      )}      {shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.path ? null : (
+      )}      {shapeMode !== "자동칼선" || (shapeMode === "자동칼선" && !(autoCutline.status === "ready" && autoCutline.path)) ? null : (
         <g>
           <circle
             cx={hole.x}
