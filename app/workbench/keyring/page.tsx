@@ -1549,19 +1549,48 @@ const rawBounds = cbGetClosedBounds(result.points);
                 70% ~ 130% 범위에서 데이터/칼선/구멍을 함께 확인
               </div>
             </div>
-            {/* DATA_SIZE_INLINE_UI_END */}
+                        {/* DATA_SIZE_INLINE_UI_END */}
+            <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] text-white/68">
+              <div className="flex items-center justify-between gap-3 text-cyan-100/90">
+                <span>0mm</span>
+                <span>50</span>
+                <span>100</span>
+                <span>150mm</span>
+              </div>
+              <div className="mt-2 h-px w-full bg-gradient-to-r from-cyan-200/70 via-cyan-200/40 to-cyan-200/70" />
+              <div className="mt-2 flex flex-wrap gap-3">
+                <span className="font-semibold text-cyan-100">150x150 mm 고정</span>
+                <span>배경 1mm / 5mm 눈금</span>
+                <span>이미지 크기: 상단 데이터 크기</span>
+                <span>칼선 여백: 좌측 mm 버튼</span>
+              </div>
+            </div>
 
 
             <div
               className={`mt-4 overflow-hidden rounded-[28px] border ${
                 dragging ? "border-[#7fbaff]/70" : "border-white/10"
-              } bg-[#02091f] p-4 transition cursor-grab active:cursor-grabbing select-none`}
+              } relative bg-[#02091f] p-4 transition cursor-grab active:cursor-grabbing select-none`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={stopDrag}
               onPointerCancel={stopDrag}
               onPointerLeave={stopDrag}
-            >
+            >              <div
+                className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2 rounded-[24px] border border-cyan-300/12 opacity-80"
+                style={{
+                  width: "min(72vw, 600px)",
+                  height: "min(72vw, 600px)",
+                  backgroundImage: `
+                    linear-gradient(to right, rgba(143,192,255,0.08) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(143,192,255,0.08) 1px, transparent 1px),
+                    linear-gradient(to right, rgba(143,192,255,0.16) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(143,192,255,0.16) 1px, transparent 1px)
+                  `,
+                  backgroundSize: "4px 4px, 4px 4px, 20px 20px, 20px 20px",
+                  boxShadow: "inset 0 0 0 1px rgba(143,192,255,0.1)",
+                }}
+              />
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white/82">메인 작업대</div>
             <div className="text-sm text-white/62">
@@ -1731,6 +1760,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
