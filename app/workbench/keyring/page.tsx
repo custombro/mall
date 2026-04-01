@@ -1482,16 +1482,11 @@ const rawBounds = cbGetClosedBounds(result.points);
           </aside>
 
           <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
-            <div className="mb-2 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">CENTER / 중앙 작업판</div>
-
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-[42px] font-extrabold leading-none tracking-tight text-white">
-                  {shapeMode} 작업판
-                </h2>
-                <p className="mt-4 max-w-[780px] text-base leading-7 text-white/76">
-                  원형/사각형은 생성된 외곽선 기준으로 구멍이 따라 움직인다.
-                  자동칼선은 업로드 이미지 기준으로 1차 빨간 칼선을 생성한다.
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">CENTER / 작업 상태</div>
+                <p className="mt-1 text-sm text-white/68">
+                  구멍 위치·규격·형태는 아래 작업대에서 바로 조정
                 </p>
               </div>
 
@@ -1736,5 +1731,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
