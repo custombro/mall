@@ -1183,11 +1183,10 @@ function KeyringCanvas({
   const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
   const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
   const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
-  const holeCompensationPx = getHoleOuterCutlineRadius(holeSize) * 0.58;
   const centeredX =
-    ART_FRAME.x + (ART_FRAME.width - safeWidth) / 2 - bridgeDirection.x * holeCompensationPx;
+    ART_FRAME.x + (ART_FRAME.width - safeWidth) / 2;
   const centeredY =
-    ART_FRAME.y + (ART_FRAME.height - safeHeight) / 2 - bridgeDirection.y * holeCompensationPx;
+    ART_FRAME.y + (ART_FRAME.height - safeHeight) / 2;
 
   return {
     width: safeWidth,
