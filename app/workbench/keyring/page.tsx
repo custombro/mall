@@ -1551,17 +1551,22 @@ const rawBounds = cbGetClosedBounds(result.points);
             </div>
                         {/* DATA_SIZE_INLINE_UI_END */}
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] text-white/68">
-              <div className="flex items-center justify-between gap-3 text-cyan-100/90">
+              <div className="flex items-center justify-between gap-2 text-cyan-100/90">
                 <span>0mm</span>
+                <span>25</span>
                 <span>50</span>
+                <span>75</span>
                 <span>100</span>
+                <span>125</span>
                 <span>150mm</span>
               </div>
               <div className="mt-2 h-px w-full bg-gradient-to-r from-cyan-200/70 via-cyan-200/40 to-cyan-200/70" />
               <div className="mt-2 flex flex-wrap gap-3">
-                <span className="font-semibold text-cyan-100">150x150 mm 고정</span>
-                <span>배경 1mm / 5mm 눈금</span>
-                <span>이미지 크기: 상단 데이터 크기</span>
+                <span className="font-semibold text-cyan-100">기준판 150 x 150mm</span>
+                <span>주 눈금 25mm</span>
+                <span>보조 눈금 5mm</span>
+                <span>숫자 눈금 25mm 간격</span>
+                <span>현재 배율 {Math.round(artScale * 100)}%</span>
                 <span>칼선 여백: 좌측 mm 버튼</span>
               </div>
             </div>
@@ -1591,6 +1596,29 @@ const rawBounds = cbGetClosedBounds(result.points);
                   boxShadow: "inset 0 0 0 1px rgba(143,192,255,0.1)",
                 }}
               />
+              <div
+                className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2"
+                style={{ width: "min(72vw, 600px)", height: "min(72vw, 600px)" }}
+              >
+                <div className="absolute inset-x-3 top-1 flex items-center justify-between text-[10px] font-medium text-cyan-100/58">
+                  <span>0</span>
+                  <span>25</span>
+                  <span>50</span>
+                  <span>75</span>
+                  <span>100</span>
+                  <span>125</span>
+                  <span>150mm</span>
+                </div>
+                <div className="absolute inset-y-3 left-1 flex flex-col items-start justify-between text-[10px] font-medium text-cyan-100/52">
+                  <span>0</span>
+                  <span>25</span>
+                  <span>50</span>
+                  <span>75</span>
+                  <span>100</span>
+                  <span>125</span>
+                  <span>150</span>
+                </div>
+              </div>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white/82">메인 작업대</div>
             <div className="text-sm text-white/62">
@@ -1760,6 +1788,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
