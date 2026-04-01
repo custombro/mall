@@ -1585,7 +1585,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                   현재 배율 {Math.round(artScale * 100)}%
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
-                  구멍 중심 X {Math.round(hole.x)} / Y {Math.round(hole.y)}mm
+                  작업대 좌표 X {Math.round(hole.x)} / Y {Math.round(hole.y)}px
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
                   구멍 규격 {getHoleLabel(holeSize)}
@@ -1625,7 +1625,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 모든 형태에서 최소/최대 칼선 가이드 표시
+                작업대 좌표는 px · 규격/눈금/칼선 가이드는 mm 기준 · 모든 형태에서 최소/최대 칼선 가이드 표시
               </div>
             </div>
 
@@ -1920,6 +1920,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
