@@ -961,14 +961,15 @@ function cbBuildBaseShapeUnionPreviewPath(
 
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
   ctx.fillStyle = "#000";
+  const outerMargin = getAutoCutlineMarginVisualPx();
 
   if (shapeMode === "원형") {
     ctx.beginPath();
     ctx.ellipse(
       ART_FRAME.x + ART_FRAME.width / 2,
       ART_FRAME.y + ART_FRAME.height / 2,
-      ART_FRAME.width / 2,
-      ART_FRAME.height / 2,
+      ART_FRAME.width / 2 + outerMargin,
+      ART_FRAME.height / 2 + outerMargin,
       0,
       0,
       Math.PI * 2,
@@ -976,11 +977,11 @@ function cbBuildBaseShapeUnionPreviewPath(
     ctx.closePath();
     ctx.fill();
   } else if (shapeMode === "사각형") {
-    const x = ART_FRAME.x;
-    const y = ART_FRAME.y;
-    const w = ART_FRAME.width;
-    const h = ART_FRAME.height;
-    const r = 28;
+    const x = ART_FRAME.x - outerMargin;
+    const y = ART_FRAME.y - outerMargin;
+    const w = ART_FRAME.width + outerMargin * 2;
+    const h = ART_FRAME.height + outerMargin * 2;
+    const r = 28 + outerMargin;
 
     ctx.beginPath();
     ctx.moveTo(x + r, y);
