@@ -454,7 +454,8 @@ function renderPreviewOuterCutlineShape(shapeMode: ShapeMode) {
 }
 
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
-  const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
+  const holeInset = getHoleOuterCutlineRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
+  const holeInsideBias = Math.max(10, getHoleOuterCutlineRadius(holeSize) * 0.92);
   const cx = ART_FRAME.x + ART_FRAME.width / 2;
   const cy = ART_FRAME.y + ART_FRAME.height / 2;
   const rx = ART_FRAME.width / 2;
@@ -477,15 +478,17 @@ function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePo
     (by - cy) / (ry * ry),
   );
 
+  const extraInside = n.y < -0.2 ? holeInsideBias : holeInsideBias * 0.55;
+
   return {
-    x: bx + n.x * holeOffset,
-    y: by + n.y * holeOffset,
+    x: bx - n.x * (holeInset + extraInside),
+    y: by - n.y * (holeInset + extraInside),
   };
 }
 
 function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): HolePosition {
-  const holeOffset = getHoleOuterCutlineRadius(holeSize) * 0.6 + 2;
-
+  const holeInset = getHoleOuterCutlineRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
+  const holeInsideBias = Math.max(10, getHoleOuterCutlineRadius(holeSize) * 0.92);
   const previewRadius = 28;
   const halfW = ART_FRAME.width / 2;
   const halfH = ART_FRAME.height / 2;
@@ -494,55 +497,52 @@ function projectHoleToRoundedRect(pointer: HolePosition, holeSize: HoleSize): Ho
   const cx = ART_FRAME.x + halfW;
   const cy = ART_FRAME.y + halfH;
 
-  const px = pointer.x - cx;
-  const py = pointer.y - cy;
-  const ax = Math.abs(px);
-  const ay = Math.abs(py);
-  const sx = px >= 0 ? 1 : -1;
-  const sy = py >= 0 ? 1 : -1;
+  let dx = pointer.x - cx;
+  let dy = pointer.y - cy;
 
-  let anchorX = 0;
-  let anchorY = 0;
-  let normalX = 0;
-  let normalY = 0;
-
-  if (ax <= innerW && ay <= innerH) {
-    const distX = halfW - ax;
-    const distY = halfH - ay;
-    if (distY <= distX) {
-      anchorX = px;
-      anchorY = sy * halfH;
-      normalX = 0;
-      normalY = sy;
-    } else {
-      anchorX = sx * halfW;
-      anchorY = py;
-      normalX = sx;
-      normalY = 0;
-    }
-  } else if (ax <= innerW) {
-    anchorX = px;
-    anchorY = sy * halfH;
-    normalX = 0;
-    normalY = sy;
-  } else if (ay <= innerH) {
-    anchorX = sx * halfW;
-    anchorY = py;
-    normalX = sx;
-    normalY = 0;
-  } else {
-    const ccx = sx * innerW;
-    const ccy = sy * innerH;
-    const dir = normalize(px - ccx, py - ccy);
-    anchorX = ccx + dir.x * ROUNDED_RECT.radius;
-    anchorY = ccy + dir.y * ROUNDED_RECT.radius;
-    normalX = dir.x;
-    normalY = dir.y;
+  if (Math.abs(dx) < 0.0001 && Math.abs(dy) < 0.0001) {
+    dx = 0;
+    dy = -1;
   }
 
+  const signX = dx === 0 ? 0 : dx / Math.abs(dx);
+  const signY = dy === 0 ? 0 : dy / Math.abs(dy);
+  const absX = Math.abs(dx);
+  const absY = Math.abs(dy);
+
+  let bx = cx;
+  let by = cy;
+  let nx = 0;
+  let ny = -1;
+
+  if (absX <= innerW - 2 && absY > innerH) {
+    bx = cx + dx;
+    by = cy + signY * halfH;
+    nx = 0;
+    ny = signY;
+  } else {
+    if (absY <= innerH - 2 && absX > innerW) {
+      bx = cx + signX * halfW;
+      by = cy + dy;
+      nx = signX;
+      ny = 0;
+    } else {
+      const cornerCx = cx + signX * innerW;
+      const cornerCy = cy + signY * innerH;
+      const v = normalize(pointer.x - cornerCx, pointer.y - cornerCy);
+      bx = cornerCx + v.x * previewRadius;
+      by = cornerCy + v.y * previewRadius;
+      nx = v.x;
+      ny = v.y;
+    }
+  }
+
+  const normal = normalize(nx, ny);
+  const extraInside = normal.y < -0.2 ? holeInsideBias : holeInsideBias * 0.55;
+
   return {
-    x: cx + anchorX + normalX * holeOffset,
-    y: cy + anchorY + normalY * holeOffset,
+    x: bx - normal.x * (holeInset + extraInside),
+    y: by - normal.y * (holeInset + extraInside),
   };
 }
 
@@ -1009,7 +1009,7 @@ function KeyringCanvas({
   const baseX = ART_FRAME.x + (ART_FRAME.width - baseWidth) / 2;
   const baseY = ART_FRAME.y + (ART_FRAME.height - baseHeight) / 2;
   const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
-  const printSafeShiftPx = getAutoCutlineMarginVisualPxByMm(2) * 0.85;
+  const printSafeShiftPx = getAutoCutlineMarginVisualPxByMm(2) * 2.4;
   const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
   const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
   const shiftedX = baseX + autoInsetPx - bridgeDirection.x * printSafeShiftPx;
@@ -1776,7 +1776,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                 </div>
               </div>
               <div className="mt-2 text-[11px] text-white/55">
-                작업대 좌표는 px · 이미지는 외곽/구멍 보호영역에서 2mm 이격 · 구멍 브리지 연결 · 가이드는 mm 기준
+                구멍 중심은 칼선 안쪽 유지 · 구멍 안쪽은 이미지 배치 불가 · 이미지는 외곽/구멍 보호영역에서 2mm 이격 · 가이드는 mm 기준
               </div>
             </div>
 
@@ -2071,6 +2071,9 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
+
+
 
 
 
