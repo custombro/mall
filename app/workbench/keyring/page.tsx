@@ -283,14 +283,32 @@ function getHoleOuterCutlineRadius(holeSize: HoleSize) {
   return getHoleVisualRadius(holeSize) + getAutoCutlineMarginVisualPx();
 }
 
-function getAdjustedAutoCutlinePoints(points: Point[], centroid: Point | null) {
+function getAdjustedAutoCutlinePoints(
+  points: Point[],
+  centroid: Point | null,
+  frame: { x: number; y: number; width: number; height: number },
+) {
   if (!centroid || points.length === 0) return points;
-  const extraPx = getAutoCutlineMarginVisualPx();
-  if (extraPx <= 0) return points;
 
-  return points.map((point) => {
-    const dx = point.x - centroid.x;
-    const dy = point.y - centroid.y;
+  const scaleX = frame.width / ANALYSIS_WIDTH;
+  const scaleY = frame.height / ANALYSIS_HEIGHT;
+
+  const mappedCentroid = {
+    x: frame.x + centroid.x * scaleX,
+    y: frame.y + centroid.y * scaleY,
+  };
+
+  const mappedPoints = points.map((point) => ({
+    x: frame.x + point.x * scaleX,
+    y: frame.y + point.y * scaleY,
+  }));
+
+  const extraPx = getAutoCutlineMarginVisualPx();
+  if (extraPx <= 0) return mappedPoints;
+
+  return mappedPoints.map((point) => {
+    const dx = point.x - mappedCentroid.x;
+    const dy = point.y - mappedCentroid.y;
     const len = Math.hypot(dx, dy) || 1;
 
     return {
@@ -761,7 +779,7 @@ function projectHole(
       return projectHoleToAutoCutlineHalfOutside(
       pointer,
       autoCutline.centroid
-        ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid)
+        ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, ART_FRAME)
         : autoCutline.points,
     );
     }
@@ -1293,7 +1311,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid) : autoCutline.points)}
+              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame) : autoCutline.points)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
