@@ -318,6 +318,157 @@ function getAdjustedAutoCutlinePoints(
   });
 }
 
+function cbKeyringSilhouetteDistanceV2(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+function cbKeyringSilhouetteClampIntV2(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function cbKeyringResampleClosedPointsV2(
+  points: Array<{ x: number; y: number }>,
+  targetStep = 6,
+) {
+  const src = points.filter(
+    (point) =>
+      point &&
+      Number.isFinite(point.x) &&
+      Number.isFinite(point.y),
+  );
+
+  if (src.length < 3) return points;
+
+  const lengths: number[] = [];
+  let perimeter = 0;
+
+  for (let i = 0; i < src.length; i += 1) {
+    const a = src[i];
+    const b = src[(i + 1) % src.length];
+    const len = cbKeyringSilhouetteDistanceV2(a, b);
+    lengths.push(len);
+    perimeter += len;
+  }
+
+  if (!Number.isFinite(perimeter) || perimeter <= 0) return src;
+
+  const sampleCount = cbKeyringSilhouetteClampIntV2(
+    perimeter / Math.max(2, targetStep),
+    Math.min(src.length, 24),
+    480,
+  );
+
+  const sampled: Array<{ x: number; y: number }> = [];
+  let segmentIndex = 0;
+  let segmentStart = 0;
+
+  for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+    const targetDistance = perimeter * (sampleIndex / sampleCount);
+
+    while (
+      segmentIndex < lengths.length - 1 &&
+      segmentStart + lengths[segmentIndex] < targetDistance
+    ) {
+      segmentStart += lengths[segmentIndex];
+      segmentIndex += 1;
+    }
+
+    const a = src[segmentIndex];
+    const b = src[(segmentIndex + 1) % src.length];
+    const len = Math.max(0.0001, lengths[segmentIndex]);
+    const ratio = Math.max(
+      0,
+      Math.min(1, (targetDistance - segmentStart) / len),
+    );
+
+    sampled.push({
+      x: a.x + (b.x - a.x) * ratio,
+      y: a.y + (b.y - a.y) * ratio,
+    });
+  }
+
+  return sampled.length >= 3 ? sampled : src;
+}
+
+function cbKeyringSimplifyShortSegmentsV2(
+  points: Array<{ x: number; y: number }>,
+  minSegment = 4,
+) {
+  if (points.length < 3) return points;
+
+  const simplified: Array<{ x: number; y: number }> = [points[0]];
+
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = simplified[simplified.length - 1];
+    const current = points[i];
+    if (cbKeyringSilhouetteDistanceV2(prev, current) >= minSegment) {
+      simplified.push(current);
+    }
+  }
+
+  if (
+    simplified.length > 3 &&
+    cbKeyringSilhouetteDistanceV2(
+      simplified[0],
+      simplified[simplified.length - 1],
+    ) < minSegment
+  ) {
+    simplified.pop();
+  }
+
+  return simplified.length >= 3 ? simplified : points;
+}
+
+function cbKeyringSmoothClosedPointsV2(
+  points: Array<{ x: number; y: number }>,
+  iterations = 2,
+) {
+  if (points.length < 3) return points;
+
+  let current = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const next = current.map((point, index) => {
+      const prev = current[(index - 1 + current.length) % current.length];
+      const after = current[(index + 1) % current.length];
+      return {
+        x: prev.x * 0.2 + point.x * 0.6 + after.x * 0.2,
+        y: prev.y * 0.2 + point.y * 0.6 + after.y * 0.2,
+      };
+    });
+    current = next;
+  }
+
+  return current;
+}
+
+function cbNormalizeKeyringSilhouettePointsV2(
+  points: Array<{ x: number; y: number }>,
+  options?: {
+    step?: number;
+    smoothIterations?: number;
+    minSegment?: number;
+  },
+) {
+  if (!points || points.length < 3) return points;
+
+  const step = options?.step ?? 6;
+  const smoothIterations = options?.smoothIterations ?? 3;
+  const minSegment = options?.minSegment ?? 5;
+
+  let normalized = cbKeyringResampleClosedPointsV2(points, step);
+  normalized = cbKeyringSimplifyShortSegmentsV2(normalized, minSegment);
+  normalized = cbKeyringSmoothClosedPointsV2(normalized, smoothIterations);
+  normalized = cbKeyringSimplifyShortSegmentsV2(
+    normalized,
+    Math.max(2.4, minSegment * 0.72),
+  );
+
+  return normalized.length >= 3 ? normalized : points;
+}
 function formatAutoCutlineMarginMm(value: number) {
   return Number.isInteger(value)
     ? value.toFixed(0)
@@ -778,9 +929,7 @@ function projectHole(
   if (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) {
       return projectHoleToAutoCutlineHalfOutside(
       pointer,
-      autoCutline.centroid
-        ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, ART_FRAME)
-        : autoCutline.points,
+      cbNormalizeKeyringSilhouettePointsV2(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, ART_FRAME) : autoCutline.points, { step: 6, smoothIterations: 3, minSegment: 5 }),
     );
     }
 
@@ -1311,7 +1460,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame) : autoCutline.points)}
+              d={cbBuildSmoothClosedPath(cbNormalizeKeyringSilhouettePointsV2(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame) : autoCutline.points, { step: 6, smoothIterations: 3, minSegment: 5 }))}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1365,25 +1514,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
         </>
       )}
 
-                      <g>
-          <circle
-            cx={hole.x}
-            cy={hole.y}
-            r={holeRadius * 2.4 + 1.5}
-            fill="none"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth={4.6}
-          />
-          <circle
-            cx={hole.x}
-            cy={hole.y}
-            r={holeRadius * 2.4}
-            fill="none"
-            stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
-            strokeWidth={2.2}
-          />
-        </g>
-        $1
+        {/* standalone outer ring removed: absorbed into body silhouette */}
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
         <circle cx={hole.x} cy={hole.y} r={Math.max(2.2, holeRadius * 0.42)} fill="#08111f" />
     </svg>
