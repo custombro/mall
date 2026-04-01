@@ -1495,15 +1495,29 @@ const rawBounds = cbGetClosedBounds(result.points);
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
-                현재 구멍 좌표: X {Math.round(hole.x)} / Y {Math.round(hole.y)}
+                        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-full border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-2 text-[11px] font-semibold text-cyan-100">
+                  기준판 150 x 150mm
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  현재 배율 {Math.round(artScale * 100)}%
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  구멍 중심 X {Math.round(hole.x)} / Y {Math.round(hole.y)}mm
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  구멍 규격 {getHoleLabel(holeSize)}
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  현재 형태 {shapeMode}
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/82">
+                  칼선 여백 후보 2 / 2.25 / 2.5mm
+                </div>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
-                현재 규격: {getHoleLabel(holeSize)}
-              </div>
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
-                현재 형태: {shapeMode}
+              <div className="mt-2 text-[11px] text-white/55">
+                숫자 눈금 25mm 간격 · 보조 눈금 5mm 간격 · 칼선 여백은 좌측 mm 버튼에서 선택
               </div>
             </div>
 
@@ -1788,6 +1802,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
