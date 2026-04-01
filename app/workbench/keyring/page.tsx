@@ -1118,7 +1118,7 @@ async function buildAutoCutlineFromImage(
         const deduped = outlinePoints.filter((point, index, arr) => {
           if (!arr.length) return false;
           const prev = arr[(index - 1 + arr.length) % arr.length];
-          return Math.hypot(point.x - prev.x, point.y - prev.y) > 1.5;
+          return Math.hypot(point.x - prev.x, point.y - prev.y) > 3.2;
         });
 
         if (deduped.length < 18) {
@@ -1366,103 +1366,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
         </>
       )}
 
-      <g>
-        <>
-          <circle
-            cx={hole.x}
-            cy={hole.y}
-            r={minGuideOuterRadius}
-            fill="none"
-            stroke="rgba(255,214,102,0.78)"
-            strokeWidth="1.5"
-            strokeDasharray="8 8"
-          />
-          <circle
-            cx={hole.x}
-            cy={hole.y}
-            r={maxGuideOuterRadius}
-            fill="none"
-            stroke="rgba(102,217,255,0.76)"
-            strokeWidth="1.5"
-            strokeDasharray="10 10"
-          />
-          <text
-            x={Math.min(VIEW_WIDTH - 12, hole.x + maxGuideOuterRadius + 18)}
-            y={Math.max(18, hole.y - 12)}
-            fill="rgba(102,217,255,0.88)"
-            fontSize="12"
-            fontWeight="700"
-          >
-            
-          </text>
-          <text
-            x={Math.min(VIEW_WIDTH - 12, hole.x + minGuideOuterRadius + 18)}
-            y={Math.min(VIEW_HEIGHT - 12, hole.y + 14)}
-            fill="rgba(255,214,102,0.88)"
-            fontSize="12"
-            fontWeight="700"
-          >
-            
-          </text>
-        </>
-        {hasUpload ? (
-          <>
-            <circle
-              data-hole-print-safe="2mm"
-              cx={hole.x}
-              cy={hole.y}
-              r={holePrintSafeRadius}
-              fill="rgba(238,244,255,0.98)"
-            />
-            <line
-              data-bridge-preview="cutline-bridge"
-              x1={bridgeStart.x}
-              y1={bridgeStart.y}
-              x2={bridgeEnd.x}
-              y2={bridgeEnd.y}
-              stroke="rgba(238,244,255,0.98)"
-              strokeWidth={holePrintSafeRadius * 1.22}
-              strokeLinecap="round"
-            />
-          </>
-        ) : null}
-        <line
-          data-bridge-preview="cutline-bridge"
-          x1={bridgeStart.x}
-          y1={bridgeStart.y}
-          x2={bridgeEnd.x}
-          y2={bridgeEnd.y}
-          stroke="rgba(255,255,255,0.22)"
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 8}
-          strokeLinecap="round"
-        />
-        <line
-          data-bridge-preview="cutline-bridge"
-          x1={bridgeStart.x}
-          y1={bridgeStart.y}
-          x2={bridgeEnd.x}
-          y2={bridgeEnd.y}
-          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX + 3}
-          strokeLinecap="round"
-        />
-        <circle
-          cx={hole.x}
-          cy={hole.y}
-          r={getHoleOuterCutlineRadius(holeSize)}
-          fill="none"
-          stroke={PRODUCTION_OUTER_CUTLINE_COLOR}
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
-        />
-        <circle
-          cx={hole.x}
-          cy={hole.y}
-          r={holeRadius}
-          fill="none"
-          stroke={PRODUCTION_HOLE_CUTLINE_COLOR}
-          strokeWidth={PREVIEW_CUTLINE_STROKE_PX}
-        />
-      </g>
+              <g />
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
       <circle cx={hole.x} cy={hole.y} r="4" fill="#08111f" />
     </svg>
