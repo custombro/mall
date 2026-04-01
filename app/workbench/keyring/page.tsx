@@ -227,6 +227,7 @@ type HoleSize = (typeof HOLE_SIZES)[number];
 type AutoCutlineMarginMm = (typeof AUTO_CUTLINE_MARGIN_OPTIONS)[number];
 
 let autoCutlineMarginMmLive: AutoCutlineMarginMm = 2.5;
+let keyringArtScaleLive = 1;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -318,6 +319,30 @@ function getAdjustedAutoCutlinePoints(
   });
 }
 
+function getAutoCutlinePreviewFrameForScale(artScale: number) {
+  const baseWidth = ART_FRAME.width * artScale;
+  const baseHeight = ART_FRAME.height * artScale;
+  const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
+  const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
+  const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
+  const centeredX =
+    ART_FRAME.x + (ART_FRAME.width - safeWidth) / 2;
+  const centeredY =
+    ART_FRAME.y + (ART_FRAME.height - safeHeight) / 2;
+
+  return {
+    width: safeWidth,
+    height: safeHeight,
+    x: Math.max(
+      ART_FRAME.x + autoInsetPx,
+      Math.min(ART_FRAME.x + ART_FRAME.width - autoInsetPx - safeWidth, centeredX),
+    ),
+    y: Math.max(
+      ART_FRAME.y + autoInsetPx,
+      Math.min(ART_FRAME.y + ART_FRAME.height - autoInsetPx - safeHeight, centeredY),
+    ),
+  };
+}
 function formatAutoCutlineMarginMm(value: number) {
   return Number.isInteger(value)
     ? value.toFixed(0)
@@ -778,9 +803,7 @@ function projectHole(
   if (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) {
       return projectHoleToAutoCutlineHalfOutside(
       pointer,
-      autoCutline.centroid
-        ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, ART_FRAME)
-        : autoCutline.points,
+      autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, getAutoCutlinePreviewFrameForScale(keyringArtScaleLive)) : autoCutline.points,
     );
     }
 
@@ -1177,30 +1200,8 @@ function KeyringCanvas({
     x: hole.x + bridgeDirection.x * (getHoleOuterCutlineRadius(holeSize) + bridgeNeckInset),
     y: hole.y + bridgeDirection.y * (getHoleOuterCutlineRadius(holeSize) + bridgeNeckInset),
   };
-  const scaledArtFrame = (() => {
-  const baseWidth = ART_FRAME.width * artScale;
-  const baseHeight = ART_FRAME.height * artScale;
-  const autoInsetPx = getAutoCutlineMarginVisualPxByMm(2);
-  const safeWidth = Math.max(24, baseWidth - autoInsetPx * 2);
-  const safeHeight = Math.max(24, baseHeight - autoInsetPx * 2);
-  const centeredX =
-    ART_FRAME.x + (ART_FRAME.width - safeWidth) / 2;
-  const centeredY =
-    ART_FRAME.y + (ART_FRAME.height - safeHeight) / 2;
-
-  return {
-    width: safeWidth,
-    height: safeHeight,
-    x: Math.max(
-      ART_FRAME.x + autoInsetPx,
-      Math.min(ART_FRAME.x + ART_FRAME.width - autoInsetPx - safeWidth, centeredX),
-    ),
-    y: Math.max(
-      ART_FRAME.y + autoInsetPx,
-      Math.min(ART_FRAME.y + ART_FRAME.height - autoInsetPx - safeHeight, centeredY),
-    ),
-  };
-})();
+  keyringArtScaleLive = artScale;
+  const scaledArtFrame = getAutoCutlinePreviewFrameForScale(artScale);
 
 const autoCutlinePending = shapeMode === "자동칼선";
 
