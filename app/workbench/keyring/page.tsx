@@ -1309,6 +1309,38 @@ const rawBounds = cbGetClosedBounds(result.points);
   const totalPrice = unitPrice * quantity;
   const autoCutlineLocked = shapeMode === "자동칼선" && autoCutline.status !== "ready";
 
+  const productionStatus = useMemo(() => {
+    if (shapeMode === "자동칼선" && !uploadState?.previewUrl) {
+      return {
+        label: "업로드 필요",
+        tone: "amber" as const,
+        detail: "자동칼선은 업로드 이미지가 있어야 칼선 계산 가능",
+      };
+    }
+
+    if (shapeMode === "자동칼선" && autoCutline.status !== "ready") {
+      return {
+        label: "계산 중",
+        tone: "amber" as const,
+        detail: "자동칼선 계산 완료 후 구멍 위치와 가이드 확인 가능",
+      };
+    }
+
+    if (holeSize === 3) {
+      return {
+        label: "확인 필요",
+        tone: "amber" as const,
+        detail: getHoleLimitLabel(holeSize),
+      };
+    }
+
+    return {
+      label: "제작 가능",
+      tone: "cyan" as const,
+      detail: getHoleLimitLabel(holeSize),
+    };
+  }, [autoCutline.status, holeSize, shapeMode, uploadState?.previewUrl]);
+
   const updateHole = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (autoCutlineLocked) return;
 
@@ -1709,11 +1741,21 @@ const rawBounds = cbGetClosedBounds(result.points);
                   <span>150</span>
                 </div>
               </div>
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-white/82">메인 작업대</div>
-            <div className="text-sm text-white/62">
-                  {autoCutlineLocked ? "자동칼선 계산 완료 후 구멍 이동 가능" : "구멍은 외곽선에 붙어서 이동"}
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold text-white/82">메인 작업대</div>
+                  <div
+                    className={[
+                      "rounded-full border px-3 py-1 text-[11px] font-semibold",
+                      productionStatus.tone === "cyan"
+                        ? "border-cyan-300/30 bg-cyan-400/[0.12] text-cyan-100"
+                        : "border-amber-300/30 bg-amber-300/[0.12] text-amber-100",
+                    ].join(" ")}
+                  >
+                    {productionStatus.label}
+                  </div>
                 </div>
+                <div className="text-sm text-white/62">{productionStatus.detail}</div>
               </div>
 
               <div className="h-[700px] w-full">
@@ -1878,6 +1920,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
