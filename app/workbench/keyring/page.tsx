@@ -833,6 +833,116 @@ function projectHole(
   );
 }
 
+function cbBuildAutoCutlineUnionPreviewPath(
+  points: Point[],
+  hole: HolePosition,
+  holeSize: HoleSize,
+) {
+  if (points.length < 3 || typeof document === "undefined") {
+    return cbBuildSmoothClosedPath(points);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = VIEW_WIDTH;
+  canvas.height = VIEW_HEIGHT;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) {
+    return cbBuildSmoothClosedPath(points);
+  }
+
+  ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  ctx.fillStyle = "#000";
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, getHoleOuterCutlineRadius(holeSize), 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+
+  const image = ctx.getImageData(0, 0, VIEW_WIDTH, VIEW_HEIGHT).data;
+  const mask: boolean[][] = Array.from({ length: VIEW_HEIGHT }, () =>
+    Array.from({ length: VIEW_WIDTH }, () => false),
+  );
+
+  let count = 0;
+  let sumX = 0;
+  let sumY = 0;
+
+  for (let y = 0; y < VIEW_HEIGHT; y += 1) {
+    for (let x = 0; x < VIEW_WIDTH; x += 1) {
+      const idx = (y * VIEW_WIDTH + x) * 4 + 3;
+      if (image[idx] > 16) {
+        mask[y][x] = true;
+        count += 1;
+        sumX += x;
+        sumY += y;
+      }
+    }
+  }
+
+  if (count < 48) {
+    return cbBuildSmoothClosedPath(points);
+  }
+
+  const centroid = {
+    x: sumX / count,
+    y: sumY / count,
+  };
+
+  const sectorCount = 160;
+  const buckets = Array.from(
+    { length: sectorCount },
+    () => null as { x: number; y: number; dist: number } | null,
+  );
+
+  for (let y = 1; y < VIEW_HEIGHT - 1; y += 1) {
+    for (let x = 1; x < VIEW_WIDTH - 1; x += 1) {
+      if (!mask[y][x]) continue;
+
+      const isBoundary =
+        !mask[y][x - 1] ||
+        !mask[y][x + 1] ||
+        !mask[y - 1][x] ||
+        !mask[y + 1][x];
+
+      if (!isBoundary) continue;
+
+      const dx = x - centroid.x;
+      const dy = y - centroid.y;
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += Math.PI * 2;
+
+      const sector = Math.min(
+        sectorCount - 1,
+        Math.floor((angle / (Math.PI * 2)) * sectorCount),
+      );
+      const dist = Math.hypot(dx, dy);
+      const prev = buckets[sector];
+
+      if (!prev || dist > prev.dist) {
+        buckets[sector] = { x, y, dist };
+      }
+    }
+  }
+
+  const outlinePoints = buckets
+    .filter((bucket): bucket is { x: number; y: number; dist: number } => Boolean(bucket))
+    .map((bucket) => ({ x: bucket.x, y: bucket.y }));
+
+  if (outlinePoints.length < 24) {
+    return cbBuildSmoothClosedPath(points);
+  }
+
+  return cbBuildSmoothClosedPath(outlinePoints);
+}
 async function buildAutoCutlineFromImage(
   url: string,
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> {
@@ -1202,6 +1312,14 @@ function KeyringCanvas({
   };
   keyringArtScaleLive = artScale;
   const scaledArtFrame = getAutoCutlinePreviewFrameForScale(artScale);
+  const autoCutlinePreviewPoints =
+    autoCutline.centroid
+      ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame)
+      : autoCutline.points;
+  const autoCutlinePreviewPath =
+    shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
+      ? cbBuildAutoCutlineUnionPreviewPath(autoCutlinePreviewPoints, hole, holeSize)
+      : null;
 
 const autoCutlinePending = shapeMode === "자동칼선";
 
@@ -1312,7 +1430,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame) : autoCutline.points)}
+              d={autoCutlinePreviewPath ?? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1364,9 +1482,8 @@ const autoCutlinePending = shapeMode === "자동칼선";
                   : "업로드 대기"}
           </text>
         </>
-      )}
-
-                      <g>
+      )}      {shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.path ? null : (
+        <g>
           <circle
             cx={hole.x}
             cy={hole.y}
@@ -1384,7 +1501,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
             strokeWidth={2.2}
           />
         </g>
-        $1
+      )}
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
         <circle cx={hole.x} cy={hole.y} r={Math.max(2.2, holeRadius * 0.42)} fill="#08111f" />
     </svg>
