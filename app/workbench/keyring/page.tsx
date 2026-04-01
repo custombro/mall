@@ -759,9 +759,11 @@ function projectHole(
 
   if (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) {
       return projectHoleToAutoCutlineHalfOutside(
-        pointer,
-        autoCutline.points,
-      );
+      pointer,
+      autoCutline.centroid
+        ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid)
+        : autoCutline.points,
+    );
     }
 
   if (shapeMode === "원형") {
@@ -1291,7 +1293,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={autoCutline.path}
+              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid) : autoCutline.points)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
