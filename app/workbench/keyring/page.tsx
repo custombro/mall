@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -753,220 +753,267 @@ async function buildAutoCutlineFromImage(
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> {
   return new Promise((resolve) => {
     const img = new Image();
+
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = ANALYSIS_WIDTH;
-      canvas.height = ANALYSIS_HEIGHT;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = ANALYSIS_WIDTH;
+        canvas.height = ANALYSIS_HEIGHT;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-      if (!ctx) {
-        resolve(null);
-        return;
-      }
-
-      ctx.clearRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
-
-      const scale = Math.min(ANALYSIS_WIDTH / img.width, ANALYSIS_HEIGHT / img.height);
-      const drawWidth = img.width * scale;
-      const drawHeight = img.height * scale;
-      const drawX = (ANALYSIS_WIDTH - drawWidth) / 2;
-      const drawY = (ANALYSIS_HEIGHT - drawHeight) / 2;
-
-      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-
-      const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
-      const data = imageData.data;
-
-      const mask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
-        Array.from({ length: ANALYSIS_WIDTH }, () => false),
-      );
-
-      let count = 0;
-      let sumX = 0;
-      let sumY = 0;
-
-      for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
-        for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
-          const idx = (y * ANALYSIS_WIDTH + x) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          const a = data[idx + 3];
-          const fg = isForeground(r, g, b, a);
-
-          if (fg) {
-            mask[y][x] = true;
-            count += 1;
-            sumX += x + 0.5;
-            sumY += y + 0.5;
-          }
-        }
-      }
-
-      if (count < 40) {
-        resolve(null);
-        return;
-      }
-  const autoCutlineMarginPx = Math.max(
-      Math.round(Math.max(img.width, img.height) * 0.03),
-      getAutoCutlineMarginVisualPx(),
-    );
-
-  if (autoCutlineMarginPx > 0) {
-    const expandedMask = mask.map((row) => [...row]);
-
-    for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
-      for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
-        if (!mask[y][x]) continue;
-
-        for (let oy = -autoCutlineMarginPx; oy <= autoCutlineMarginPx; oy += 1) {
-          const ny = y + oy;
-          if (ny < 0 || ny >= ANALYSIS_HEIGHT) continue;
-
-          for (let ox = -autoCutlineMarginPx; ox <= autoCutlineMarginPx; ox += 1) {
-            const nx = x + ox;
-            if (nx < 0 || nx >= ANALYSIS_WIDTH) continue;
-            if (ox * ox + oy * oy > autoCutlineMarginPx * autoCutlineMarginPx) continue;
-            expandedMask[ny][nx] = true;
-          }
-        }
-      }
-    }
-
-    for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
-      for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
-        mask[y][x] = expandedMask[y][x];
-      }
-    }
-  }
-
-      const centroidMask = {
-        x: sumX / count,
-        y: sumY / count,
-      };
-
-      const bins = 240;
-      const radial: Array<{ d: number; x: number; y: number }> = Array.from({ length: bins }, () => ({
-        d: -1,
-        x: 0,
-        y: 0,
-      }));
-
-      let boundaryCount = 0;
-
-      for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
-        for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
-          if (!mask[y][x]) continue;
-
-          const boundary =
-            !mask[y - 1][x] ||
-            !mask[y + 1][x] ||
-            !mask[y][x - 1] ||
-            !mask[y][x + 1] ||
-            !mask[y - 1][x - 1] ||
-            !mask[y - 1][x + 1] ||
-            !mask[y + 1][x - 1] ||
-            !mask[y + 1][x + 1];
-
-          if (!boundary) continue;
-
-          boundaryCount += 1;
-
-          const px = x + 0.5;
-          const py = y + 0.5;
-          const angle = Math.atan2(py - centroidMask.y, px - centroidMask.x);
-          const bin = Math.floor((((angle + Math.PI) / (Math.PI * 2)) * bins)) % bins;
-          const d = distanceSq({ x: px, y: py }, centroidMask);
-
-          if (d > radial[bin].d) {
-            radial[bin] = { d, x: px, y: py };
-          }
-        }
-      }
-
-      if (boundaryCount < 40) {
-        resolve(null);
-        return;
-      }
-
-      for (let i = 0; i < bins; i += 1) {
-        if (radial[i].d >= 0) continue;
-
-        let left = (i - 1 + bins) % bins;
-        while (left !== i && radial[left].d < 0) {
-          left = (left - 1 + bins) % bins;
-        }
-
-        let right = (i + 1) % bins;
-        while (right !== i && radial[right].d < 0) {
-          right = (right + 1) % bins;
-        }
-
-        if (radial[left].d >= 0 && radial[right].d >= 0) {
-          radial[i] = {
-            d: (radial[left].d + radial[right].d) / 2,
-            x: (radial[left].x + radial[right].x) / 2,
-            y: (radial[left].y + radial[right].y) / 2,
-          };
-        } else if (radial[left].d >= 0) {
-          radial[i] = radial[left];
-        } else if (radial[right].d >= 0) {
-          radial[i] = radial[right];
-        } else {
+        if (!ctx) {
           resolve(null);
           return;
         }
-      }
 
-      const rawPoints: Point[] = [];
+        ctx.clearRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
 
-      for (let i = 0; i < bins; i += 1) {
-        const point = radial[i];
-        const svgPoint = {
-          x: ART_FRAME.x + (point.x / ANALYSIS_WIDTH) * ART_FRAME.width,
-          y: ART_FRAME.y + (point.y / ANALYSIS_HEIGHT) * ART_FRAME.height,
-        };
+        const scale = Math.min(ANALYSIS_WIDTH / img.width, ANALYSIS_HEIGHT / img.height);
+        const drawWidth = img.width * scale;
+        const drawHeight = img.height * scale;
+        const drawX = (ANALYSIS_WIDTH - drawWidth) / 2;
+        const drawY = (ANALYSIS_HEIGHT - drawHeight) / 2;
 
-        if (rawPoints.length === 0 || distanceSq(rawPoints[rawPoints.length - 1], svgPoint) > 3) {
-          rawPoints.push(svgPoint);
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+        const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+        const data = imageData.data;
+
+        const bgCandidate: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            const maxChannel = Math.max(r, g, b);
+            const minChannel = Math.min(r, g, b);
+            const brightness = (r + g + b) / 3;
+            const chroma = maxChannel - minChannel;
+
+            bgCandidate[y][x] =
+              a <= 20 ||
+              (a >= 220 && brightness >= 244 && chroma <= 18) ||
+              (a >= 245 && brightness >= 232 && chroma <= 8);
+          }
         }
-      }
 
-      if (rawPoints.length < 24) {
-        resolve(null);
-        return;
-      }
+        const bgVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
 
-      const smoothPoints = rawPoints.map((point, index) => {
-        const prev = rawPoints[(index - 1 + rawPoints.length) % rawPoints.length];
-        const next = rawPoints[(index + 1) % rawPoints.length];
-        return {
-          x: (prev.x + point.x * 2 + next.x) / 4,
-          y: (prev.y + point.y * 2 + next.y) / 4,
+        const queueX: number[] = [];
+        const queueY: number[] = [];
+        let head = 0;
+
+        const pushBg = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
+          if (bgVisited[y][x] || !bgCandidate[y][x]) return;
+          bgVisited[y][x] = true;
+          queueX.push(x);
+          queueY.push(y);
         };
-      });
 
-      const path = smoothPoints
-        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-        .join(" ") + " Z";
+        for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+          pushBg(x, 0);
+          pushBg(x, ANALYSIS_HEIGHT - 1);
+        }
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          pushBg(0, y);
+          pushBg(ANALYSIS_WIDTH - 1, y);
+        }
 
-      const centroidSvg = {
-        x: ART_FRAME.x + (centroidMask.x / ANALYSIS_WIDTH) * ART_FRAME.width,
-        y: ART_FRAME.y + (centroidMask.y / ANALYSIS_HEIGHT) * ART_FRAME.height,
-      };
+        const dirs4 = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const;
 
-      resolve({
-        path,
-        points: smoothPoints,
-        centroid: centroidSvg,
-      });
+        while (head < queueX.length) {
+          const x = queueX[head];
+          const y = queueY[head];
+          head += 1;
+
+          for (const [dx, dy] of dirs4) {
+            pushBg(x + dx, y + dy);
+          }
+        }
+
+        const fgMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        let fgCount = 0;
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            const brightness = (r + g + b) / 3;
+            const maxChannel = Math.max(r, g, b);
+            const minChannel = Math.min(r, g, b);
+            const chroma = maxChannel - minChannel;
+
+            const definitelyInk = a > 38 && !(brightness >= 248 && chroma <= 6);
+            const isForeground = definitelyInk && !bgVisited[y][x];
+
+            if (isForeground) {
+              fgMask[y][x] = true;
+              fgCount += 1;
+            }
+          }
+        }
+
+        if (fgCount < 40) {
+          resolve(null);
+          return;
+        }
+
+        const componentVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        let bestPoints: Point[] = [];
+
+        const pushFg = (
+          x: number,
+          y: number,
+          xs: number[],
+          ys: number[],
+          points: Point[],
+        ) => {
+          if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
+          if (componentVisited[y][x] || !fgMask[y][x]) return;
+          componentVisited[y][x] = true;
+          xs.push(x);
+          ys.push(y);
+          points.push({ x, y });
+        };
+
+        for (let startY = 0; startY < ANALYSIS_HEIGHT; startY += 1) {
+          for (let startX = 0; startX < ANALYSIS_WIDTH; startX += 1) {
+            if (componentVisited[startY][startX] || !fgMask[startY][startX]) continue;
+
+            const xs: number[] = [];
+            const ys: number[] = [];
+            const points: Point[] = [];
+            let localHead = 0;
+
+            pushFg(startX, startY, xs, ys, points);
+
+            while (localHead < xs.length) {
+              const x = xs[localHead];
+              const y = ys[localHead];
+              localHead += 1;
+
+              for (const [dx, dy] of dirs4) {
+                pushFg(x + dx, y + dy, xs, ys, points);
+              }
+            }
+
+            if (points.length > bestPoints.length) {
+              bestPoints = points;
+            }
+          }
+        }
+
+        if (bestPoints.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        const componentMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        let sumX = 0;
+        let sumY = 0;
+        for (const point of bestPoints) {
+          componentMask[point.y][point.x] = true;
+          sumX += point.x;
+          sumY += point.y;
+        }
+
+        const centroid = {
+          x: sumX / bestPoints.length,
+          y: sumY / bestPoints.length,
+        };
+
+        const sectorCount = Math.max(96, Math.min(180, Math.round(bestPoints.length / 4)));
+        const buckets = Array.from(
+          { length: sectorCount },
+          () => null as { x: number; y: number; dist: number } | null,
+        );
+
+        for (const point of bestPoints) {
+          const x = point.x;
+          const y = point.y;
+
+          const isBoundary =
+            x === 0 ||
+            y === 0 ||
+            x === ANALYSIS_WIDTH - 1 ||
+            y === ANALYSIS_HEIGHT - 1 ||
+            !componentMask[y][x - 1] ||
+            !componentMask[y][x + 1] ||
+            !componentMask[y - 1][x] ||
+            !componentMask[y + 1][x];
+
+          if (!isBoundary) continue;
+
+          const dx = x - centroid.x;
+          const dy = y - centroid.y;
+          let angle = Math.atan2(dy, dx);
+          if (angle < 0) angle += Math.PI * 2;
+
+          const sector = Math.min(sectorCount - 1, Math.floor((angle / (Math.PI * 2)) * sectorCount));
+          const dist = Math.hypot(dx, dy);
+          const prev = buckets[sector];
+
+          if (!prev || dist > prev.dist) {
+            buckets[sector] = { x, y, dist };
+          }
+        }
+
+        const outlinePoints: Point[] = [];
+        for (const bucket of buckets) {
+          if (bucket) {
+            outlinePoints.push({ x: bucket.x, y: bucket.y });
+          }
+        }
+
+        const deduped = outlinePoints.filter((point, index, arr) => {
+          if (!arr.length) return false;
+          const prev = arr[(index - 1 + arr.length) % arr.length];
+          return Math.hypot(point.x - prev.x, point.y - prev.y) > 1.5;
+        });
+
+        if (deduped.length < 18) {
+          resolve(null);
+          return;
+        }
+
+        resolve({
+          path: cbBuildSmoothClosedPath(deduped),
+          points: deduped,
+          centroid,
+        });
+      } catch {
+        resolve(null);
+      }
     };
 
     img.onerror = () => resolve(null);
     img.src = url;
   });
 }
-
 function KeyringCanvas({
   hole,
   shapeMode,
@@ -1138,7 +1185,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={cbBuildSmoothClosedPath(autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid) : autoCutline.points)}
+              d={autoCutline.path}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1406,18 +1453,15 @@ const effectiveHoleAutoCutline = useMemo(() => {
       if (result) {
         
 const rawBounds = cbGetClosedBounds(result.points);
-        const largestSize = Math.max(rawBounds.width, rawBounds.height);
-        const autoMarginPx = largestSize >= 240 ? 24 : 20;
         const rawCentroid = result.centroid ?? {
           x: rawBounds.left + rawBounds.width / 2,
           y: rawBounds.top + rawBounds.height / 2,
         };
-        const expandedPoints = cbExpandClosedPoints(result.points, rawCentroid, autoMarginPx);
 
         setAutoCutline({
           status: "ready",
-          path: cbBuildSmoothClosedPath(expandedPoints),
-          points: expandedPoints,
+          path: cbBuildSmoothClosedPath(result.points),
+          points: result.points,
           centroid: rawCentroid,
         });
 
