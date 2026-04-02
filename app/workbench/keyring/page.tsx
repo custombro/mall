@@ -916,11 +916,11 @@ function cbBuildAutoCutlineUnionPreviewPath(
   const segmentNext = points[(bestSegmentIndex + 1) % points.length];
   const segmentDir = normalize(segmentNext.x - points[bestSegmentIndex].x, segmentNext.y - points[bestSegmentIndex].y);
 
-  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.48;
-  const baseHalf = Math.max(3.2, outerRadius * 0.86);
-  const baseLift = Math.max(0.3, outerRadius * 0.04);
-  const shoulderLift = Math.max(1.1, outerRadius * 0.18);
-  const topLift = Math.max(2.4, outerRadius * 0.34);
+  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.34;
+  const baseHalf = Math.max(2.0, outerRadius * 0.56);
+  const baseLift = Math.max(0.0, outerRadius * 0.01);
+  const shoulderLift = Math.max(0.45, outerRadius * 0.08);
+  const topLift = Math.max(0.95, outerRadius * 0.14);
 
   const leftBase = {
     x: bestPoint.x - segmentDir.x * baseHalf + outward.x * baseLift,
@@ -928,8 +928,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
   };
 
   const leftShoulder = {
-    x: hole.x - segmentDir.x * (outerRadius * 0.72) + outward.x * shoulderLift,
-    y: hole.y - segmentDir.y * (outerRadius * 0.72) + outward.y * shoulderLift,
+    x: hole.x - segmentDir.x * (outerRadius * 0.46) + outward.x * shoulderLift,
+    y: hole.y - segmentDir.y * (outerRadius * 0.46) + outward.y * shoulderLift,
   };
 
   const topPoint = {
@@ -938,8 +938,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
   };
 
   const rightShoulder = {
-    x: hole.x + segmentDir.x * (outerRadius * 0.72) + outward.x * shoulderLift,
-    y: hole.y + segmentDir.y * (outerRadius * 0.72) + outward.y * shoulderLift,
+    x: hole.x + segmentDir.x * (outerRadius * 0.46) + outward.x * shoulderLift,
+    y: hole.y + segmentDir.y * (outerRadius * 0.46) + outward.y * shoulderLift,
   };
 
   const rightBase = {
@@ -2443,7 +2443,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
