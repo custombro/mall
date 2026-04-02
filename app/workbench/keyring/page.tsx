@@ -549,14 +549,17 @@ function projectHoleToAutoCutlineHalfOutside(
     y: sumY / points.length,
   };
 
-  const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
-  const seatDepth = Math.max(4.8, getHoleOuterCutlineRadius(holeSize) * 0.82);
-  const safeInside = Math.max(3.2, getHoleVisualRadius(holeSize) * 0.34);
-  const insideShift = Math.max(seatDepth, safeInside);
+  const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
+  const seatDepth = Math.max(
+    getHoleVisualRadius(holeSize) * 0.52,
+    getHoleOuterCutlineRadius(holeSize) * 0.34,
+  );
+  const safeOutside = Math.max(1.2, getHoleVisualRadius(holeSize) * 0.08);
+  const outsideShift = Math.max(seatDepth, safeOutside);
 
   return {
-    x: bestPoint.x + inward.x * insideShift,
-    y: bestPoint.y + inward.y * insideShift,
+    x: bestPoint.x + outward.x * outsideShift,
+    y: bestPoint.y + outward.y * outsideShift,
   };
 }
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
@@ -2443,7 +2446,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
