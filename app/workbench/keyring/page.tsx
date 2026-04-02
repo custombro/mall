@@ -1416,6 +1416,7 @@ function KeyringCanvas({
   shapeMode,
   holeSize,
   imageUrl,
+  previewUrl,
   autoCutline,
   artScale,
 }: {
@@ -1423,13 +1424,15 @@ function KeyringCanvas({
   shapeMode: ShapeMode;
   holeSize: HoleSize;
   imageUrl: string | null;
+  previewUrl: string | null;
   autoCutline: AutoCutlineState;
   artScale: number;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
-  const hasUpload = Boolean(imageUrl);
+  const renderImageUrl = previewUrl ?? imageUrl;
+  const hasUpload = Boolean(renderImageUrl);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
     getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[AUTO_CUTLINE_MARGIN_OPTIONS.length - 1]);
@@ -1512,7 +1515,7 @@ const previewImageClipPath =
           {hasUpload ? (
             <>
               <image
-                href={imageUrl!}
+                href={renderImageUrl!}
                 x={scaledArtFrame.x}
                 y={scaledArtFrame.y}
                 width={scaledArtFrame.width}
@@ -1583,7 +1586,7 @@ const previewImageClipPath =
 
           {hasUpload ? (
             <image
-              href={imageUrl!}
+              href={renderImageUrl!}
               x={scaledArtFrame.x}
               y={scaledArtFrame.y}
               width={scaledArtFrame.width}
@@ -2290,6 +2293,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                   shapeMode={shapeMode}
                   holeSize={holeSize}
                   imageUrl={uploadState?.previewUrl ?? null}
+              previewUrl={uploadState?.previewUrl ?? null}
                   autoCutline={effectiveAutoCutline}
                 artScale={artScale}
                 />
