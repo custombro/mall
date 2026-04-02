@@ -862,16 +862,7 @@ function cbBuildAutoCutlineUnionPreviewPath(
   hole: HolePosition,
   holeSize: HoleSize,
 ) {
-  if (points.length < 3 || typeof document === "undefined") {
-    return cbBuildSmoothClosedPath(points);
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = VIEW_WIDTH;
-  canvas.height = VIEW_HEIGHT;
-
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) {
+  if (points.length < 3) {
     return cbBuildSmoothClosedPath(points);
   }
 
@@ -892,18 +883,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
     };
   };
 
-  ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
-  ctx.fillStyle = "#000";
-
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i += 1) {
-    ctx.lineTo(points[i].x, points[i].y);
-  }
-  ctx.closePath();
-  ctx.fill();
-
   let bestPoint = points[0];
+  let bestSegmentIndex = 0;
   let bestDist = Number.POSITIVE_INFINITY;
 
   for (let i = 0; i < points.length; i += 1) {
@@ -915,6 +896,7 @@ function cbBuildAutoCutlineUnionPreviewPath(
     if (dist < bestDist) {
       bestDist = dist;
       bestPoint = projected;
+      bestSegmentIndex = i;
     }
   }
 
@@ -930,113 +912,54 @@ function cbBuildAutoCutlineUnionPreviewPath(
     y: sumY / points.length,
   };
 
-  const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
-  const outward = { x: -inward.x, y: -inward.y };
+  const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
+  const segmentNext = points[(bestSegmentIndex + 1) % points.length];
+  const segmentDir = normalize(segmentNext.x - points[bestSegmentIndex].x, segmentNext.y - points[bestSegmentIndex].y);
 
-  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.66;
-  const bridgeHalf = Math.max(3.2, outerRadius * 0.34);
+  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.48;
+  const baseHalf = Math.max(3.2, outerRadius * 0.86);
+  const baseLift = Math.max(0.3, outerRadius * 0.04);
+  const shoulderLift = Math.max(1.1, outerRadius * 0.18);
+  const topLift = Math.max(2.4, outerRadius * 0.34);
 
-  const bridgeStart = {
-    x: bestPoint.x - outward.x * Math.max(0.2, outerRadius * 0.02),
-    y: bestPoint.y - outward.y * Math.max(0.2, outerRadius * 0.02),
+  const leftBase = {
+    x: bestPoint.x - segmentDir.x * baseHalf + outward.x * baseLift,
+    y: bestPoint.y - segmentDir.y * baseHalf + outward.y * baseLift,
   };
 
-  const bridgeEnd = {
-    x: hole.x - inward.x * Math.max(5.2, outerRadius * 0.82),
-    y: hole.y - inward.y * Math.max(5.2, outerRadius * 0.82),
+  const leftShoulder = {
+    x: hole.x - segmentDir.x * (outerRadius * 0.72) + outward.x * shoulderLift,
+    y: hole.y - segmentDir.y * (outerRadius * 0.72) + outward.y * shoulderLift,
   };
 
-  ctx.save();
-  ctx.strokeStyle = "#000";
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.lineWidth = bridgeHalf * 2;
-  ctx.beginPath();
-  ctx.moveTo(bridgeStart.x, bridgeStart.y);
-  ctx.lineTo(bridgeEnd.x, bridgeEnd.y);
-  ctx.stroke();
-  ctx.restore();
+  const topPoint = {
+    x: hole.x + outward.x * topLift,
+    y: hole.y + outward.y * topLift,
+  };
 
-  ctx.beginPath();
-  ctx.arc(hole.x, hole.y, outerRadius, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.fill();
+  const rightShoulder = {
+    x: hole.x + segmentDir.x * (outerRadius * 0.72) + outward.x * shoulderLift,
+    y: hole.y + segmentDir.y * (outerRadius * 0.72) + outward.y * shoulderLift,
+  };
 
-  const image = ctx.getImageData(0, 0, VIEW_WIDTH, VIEW_HEIGHT).data;
-  const mask: boolean[][] = Array.from({ length: VIEW_HEIGHT }, () =>
-    Array.from({ length: VIEW_WIDTH }, () => false),
-  );
+  const rightBase = {
+    x: bestPoint.x + segmentDir.x * baseHalf + outward.x * baseLift,
+    y: bestPoint.y + segmentDir.y * baseHalf + outward.y * baseLift,
+  };
 
-  let count = 0;
-  let contourSumX = 0;
-  let contourSumY = 0;
-
-  for (let y = 0; y < VIEW_HEIGHT; y += 1) {
-    for (let x = 0; x < VIEW_WIDTH; x += 1) {
-      const idx = (y * VIEW_WIDTH + x) * 4 + 3;
-      if (image[idx] > 16) {
-        mask[y][x] = true;
-        count += 1;
-        contourSumX += x;
-        contourSumY += y;
-      }
+  const mergedPoints: Point[] = [];
+  for (let i = 0; i < points.length; i += 1) {
+    mergedPoints.push(points[i]);
+    if (i === bestSegmentIndex) {
+      mergedPoints.push(leftBase, leftShoulder, topPoint, rightShoulder, rightBase);
     }
   }
 
-  if (count < 48) {
+  if (mergedPoints.length < points.length + 5) {
     return cbBuildSmoothClosedPath(points);
   }
 
-  const contourCentroid = {
-    x: contourSumX / count,
-    y: contourSumY / count,
-  };
-
-  const sectorCount = 160;
-  const buckets = Array.from(
-    { length: sectorCount },
-    () => null as { x: number; y: number; dist: number } | null,
-  );
-
-  for (let y = 1; y < VIEW_HEIGHT - 1; y += 1) {
-    for (let x = 1; x < VIEW_WIDTH - 1; x += 1) {
-      if (!mask[y][x]) continue;
-
-      const isBoundary =
-        !mask[y][x - 1] ||
-        !mask[y][x + 1] ||
-        !mask[y - 1][x] ||
-        !mask[y + 1][x];
-
-      if (!isBoundary) continue;
-
-      const dx = x - contourCentroid.x;
-      const dy = y - contourCentroid.y;
-      let angle = Math.atan2(dy, dx);
-      if (angle < 0) angle += Math.PI * 2;
-
-      const sector = Math.min(
-        sectorCount - 1,
-        Math.floor((angle / (Math.PI * 2)) * sectorCount),
-      );
-      const dist = Math.hypot(dx, dy);
-      const prev = buckets[sector];
-
-      if (!prev || dist > prev.dist) {
-        buckets[sector] = { x, y, dist };
-      }
-    }
-  }
-
-  const outlinePoints = buckets
-    .filter((bucket): bucket is { x: number; y: number; dist: number } => Boolean(bucket))
-    .map((bucket) => ({ x: bucket.x, y: bucket.y }));
-
-  if (outlinePoints.length < 24) {
-    return cbBuildSmoothClosedPath(points);
-  }
-
-  return cbBuildSmoothClosedPath(outlinePoints);
+  return cbBuildSmoothClosedPath(mergedPoints);
 }
 function cbBuildBaseShapeUnionPreviewPath(
   shapeMode: ShapeMode,
@@ -2520,7 +2443,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
