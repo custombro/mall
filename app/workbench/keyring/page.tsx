@@ -499,6 +499,7 @@ function renderPreviewOuterCutlineShape(shapeMode: ShapeMode) {
 function projectHoleToAutoCutlineHalfOutside(
   pointer: HolePosition,
   points: Point[],
+  holeSize: HoleSize,
 ): HolePosition {
   if (points.length < 2) {
     return pointer;
@@ -536,12 +537,28 @@ function projectHoleToAutoCutlineHalfOutside(
     }
   }
 
+  let sumX = 0;
+  let sumY = 0;
+  for (const point of points) {
+    sumX += point.x;
+    sumY += point.y;
+  }
+
+  const centroid = {
+    x: sumX / points.length,
+    y: sumY / points.length,
+  };
+
+  const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
+  const seatDepth = Math.max(3.5, getHoleOuterCutlineRadius(holeSize) * 0.58);
+  const safeInside = Math.max(2.5, getHoleVisualRadius(holeSize) * 0.24);
+  const insideShift = Math.max(seatDepth, safeInside);
+
   return {
-    x: bestPoint.x,
-    y: bestPoint.y,
+    x: bestPoint.x + inward.x * insideShift,
+    y: bestPoint.y + inward.y * insideShift,
   };
 }
-
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
   const holeInset = getHoleOuterCutlineRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
   const holeInsideBias = Math.max(10, getHoleOuterCutlineRadius(holeSize) * 0.92);
@@ -802,9 +819,16 @@ function projectHole(
 
   if (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) {
       return projectHoleToAutoCutlineHalfOutside(
-      pointer,
-      autoCutline.centroid ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, getAutoCutlinePreviewFrameForScale(keyringArtScaleLive)) : autoCutline.points,
-    );
+        pointer,
+        autoCutline.centroid
+          ? getAdjustedAutoCutlinePoints(
+              autoCutline.points,
+              autoCutline.centroid,
+              getAutoCutlinePreviewFrameForScale(keyringArtScaleLive),
+            )
+          : autoCutline.points,
+        holeSize,
+      );
     }
 
   if (shapeMode === "원형") {
@@ -2425,7 +2449,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
