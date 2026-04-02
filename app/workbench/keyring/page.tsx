@@ -550,8 +550,8 @@ function projectHoleToAutoCutlineHalfOutside(
   };
 
   const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
-  const seatDepth = Math.max(3.5, getHoleOuterCutlineRadius(holeSize) * 0.58);
-  const safeInside = Math.max(2.5, getHoleVisualRadius(holeSize) * 0.24);
+  const seatDepth = Math.max(4.8, getHoleOuterCutlineRadius(holeSize) * 0.82);
+  const safeInside = Math.max(3.2, getHoleVisualRadius(holeSize) * 0.34);
   const insideShift = Math.max(seatDepth, safeInside);
 
   return {
@@ -933,17 +933,17 @@ function cbBuildAutoCutlineUnionPreviewPath(
   const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
   const outward = { x: -inward.x, y: -inward.y };
 
-  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.9;
-  const bridgeHalf = Math.max(5, outerRadius * 0.62);
+  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.66;
+  const bridgeHalf = Math.max(3.2, outerRadius * 0.34);
 
   const bridgeStart = {
-    x: bestPoint.x - outward.x * Math.max(1.6, outerRadius * 0.18),
-    y: bestPoint.y - outward.y * Math.max(1.6, outerRadius * 0.18),
+    x: bestPoint.x - outward.x * Math.max(0.2, outerRadius * 0.02),
+    y: bestPoint.y - outward.y * Math.max(0.2, outerRadius * 0.02),
   };
 
   const bridgeEnd = {
-    x: hole.x - inward.x * Math.max(1.4, outerRadius * 0.14),
-    y: hole.y - inward.y * Math.max(1.4, outerRadius * 0.14),
+    x: hole.x - inward.x * Math.max(5.2, outerRadius * 0.82),
+    y: hole.y - inward.y * Math.max(5.2, outerRadius * 0.82),
   };
 
   ctx.save();
@@ -2520,7 +2520,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
