@@ -1176,13 +1176,13 @@ async function buildAutoCutlineFromImage(
             const chroma = maxChannel - minChannel;
             const dist = colorDistance(r, g, b);
 
-            const transparentLike = a <= 20;
-            const whiteLike = a >= 220 && brightness >= 236 && chroma <= 26;
+            const transparentLike = a <= 36;
+            const whiteLike = a >= 150 && brightness >= 214 && chroma <= 40;
             const edgeColorLike =
-              a >= 180 &&
-              dist <= 34 &&
-              Math.abs(brightness - avgBorderBrightness) <= 26 &&
-              chroma <= 42;
+              a >= 120 &&
+              dist <= 52 &&
+              Math.abs(brightness - avgBorderBrightness) <= 38 &&
+              chroma <= 58;
 
             bgCandidate[y][x] = transparentLike || whiteLike || edgeColorLike;
           }
@@ -2434,7 +2434,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
