@@ -1431,7 +1431,12 @@ function KeyringCanvas({
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
+  const stablePreviewHole = {
+    x: Math.round(hole.x * 4) / 4,
+    y: Math.round(hole.y * 4) / 4,
+  };
   const renderImageUrl = previewUrl ?? imageUrl;
+  const autoPreviewInsetEnabled = Boolean(previewUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
@@ -1459,7 +1464,7 @@ function KeyringCanvas({
       : autoCutline.points;
   const autoCutlinePreviewPath =
     shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
-      ? cbBuildAutoCutlineUnionPreviewPath(autoCutlinePreviewPoints, hole, holeSize)
+      ? cbBuildAutoCutlineUnionPreviewPath(autoCutlinePreviewPoints, stablePreviewHole, holeSize)
       : null;
   const baseShapeUnionPreviewPath =
     shapeMode === "원형" || shapeMode === "사각형"
@@ -1516,10 +1521,10 @@ const previewImageClipPath =
             <>
               <image
                 href={renderImageUrl!}
-                x={scaledArtFrame.x}
-                y={scaledArtFrame.y}
-                width={scaledArtFrame.width}
-                height={scaledArtFrame.height}
+                x={autoPreviewInsetEnabled ? scaledArtFrame.x - (scaledArtFrame.width * 1.04 - scaledArtFrame.width) / 2 : scaledArtFrame.x}
+                y={autoPreviewInsetEnabled ? scaledArtFrame.y - (scaledArtFrame.height * 1.04 - scaledArtFrame.height) / 2 : scaledArtFrame.y}
+                width={autoPreviewInsetEnabled ? scaledArtFrame.width * 1.04 : scaledArtFrame.width}
+                height={autoPreviewInsetEnabled ? scaledArtFrame.height * 1.04 : scaledArtFrame.height}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -1587,10 +1592,10 @@ const previewImageClipPath =
           {hasUpload ? (
             <image
               href={renderImageUrl!}
-              x={scaledArtFrame.x}
-              y={scaledArtFrame.y}
-              width={scaledArtFrame.width}
-              height={scaledArtFrame.height}
+                x={autoPreviewInsetEnabled ? scaledArtFrame.x - (scaledArtFrame.width * 1.04 - scaledArtFrame.width) / 2 : scaledArtFrame.x}
+                y={autoPreviewInsetEnabled ? scaledArtFrame.y - (scaledArtFrame.height * 1.04 - scaledArtFrame.height) / 2 : scaledArtFrame.y}
+                width={autoPreviewInsetEnabled ? scaledArtFrame.width * 1.04 : scaledArtFrame.width}
+                height={autoPreviewInsetEnabled ? scaledArtFrame.height * 1.04 : scaledArtFrame.height}
               preserveAspectRatio="xMidYMid meet"
               clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
             />
