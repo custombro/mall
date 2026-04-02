@@ -917,49 +917,37 @@ function cbBuildAutoCutlineUnionPreviewPath(
 
   const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
   const segmentNext = points[(bestSegmentIndex + 1) % points.length];
-  const segmentDir = normalize(segmentNext.x - points[bestSegmentIndex].x, segmentNext.y - points[bestSegmentIndex].y);
+  const segmentDir = normalize(
+    segmentNext.x - points[bestSegmentIndex].x,
+    segmentNext.y - points[bestSegmentIndex].y,
+  );
 
-  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.26;
-  const baseHalf = Math.max(1.4, outerRadius * 0.34);
-  const baseLift = 0;
-  const shoulderLift = Math.max(0.16, outerRadius * 0.02);
-  const topLift = Math.max(0.28, outerRadius * 0.04);
+  const holeOuter = getHoleOuterCutlineRadius(holeSize);
+  const neckHalf = Math.max(0.9, holeOuter * 0.12);
+  const shoulderLift = Math.max(0.12, holeOuter * 0.04);
+  const topLift = Math.max(0.28, holeOuter * 0.08);
 
-  const leftBase = {
-    x: bestPoint.x - segmentDir.x * baseHalf + outward.x * baseLift,
-    y: bestPoint.y - segmentDir.y * baseHalf + outward.y * baseLift,
+  const leftNeck = {
+    x: bestPoint.x - segmentDir.x * neckHalf + outward.x * shoulderLift,
+    y: bestPoint.y - segmentDir.y * neckHalf + outward.y * shoulderLift,
   };
 
-  const leftShoulder = {
-    x: bestPoint.x - segmentDir.x * (outerRadius * 0.36) + outward.x * shoulderLift,
-    y: bestPoint.y - segmentDir.y * (outerRadius * 0.36) + outward.y * shoulderLift,
-  };
-
-  const topPoint = {
+  const topNeck = {
     x: bestPoint.x + outward.x * topLift,
     y: bestPoint.y + outward.y * topLift,
   };
 
-  const rightShoulder = {
-    x: bestPoint.x + segmentDir.x * (outerRadius * 0.36) + outward.x * shoulderLift,
-    y: bestPoint.y + segmentDir.y * (outerRadius * 0.36) + outward.y * shoulderLift,
-  };
-
-  const rightBase = {
-    x: bestPoint.x + segmentDir.x * baseHalf + outward.x * baseLift,
-    y: bestPoint.y + segmentDir.y * baseHalf + outward.y * baseLift,
+  const rightNeck = {
+    x: bestPoint.x + segmentDir.x * neckHalf + outward.x * shoulderLift,
+    y: bestPoint.y + segmentDir.y * neckHalf + outward.y * shoulderLift,
   };
 
   const mergedPoints: Point[] = [];
   for (let i = 0; i < points.length; i += 1) {
     mergedPoints.push(points[i]);
     if (i === bestSegmentIndex) {
-      mergedPoints.push(leftBase, leftShoulder, topPoint, rightShoulder, rightBase);
+      mergedPoints.push(leftNeck, topNeck, rightNeck);
     }
-  }
-
-  if (mergedPoints.length < points.length + 5) {
-    return cbBuildSmoothClosedPath(points);
   }
 
   return cbBuildSmoothClosedPath(mergedPoints);
@@ -2446,7 +2434,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
