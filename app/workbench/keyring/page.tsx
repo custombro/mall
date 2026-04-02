@@ -1464,6 +1464,12 @@ function KeyringCanvas({
       : null;
 
 const autoCutlinePending = shapeMode === "자동칼선";
+const previewImageClipPath =
+  shapeMode === "자동칼선"
+    ? autoCutlinePreviewPath
+    : shapeMode === "원형" || shapeMode === "사각형"
+      ? baseShapeUnionPreviewPath
+      : null;
 
   return (
     <svg
@@ -1478,6 +1484,11 @@ const autoCutlinePending = shapeMode === "자동칼선";
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
         <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
+        {previewImageClipPath ? (
+          <clipPath id="cb-preview-image-clip">
+            <path d={previewImageClipPath} />
+          </clipPath>
+        ) : null}
       </defs>
 
       <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
@@ -1578,6 +1589,7 @@ const autoCutlinePending = shapeMode === "자동칼선";
               width={scaledArtFrame.width}
               height={scaledArtFrame.height}
               preserveAspectRatio="xMidYMid meet"
+              clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
             />
           ) : null}
 
@@ -2434,7 +2446,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
