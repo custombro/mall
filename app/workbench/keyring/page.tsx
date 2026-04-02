@@ -875,6 +875,23 @@ function cbBuildAutoCutlineUnionPreviewPath(
     return cbBuildSmoothClosedPath(points);
   }
 
+  const projectToSegment = (p: Point, a: Point, b: Point): Point => {
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const lenSq = abx * abx + aby * aby;
+
+    if (lenSq <= 0.0001) {
+      return { x: a.x, y: a.y };
+    }
+
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * abx + (p.y - a.y) * aby) / lenSq));
+
+    return {
+      x: a.x + abx * t,
+      y: a.y + aby * t,
+    };
+  };
+
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
   ctx.fillStyle = "#000";
 
@@ -886,8 +903,62 @@ function cbBuildAutoCutlineUnionPreviewPath(
   ctx.closePath();
   ctx.fill();
 
+  let bestPoint = points[0];
+  let bestDist = Number.POSITIVE_INFINITY;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const projected = projectToSegment(hole, a, b);
+    const dist = Math.hypot(projected.x - hole.x, projected.y - hole.y);
+
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestPoint = projected;
+    }
+  }
+
+  let sumX = 0;
+  let sumY = 0;
+  for (const point of points) {
+    sumX += point.x;
+    sumY += point.y;
+  }
+
+  const centroid = {
+    x: sumX / points.length,
+    y: sumY / points.length,
+  };
+
+  const inward = normalize(centroid.x - bestPoint.x, centroid.y - bestPoint.y);
+  const outward = { x: -inward.x, y: -inward.y };
+
+  const outerRadius = getHoleOuterCutlineRadius(holeSize) * 0.9;
+  const bridgeHalf = Math.max(5, outerRadius * 0.62);
+
+  const bridgeStart = {
+    x: bestPoint.x - outward.x * Math.max(1.6, outerRadius * 0.18),
+    y: bestPoint.y - outward.y * Math.max(1.6, outerRadius * 0.18),
+  };
+
+  const bridgeEnd = {
+    x: hole.x - inward.x * Math.max(1.4, outerRadius * 0.14),
+    y: hole.y - inward.y * Math.max(1.4, outerRadius * 0.14),
+  };
+
+  ctx.save();
+  ctx.strokeStyle = "#000";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = bridgeHalf * 2;
   ctx.beginPath();
-  ctx.arc(hole.x, hole.y, getHoleOuterCutlineRadius(holeSize), 0, Math.PI * 2);
+  ctx.moveTo(bridgeStart.x, bridgeStart.y);
+  ctx.lineTo(bridgeEnd.x, bridgeEnd.y);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(hole.x, hole.y, outerRadius, 0, Math.PI * 2);
   ctx.closePath();
   ctx.fill();
 
@@ -897,8 +968,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
   );
 
   let count = 0;
-  let sumX = 0;
-  let sumY = 0;
+  let contourSumX = 0;
+  let contourSumY = 0;
 
   for (let y = 0; y < VIEW_HEIGHT; y += 1) {
     for (let x = 0; x < VIEW_WIDTH; x += 1) {
@@ -906,8 +977,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
       if (image[idx] > 16) {
         mask[y][x] = true;
         count += 1;
-        sumX += x;
-        sumY += y;
+        contourSumX += x;
+        contourSumY += y;
       }
     }
   }
@@ -916,9 +987,9 @@ function cbBuildAutoCutlineUnionPreviewPath(
     return cbBuildSmoothClosedPath(points);
   }
 
-  const centroid = {
-    x: sumX / count,
-    y: sumY / count,
+  const contourCentroid = {
+    x: contourSumX / count,
+    y: contourSumY / count,
   };
 
   const sectorCount = 160;
@@ -939,8 +1010,8 @@ function cbBuildAutoCutlineUnionPreviewPath(
 
       if (!isBoundary) continue;
 
-      const dx = x - centroid.x;
-      const dy = y - centroid.y;
+      const dx = x - contourCentroid.x;
+      const dy = y - contourCentroid.y;
       let angle = Math.atan2(dy, dx);
       if (angle < 0) angle += Math.PI * 2;
 
@@ -2449,7 +2520,6 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
-
 
 
 
