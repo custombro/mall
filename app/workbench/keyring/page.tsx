@@ -1431,9 +1431,12 @@ function KeyringCanvas({
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
   const holeRadius = getHoleVisualRadius(holeSize);
-  const stablePreviewHole = {
-    x: Math.round(hole.x * 4) / 4,
-    y: Math.round(hole.y * 4) / 4,
+  const normalizePreviewPath = (value: string | Point[] | null | undefined) => {
+    if (typeof value === "string") return value;
+    if (Array.isArray(value) && value.length > 1) {
+      return "M " + value.map((p) => p.x + " " + p.y).join(" L ") + " Z";
+    }
+    return "";
   };
   const renderImageUrl = previewUrl ?? imageUrl;
   const autoPreviewInsetEnabled = Boolean(previewUrl) && shapeMode === "자동칼선";
@@ -1464,7 +1467,7 @@ function KeyringCanvas({
       : autoCutline.points;
   const autoCutlinePreviewPath =
     shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
-      ? cbBuildAutoCutlineUnionPreviewPath(autoCutlinePreviewPoints, stablePreviewHole, holeSize)
+      ? autoCutlinePreviewPoints
       : null;
   const baseShapeUnionPreviewPath =
     shapeMode === "원형" || shapeMode === "사각형"
@@ -1492,9 +1495,9 @@ const previewImageClipPath =
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
         <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
-        {previewImageClipPath ? (
+        {normalizePreviewPath(previewImageClipPath) ? (
           <clipPath id="cb-preview-image-clip">
-            <path d={previewImageClipPath} />
+            <path d={normalizePreviewPath(previewImageClipPath)} />
           </clipPath>
         ) : null}
       </defs>
@@ -1603,7 +1606,7 @@ const previewImageClipPath =
 
           {autoCutline.status === "ready" && autoCutline.path ? (
             <path
-              d={autoCutlinePreviewPath ?? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)}
+              d={normalizePreviewPath(autoCutlinePreviewPath) || cbBuildSmoothClosedPath(autoCutlinePreviewPoints)}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
