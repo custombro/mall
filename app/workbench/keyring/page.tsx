@@ -1524,10 +1524,10 @@ const previewImageClipPath =
             <>
               <image
                 href={renderImageUrl!}
-                x={autoPreviewInsetEnabled ? scaledArtFrame.x - (scaledArtFrame.width * 1.04 - scaledArtFrame.width) / 2 : scaledArtFrame.x}
-                y={autoPreviewInsetEnabled ? scaledArtFrame.y - (scaledArtFrame.height * 1.04 - scaledArtFrame.height) / 2 : scaledArtFrame.y}
-                width={autoPreviewInsetEnabled ? scaledArtFrame.width * 1.04 : scaledArtFrame.width}
-                height={autoPreviewInsetEnabled ? scaledArtFrame.height * 1.04 : scaledArtFrame.height}
+                x={scaledArtFrame.x + (autoPreviewInsetEnabled ? 6 : 0)}
+                y={scaledArtFrame.y + (autoPreviewInsetEnabled ? 6 : 0)}
+                width={Math.max(0, scaledArtFrame.width - (autoPreviewInsetEnabled ? 12 : 0))}
+                height={Math.max(0, scaledArtFrame.height - (autoPreviewInsetEnabled ? 12 : 0))}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -1595,10 +1595,10 @@ const previewImageClipPath =
           {hasUpload ? (
             <image
               href={renderImageUrl!}
-                x={autoPreviewInsetEnabled ? scaledArtFrame.x - (scaledArtFrame.width * 1.04 - scaledArtFrame.width) / 2 : scaledArtFrame.x}
-                y={autoPreviewInsetEnabled ? scaledArtFrame.y - (scaledArtFrame.height * 1.04 - scaledArtFrame.height) / 2 : scaledArtFrame.y}
-                width={autoPreviewInsetEnabled ? scaledArtFrame.width * 1.04 : scaledArtFrame.width}
-                height={autoPreviewInsetEnabled ? scaledArtFrame.height * 1.04 : scaledArtFrame.height}
+                x={scaledArtFrame.x + (autoPreviewInsetEnabled ? 6 : 0)}
+                y={scaledArtFrame.y + (autoPreviewInsetEnabled ? 6 : 0)}
+                width={Math.max(0, scaledArtFrame.width - (autoPreviewInsetEnabled ? 12 : 0))}
+                height={Math.max(0, scaledArtFrame.height - (autoPreviewInsetEnabled ? 12 : 0))}
               preserveAspectRatio="xMidYMid meet"
               clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
             />
