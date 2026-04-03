@@ -1605,6 +1605,39 @@ function KeyringCanvas({
     autoCutline.centroid
       ? getAdjustedAutoCutlinePoints(autoCutline.points, autoCutline.centroid, scaledArtFrame)
       : autoCutline.points;
+
+  const previewContourBounds = (() => {
+  const pts = Array.isArray(autoCutlinePreviewPoints) ? autoCutlinePreviewPoints : [];
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const point of pts) {
+    const x = typeof point?.x === "number" ? point.x : (Array.isArray(point) ? Number(point[0]) : Number.NaN);
+    const y = typeof point?.y === "number" ? point.y : (Array.isArray(point) ? Number(point[1]) : Number.NaN);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    minX = 0;
+    minY = 0;
+    maxX = 1;
+    maxY = 1;
+  }
+
+  const x = minX;
+  const y = minY;
+  const width = Math.max(1, maxX - minX);
+  const height = Math.max(1, maxY - minY);
+
+  return { x, y, minX, minY, maxX, maxY, width, height };
+})();
+
   const autoCutlinePreviewPath =
     shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
       ? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)
@@ -1664,10 +1697,10 @@ const previewImageClipPath =
             <>
               <image
                 href={renderImageUrl!}
-                x={scaledArtFrame.x + (autoPreviewInsetEnabled ? 6 : 0)}
-                y={scaledArtFrame.y + (autoPreviewInsetEnabled ? 6 : 0)}
-                width={Math.max(0, scaledArtFrame.width - (autoPreviewInsetEnabled ? 12 : 0))}
-                height={Math.max(0, scaledArtFrame.height - (autoPreviewInsetEnabled ? 12 : 0))}
+                x={previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)}
+                y={previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)}
+                width={Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))}
+                height={Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0))}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -1735,10 +1768,10 @@ const previewImageClipPath =
           {hasUpload ? (
             <image
               href={renderImageUrl!}
-                x={scaledArtFrame.x + (autoPreviewInsetEnabled ? 6 : 0)}
-                y={scaledArtFrame.y + (autoPreviewInsetEnabled ? 6 : 0)}
-                width={Math.max(0, scaledArtFrame.width - (autoPreviewInsetEnabled ? 12 : 0))}
-                height={Math.max(0, scaledArtFrame.height - (autoPreviewInsetEnabled ? 12 : 0))}
+                x={previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)}
+                y={previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)}
+                width={Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))}
+                height={Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0))}
               preserveAspectRatio="xMidYMid meet"
               clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
             />
