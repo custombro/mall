@@ -1467,7 +1467,7 @@ function KeyringCanvas({
       : autoCutline.points;
   const autoCutlinePreviewPath =
     shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
-      ? autoCutlinePreviewPoints
+      ? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)
       : null;
   const baseShapeUnionPreviewPath =
     shapeMode === "원형" || shapeMode === "사각형"
