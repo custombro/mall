@@ -1438,8 +1438,110 @@ function KeyringCanvas({
     }
     return "";
   };
-  const renderImageUrl = previewUrl ?? imageUrl;
-  const autoPreviewInsetEnabled = Boolean(previewUrl) && shapeMode === "자동칼선";
+  const [transparentPreviewUrl, setTransparentPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!previewUrl) {
+      setTransparentPreviewUrl(null);
+      return;
+    }
+
+    const img = new window.Image();
+    img.decoding = "async";
+
+    img.onload = () => {
+      if (cancelled) return;
+
+      const canvas = document.createElement("canvas");
+      const width = Math.max(1, img.naturalWidth || img.width || 1);
+      const height = Math.max(1, img.naturalHeight || img.height || 1);
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setTransparentPreviewUrl(previewUrl);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+      const visited = new Uint8Array(width * height);
+      const stack: number[] = [];
+
+      const push = (x: number, y: number) => {
+        if (x < 0 || y < 0 || x >= width || y >= height) return;
+        const idx = y * width + x;
+        if (visited[idx]) return;
+        visited[idx] = 1;
+        stack.push(idx);
+      };
+
+      const isNearWhiteBg = (offset: number) => {
+        const r = data[offset] ?? 0;
+        const g = data[offset + 1] ?? 0;
+        const b = data[offset + 2] ?? 0;
+        const a = data[offset + 3] ?? 0;
+        if (a < 8) return false;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        return r >= 232 && g >= 232 && b >= 232 && (max - min) <= 20;
+      };
+
+      for (let x = 0; x < width; x++) {
+        push(x, 0);
+        push(x, height - 1);
+      }
+      for (let y = 0; y < height; y++) {
+        push(0, y);
+        push(width - 1, y);
+      }
+
+      while (stack.length > 0) {
+        const idx = stack.pop();
+        if (idx === undefined) break;
+
+        const x = idx % width;
+        const y = Math.floor(idx / width);
+        const offset = idx * 4;
+
+        if (!isNearWhiteBg(offset)) continue;
+
+        data[offset + 3] = 0;
+
+        push(x - 1, y);
+        push(x + 1, y);
+        push(x, y - 1);
+        push(x, y + 1);
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+
+      try {
+        const nextUrl = canvas.toDataURL("image/png");
+        if (!cancelled) setTransparentPreviewUrl(nextUrl);
+      } catch {
+        if (!cancelled) setTransparentPreviewUrl(previewUrl);
+      }
+    };
+
+    img.onerror = () => {
+      if (!cancelled) setTransparentPreviewUrl(previewUrl);
+    };
+
+    img.src = previewUrl;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewUrl]);
+
+  const renderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
+  const autoPreviewInsetEnabled = Boolean(transparentPreviewUrl ?? previewUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
