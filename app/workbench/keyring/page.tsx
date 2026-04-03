@@ -1521,8 +1521,46 @@ function KeyringCanvas({
 
       ctx.putImageData(imageData, 0, 0);
 
+      let minX = width;
+      let minY = height;
+      let maxX = -1;
+      let maxY = -1;
+
+      for (let scanY = 0; scanY < height; scanY++) {
+        for (let scanX = 0; scanX < width; scanX++) {
+          const alpha = data[(scanY * width + scanX) * 4 + 3] ?? 0;
+          if (alpha > 8) {
+            if (scanX < minX) minX = scanX;
+            if (scanY < minY) minY = scanY;
+            if (scanX > maxX) maxX = scanX;
+            if (scanY > maxY) maxY = scanY;
+          }
+        }
+      }
+
+      let exportCanvas = canvas;
+      if (maxX >= minX && maxY >= minY) {
+        const pad = 1;
+        minX = Math.max(0, minX - pad);
+        minY = Math.max(0, minY - pad);
+        maxX = Math.min(width - 1, maxX + pad);
+        maxY = Math.min(height - 1, maxY + pad);
+
+        const cropWidth = Math.max(1, maxX - minX + 1);
+        const cropHeight = Math.max(1, maxY - minY + 1);
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+
+        const cropCtx = cropCanvas.getContext("2d");
+        if (cropCtx) {
+          cropCtx.drawImage(canvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+          exportCanvas = cropCanvas;
+        }
+      }
+
       try {
-        const nextUrl = canvas.toDataURL("image/png");
+        const nextUrl = exportCanvas.toDataURL("image/png");
         if (!cancelled) setTransparentPreviewUrl(nextUrl);
       } catch {
         if (!cancelled) setTransparentPreviewUrl(previewUrl);
