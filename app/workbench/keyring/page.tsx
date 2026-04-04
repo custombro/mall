@@ -1697,10 +1697,10 @@ const previewImageClipPath =
             <>
               <image
                 href={renderImageUrl!}
-                x={previewContourBounds.x + 20}
-                y={previewContourBounds.y + 20}
-                width={Math.max(1, previewContourBounds.width - 40)}
-                height={Math.max(1, previewContourBounds.height - 40)}
+                x={previewContourBounds.x + 32}
+                y={previewContourBounds.y + 32}
+                width={Math.max(1, previewContourBounds.width - 64)}
+                height={Math.max(1, previewContourBounds.height - 64)}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
