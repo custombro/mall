@@ -1666,7 +1666,7 @@ function KeyringCanvas({
     };
   }, [previewUrl]);
 
-  const renderImageUrl = previewUrl ?? imageUrl ?? transparentPreviewUrl;
+  const renderImageUrl = imageUrl ?? previewUrl ?? transparentPreviewUrl;
   const autoPreviewInsetEnabled = Boolean(previewUrl ?? imageUrl ?? transparentPreviewUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
@@ -1784,13 +1784,13 @@ const previewImageClipPath =
           {hasUpload ? (
             <>
               <image
-                href={(previewUrl ?? imageUrl ?? transparentPreviewUrl)!}
+                href={(imageUrl ?? previewUrl ?? transparentPreviewUrl)!}
                 x={ART_FRAME.x}
                 y={ART_FRAME.y}
                 width={ART_FRAME.width}
                 height={ART_FRAME.height}
                 preserveAspectRatio="xMidYMid slice"
-                clipPath={autoPreviewInsetEnabled ? undefined : `url(#${clipId})`}
+                clipPath={`url(#${clipId})`}
               />
               {renderBodyShape(shapeMode, fillId, true)}
             </>
