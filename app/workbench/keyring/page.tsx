@@ -1666,8 +1666,8 @@ function KeyringCanvas({
     };
   }, [previewUrl]);
 
-  const renderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
-  const autoPreviewInsetEnabled = Boolean(transparentPreviewUrl ?? previewUrl) && shapeMode === "자동칼선";
+  const renderImageUrl = previewUrl ?? imageUrl ?? transparentPreviewUrl;
+  const autoPreviewInsetEnabled = Boolean(previewUrl ?? imageUrl ?? transparentPreviewUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
