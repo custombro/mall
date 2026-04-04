@@ -1806,7 +1806,11 @@ const previewImageClipPath =
                     : ART_FRAME.height
                 }
                 preserveAspectRatio="xMidYMid slice"
-                clipPath={`url(#${clipId})`}
+                clipPath={
+                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
+                    ? undefined
+                    : `url(#${clipId})`
+                }
               />
               {renderBodyShape(shapeMode, fillId, true)}
             </>
