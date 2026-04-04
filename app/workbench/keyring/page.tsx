@@ -1578,9 +1578,13 @@ function KeyringCanvas({
     };
   }, [previewUrl]);
 
-  const renderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
-  const autoPreviewInsetEnabled = Boolean(transparentPreviewUrl ?? previewUrl) && shapeMode === "자동칼선";
+  const autoRenderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
+  const shapeRenderImageUrl = autoRenderImageUrl;
+  const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
+  const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
+  const showShapeImage = hasUpload && shapeMode !== "자동칼선";
+  const showAutoImage = hasUpload && shapeMode === "자동칼선";
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
     getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[AUTO_CUTLINE_MARGIN_OPTIONS.length - 1]);
@@ -1693,14 +1697,14 @@ const previewImageClipPath =
             renderPreviewOuterCutlineShape(shapeMode)
           )}
           {renderBodyShape(shapeMode, fillId)}
-          {hasUpload ? (
+          {showShapeImage ? (
             <>
               <image
-                href={renderImageUrl!}
-                x={previewContourBounds.x + 20}
-                y={previewContourBounds.y + 20}
-                width={Math.max(1, previewContourBounds.width - 40)}
-                height={Math.max(1, previewContourBounds.height - 40)}
+                href={shapeRenderImageUrl!}
+                x={ART_FRAME.x}
+                y={ART_FRAME.y}
+                width={ART_FRAME.width}
+                height={ART_FRAME.height}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -1765,9 +1769,9 @@ const previewImageClipPath =
             strokeWidth="2"
           />
 
-          {hasUpload ? (
+          {showAutoImage ? (
             <image
-              href={renderImageUrl!}
+              href={autoRenderImageUrl!}
                 x={previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)}
                 y={previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)}
                 width={Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))}
@@ -2631,6 +2635,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
