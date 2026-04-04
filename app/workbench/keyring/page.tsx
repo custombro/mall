@@ -1787,12 +1787,12 @@ const previewImageClipPath =
                 href={(previewUrl ?? imageUrl ?? transparentPreviewUrl)!}
                 x={
                   autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? previewContourBounds.x
+                    ? ART_FRAME.x + (ART_FRAME.width - previewContourBounds.width) / 2
                     : ART_FRAME.x
                 }
                 y={
                   autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? previewContourBounds.y
+                    ? ART_FRAME.y + (ART_FRAME.height - previewContourBounds.height) / 2
                     : ART_FRAME.y
                 }
                 width={
