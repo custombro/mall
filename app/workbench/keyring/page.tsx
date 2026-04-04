@@ -1784,12 +1784,12 @@ const previewImageClipPath =
           {hasUpload ? (
             <>
               <image
-                href={renderImageUrl!}
-                x={previewContourBounds.x + Math.max(1, Math.round(previewContourBounds.width * 0.003))}
-                y={previewContourBounds.y + Math.max(4, Math.round(previewContourBounds.height * 0.035))}
-                width={Math.max(1, previewContourBounds.width - Math.max(2, Math.round(previewContourBounds.width * 0.006)))}
-                height={Math.max(1, previewContourBounds.height - Math.max(6, Math.round(previewContourBounds.height * 0.045)))}
-                preserveAspectRatio="xMidYMax slice"
+                href={(previewUrl ?? imageUrl ?? transparentPreviewUrl)!}
+                x={ART_FRAME.x}
+                y={ART_FRAME.y}
+                width={ART_FRAME.width}
+                height={ART_FRAME.height}
+                preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
               {renderBodyShape(shapeMode, fillId, true)}
