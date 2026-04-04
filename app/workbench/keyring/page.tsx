@@ -1785,32 +1785,12 @@ const previewImageClipPath =
             <>
               <image
                 href={(previewUrl ?? imageUrl ?? transparentPreviewUrl)!}
-                x={
-                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? ART_FRAME.x + (ART_FRAME.width - previewContourBounds.width) / 2
-                    : ART_FRAME.x
-                }
-                y={
-                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? ART_FRAME.y + (ART_FRAME.height - previewContourBounds.height) / 2
-                    : ART_FRAME.y
-                }
-                width={
-                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? previewContourBounds.width
-                    : ART_FRAME.width
-                }
-                height={
-                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? previewContourBounds.height
-                    : ART_FRAME.height
-                }
+                x={ART_FRAME.x}
+                y={ART_FRAME.y}
+                width={ART_FRAME.width}
+                height={ART_FRAME.height}
                 preserveAspectRatio="xMidYMid slice"
-                clipPath={
-                  autoPreviewInsetEnabled && previewContourBounds.width > 1 && previewContourBounds.height > 1
-                    ? undefined
-                    : `url(#${clipId})`
-                }
+                clipPath={autoPreviewInsetEnabled ? undefined : `url(#${clipId})`}
               />
               {renderBodyShape(shapeMode, fillId, true)}
             </>
