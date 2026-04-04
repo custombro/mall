@@ -1343,64 +1343,152 @@ async function buildAutoCutlineFromImage(
           y: sumY / bestPoints.length,
         };
 
-        const sectorCount = Math.max(96, Math.min(180, Math.round(bestPoints.length / 4)));
-        const buckets = Array.from(
-          { length: sectorCount },
-          () => null as { x: number; y: number; dist: number } | null,
+        const silhouetteDilateRadius = Math.max(4, Math.round(Math.min(ANALYSIS_WIDTH, ANALYSIS_HEIGHT) * 0.012));
+        const silhouetteDilateRadiusSq = silhouetteDilateRadius * silhouetteDilateRadius;
+        const silhouetteDilatedMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
         );
 
         for (const point of bestPoints) {
-          const x = point.x;
-          const y = point.y;
-
-          const isBoundary =
-            x === 0 ||
-            y === 0 ||
-            x === ANALYSIS_WIDTH - 1 ||
-            y === ANALYSIS_HEIGHT - 1 ||
-            !componentMask[y][x - 1] ||
-            !componentMask[y][x + 1] ||
-            !componentMask[y - 1][x] ||
-            !componentMask[y + 1][x];
-
-          if (!isBoundary) continue;
-
-          const dx = x - centroid.x;
-          const dy = y - centroid.y;
-          let angle = Math.atan2(dy, dx);
-          if (angle < 0) angle += Math.PI * 2;
-
-          const sector = Math.min(sectorCount - 1, Math.floor((angle / (Math.PI * 2)) * sectorCount));
-          const dist = Math.hypot(dx, dy);
-          const prev = buckets[sector];
-
-          if (!prev || dist > prev.dist) {
-            buckets[sector] = { x, y, dist };
+          for (let dy = -silhouetteDilateRadius; dy <= silhouetteDilateRadius; dy += 1) {
+            for (let dx = -silhouetteDilateRadius; dx <= silhouetteDilateRadius; dx += 1) {
+              if (dx * dx + dy * dy > silhouetteDilateRadiusSq) continue;
+              const x = point.x + dx;
+              const y = point.y + dy;
+              if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) continue;
+              silhouetteDilatedMask[y][x] = true;
+            }
           }
         }
 
-        const outlinePoints: Point[] = [];
-        for (const bucket of buckets) {
-          if (bucket) {
-            outlinePoints.push({ x: bucket.x, y: bucket.y });
+        const boundaryEdgeMap = new Map<string, string[]>();
+        const addBoundaryNeighbor = (from: string, to: string) => {
+          const prev = boundaryEdgeMap.get(from) ?? [];
+          if (!prev.includes(to)) prev.push(to);
+          boundaryEdgeMap.set(from, prev);
+        };
+        const addBoundaryEdge = (ax: number, ay: number, bx: number, by: number) => {
+          const a = `${ax},${ay}`;
+          const b = `${bx},${by}`;
+          addBoundaryNeighbor(a, b);
+          addBoundaryNeighbor(b, a);
+        };
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            if (!silhouetteDilatedMask[y][x]) continue;
+
+            const leftOpen = x === 0 || !silhouetteDilatedMask[y][x - 1];
+            const rightOpen = x === ANALYSIS_WIDTH - 1 || !silhouetteDilatedMask[y][x + 1];
+            const topOpen = y === 0 || !silhouetteDilatedMask[y - 1][x];
+            const bottomOpen = y === ANALYSIS_HEIGHT - 1 || !silhouetteDilatedMask[y + 1][x];
+
+            if (leftOpen) addBoundaryEdge(x, y, x, y + 1);
+            if (rightOpen) addBoundaryEdge(x + 1, y, x + 1, y + 1);
+            if (topOpen) addBoundaryEdge(x, y, x + 1, y);
+            if (bottomOpen) addBoundaryEdge(x, y + 1, x + 1, y + 1);
           }
         }
 
-        const deduped = outlinePoints.filter((point, index, arr) => {
-          if (!arr.length) return false;
-          const prev = arr[(index - 1 + arr.length) % arr.length];
-          return Math.hypot(point.x - prev.x, point.y - prev.y) > 3.2;
-        });
-
-        if (deduped.length < 18) {
+        if (boundaryEdgeMap.size < 16) {
           resolve(null);
           return;
         }
 
+        const parseBoundaryKey = (key: string): Point => {
+          const [x, y] = key.split(",").map((value) => Number(value));
+          return { x, y };
+        };
+
+        const compareBoundaryKey = (a: string, b: string) => {
+          const pa = parseBoundaryKey(a);
+          const pb = parseBoundaryKey(b);
+          if (pa.y !== pb.y) return pa.y - pb.y;
+          return pa.x - pb.x;
+        };
+
+        let startBoundaryKey: string | null = null;
+        for (const key of boundaryEdgeMap.keys()) {
+          if (!startBoundaryKey || compareBoundaryKey(key, startBoundaryKey) < 0) startBoundaryKey = key;
+        }
+
+        if (!startBoundaryKey) {
+          resolve(null);
+          return;
+        }
+
+        const boundaryLoopKeys: string[] = [];
+        let currentBoundaryKey: string = startBoundaryKey;
+        let previousBoundaryKey: string | null = null;
+        const boundaryMaxSteps = boundaryEdgeMap.size * 4;
+
+        for (let step = 0; step < boundaryMaxSteps; step += 1) {
+          boundaryLoopKeys.push(currentBoundaryKey);
+          const nextBoundaryCandidates = (boundaryEdgeMap.get(currentBoundaryKey) ?? []).filter((key) => key !== previousBoundaryKey);
+
+          if (!nextBoundaryCandidates.length) break;
+
+          let nextBoundaryKey: string;
+          if (nextBoundaryCandidates.includes(startBoundaryKey) && boundaryLoopKeys.length > 12) {
+            nextBoundaryKey = startBoundaryKey;
+          } else if (nextBoundaryCandidates.length === 1) {
+            nextBoundaryKey = nextBoundaryCandidates[0];
+          } else {
+            const current = parseBoundaryKey(currentBoundaryKey);
+            const prev = previousBoundaryKey ? parseBoundaryKey(previousBoundaryKey) : { x: current.x, y: current.y - 1 };
+            const incomingAngle = Math.atan2(current.y - prev.y, current.x - prev.x);
+
+            nextBoundaryKey = nextBoundaryCandidates
+              .map((key) => {
+                const next = parseBoundaryKey(key);
+                let turn = Math.atan2(next.y - current.y, next.x - current.x) - incomingAngle;
+                while (turn <= 0) turn += Math.PI * 2;
+                return { key, turn };
+              })
+              .sort((a, b) => a.turn - b.turn)[0].key;
+          }
+
+          previousBoundaryKey = currentBoundaryKey;
+          currentBoundaryKey = nextBoundaryKey;
+          if (currentBoundaryKey === startBoundaryKey) break;
+        }
+
+        const boundaryLoopPoints = boundaryLoopKeys.map(parseBoundaryKey);
+        const boundaryDedupedPoints = boundaryLoopPoints.filter((point, index, arr) => {
+          if (!arr.length) return false;
+          const prev = arr[(index - 1 + arr.length) % arr.length];
+          return Math.hypot(point.x - prev.x, point.y - prev.y) > 1.2;
+        });
+
+        if (boundaryDedupedPoints.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        const boundaryStride = Math.max(1, Math.floor(boundaryDedupedPoints.length / 180));
+        const boundarySampledPoints = boundaryDedupedPoints.filter((_, index) => index % boundaryStride === 0);
+
+        if (boundarySampledPoints.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        let boundarySumX = 0;
+        let boundarySumY = 0;
+        for (const point of boundarySampledPoints) {
+          boundarySumX += point.x;
+          boundarySumY += point.y;
+        }
+
+        const boundaryCentroid = {
+          x: boundarySumX / boundarySampledPoints.length,
+          y: boundarySumY / boundarySampledPoints.length,
+        };
+
         resolve({
-          path: cbBuildSmoothClosedPath(deduped),
-          points: deduped,
-          centroid,
+          path: cbBuildSmoothClosedPath(boundarySampledPoints),
+          points: boundarySampledPoints,
+          centroid: boundaryCentroid,
         });
       } catch {
         resolve(null);
