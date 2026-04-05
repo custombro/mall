@@ -1827,7 +1827,7 @@ const previewImageClipPath =
             fontWeight="700"
           >
             {autoCutline.status === "ready"
-              ? "자동칼선 생성 완료"
+              ? "자동칼선 1차 생성"
               : autoCutline.status === "processing"
                 ? "자동칼선 계산중"
                 : autoCutline.status === "failed"
@@ -1890,6 +1890,323 @@ function OptionButton({
       {description ? <div className="mt-1 text-xs leading-5 text-white/58">{description}</div> : null}
     </button>
   );
+}
+
+async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        const width = Math.max(1, img.naturalWidth || img.width || 1);
+        const height = Math.max(1, img.naturalHeight || img.height || 1);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!ctx) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const total = width * height;
+
+        const getStats = (idx: number) => {
+          const p = idx * 4;
+          const a = data[p + 3];
+          const r = data[p];
+          const g = data[p + 1];
+          const b = data[p + 2];
+          const maxRgb = Math.max(r, g, b);
+          const minRgb = Math.min(r, g, b);
+          const spread = maxRgb - minRgb;
+          const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          return { r, g, b, a, spread, luminance };
+        };
+
+        const borderStats = (() => {
+          let count = 0;
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          let sumL = 0;
+          let sumS = 0;
+
+          const collect = (x: number, y: number) => {
+            const s = getStats(y * width + x);
+            if (s.a <= 20) return;
+            sumR += s.r;
+            sumG += s.g;
+            sumB += s.b;
+            sumL += s.luminance;
+            sumS += s.spread;
+            count += 1;
+          };
+
+          for (let x = 0; x < width; x++) {
+            collect(x, 0);
+            collect(x, height - 1);
+          }
+          for (let y = 1; y < height - 1; y++) {
+            collect(0, y);
+            collect(width - 1, y);
+          }
+
+          if (count <= 0) return null;
+
+          return {
+            r: sumR / count,
+            g: sumG / count,
+            b: sumB / count,
+            l: sumL / count,
+            s: sumS / count,
+          };
+        })();
+
+        const isBackgroundLike = (idx: number) => {
+          const s = getStats(idx);
+          if (s.a <= 20) return true;
+
+          const veryBrightFlat = s.luminance >= 244 && s.spread <= 16;
+          if (veryBrightFlat) return true;
+
+          if (!borderStats) return false;
+
+          const colorDelta =
+            Math.abs(s.r - borderStats.r) +
+            Math.abs(s.g - borderStats.g) +
+            Math.abs(s.b - borderStats.b);
+          const luminanceDelta = Math.abs(s.luminance - borderStats.l);
+          const spreadCap = Math.max(24, borderStats.s + 12);
+
+          return colorDelta <= 54 && luminanceDelta <= 24 && s.spread <= spreadCap;
+        };
+
+        const background = new Uint8Array(total);
+        const visitedBg = new Uint8Array(total);
+        const bgQueue = new Int32Array(total);
+        let bgHead = 0;
+        let bgTail = 0;
+
+        const pushBg = (idx: number) => {
+          if (idx < 0 || idx >= total) return;
+          if (visitedBg[idx] === 1) return;
+          if (!isBackgroundLike(idx)) return;
+          visitedBg[idx] = 1;
+          background[idx] = 1;
+          bgQueue[bgTail++] = idx;
+        };
+
+        for (let x = 0; x < width; x++) {
+          pushBg(x);
+          pushBg((height - 1) * width + x);
+        }
+        for (let y = 1; y < height - 1; y++) {
+          pushBg(y * width);
+          pushBg(y * width + (width - 1));
+        }
+
+        const floodNeighbor4 = [
+          [0, -1], [-1, 0], [1, 0], [0, 1],
+        ] as const;
+
+        while (bgHead < bgTail) {
+          const current = bgQueue[bgHead++];
+          const y = Math.floor(current / width);
+          const x = current - y * width;
+
+          for (const [dx, dy] of floodNeighbor4) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            pushBg(ny * width + nx);
+          }
+        }
+
+        for (let i = 0; i < total; i++) {
+          const p = i * 4;
+          const s = getStats(i);
+          const y = Math.floor(i / width);
+          const yRatio = y / Math.max(1, height - 1);
+
+          const softBottomShadow =
+            yRatio >= 0.84 &&
+            s.luminance >= 150 &&
+            s.luminance <= 235 &&
+            s.spread <= 28 &&
+            s.a >= 35 &&
+            s.a <= 220;
+
+          if (background[i] === 1 || softBottomShadow) {
+            data[p + 3] = 0;
+          }
+        }
+
+        const floorMask = new Uint8Array(total);
+        for (let i = 0; i < total; i++) {
+          if (data[i * 4 + 3] <= 20) continue;
+
+          const s = getStats(i);
+          const y = Math.floor(i / width);
+          const yRatio = y / Math.max(1, height - 1);
+
+          if (yRatio < 0.58) continue;
+          if (s.luminance < 70 || s.luminance > 255) continue;
+          if (s.spread > 52) continue;
+
+          floorMask[i] = 1;
+        }
+
+        const floorVisited = new Uint8Array(total);
+        const floorQueue = new Int32Array(total);
+        const floorNeighbor8 = [
+          [-1, -1], [0, -1], [1, -1],
+          [-1,  0],          [1,  0],
+          [-1,  1], [0,  1], [1,  1],
+        ] as const;
+
+        for (let seed = 0; seed < total; seed++) {
+          if (floorMask[seed] !== 1 || floorVisited[seed] === 1) continue;
+
+          let head = 0;
+          let tail = 0;
+          floorQueue[tail++] = seed;
+          floorVisited[seed] = 1;
+
+          const component: number[] = [];
+          let minX = width;
+          let maxX = 0;
+          let minY = height;
+          let maxY = 0;
+
+          while (head < tail) {
+            const current = floorQueue[head++];
+            component.push(current);
+
+            const y = Math.floor(current / width);
+            const x = current - y * width;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+
+            for (const [dx, dy] of floorNeighbor8) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const ni = ny * width + nx;
+              if (floorMask[ni] !== 1 || floorVisited[ni] === 1) continue;
+              floorVisited[ni] = 1;
+              floorQueue[tail++] = ni;
+            }
+          }
+
+          const compWidth = maxX - minX + 1;
+          const compHeight = maxY - minY + 1;
+          const area = component.length;
+
+          const isWideShallow = compWidth >= Math.max(10, compHeight * 0.95);
+          const isLow = maxY >= Math.floor(height * 0.68);
+          const isThinEnough = compHeight <= Math.floor(height * 0.34);
+          const isLargeEnough = area >= 20;
+
+          if (isWideShallow && isLow && isThinEnough && isLargeEnough) {
+            for (const idx of component) {
+              data[idx * 4 + 3] = 0;
+            }
+          }
+        }
+        const lightBackdropMask = new Uint8Array(total);
+        for (let i = 0; i < total; i++) {
+          if (data[i * 4 + 3] <= 20) continue;
+
+          const s = getStats(i);
+          if (s.luminance < 120 || s.luminance > 255) continue;
+          if (s.spread > 34) continue;
+
+          lightBackdropMask[i] = 1;
+        }
+
+        const lightBackdropVisited = new Uint8Array(total);
+        const lightBackdropQueue = new Int32Array(total);
+        const lightBackdropNeighbor8 = [
+          [-1, -1], [0, -1], [1, -1],
+          [-1,  0],          [1,  0],
+          [-1,  1], [0,  1], [1,  1],
+        ] as const;
+
+        for (let seed = 0; seed < total; seed++) {
+          if (lightBackdropMask[seed] !== 1 || lightBackdropVisited[seed] === 1) continue;
+
+          let head = 0;
+          let tail = 0;
+          lightBackdropQueue[tail++] = seed;
+          lightBackdropVisited[seed] = 1;
+
+          const component: number[] = [];
+          let minX = width;
+          let maxX = 0;
+          let minY = height;
+          let maxY = 0;
+
+          while (head < tail) {
+            const current = lightBackdropQueue[head++];
+            component.push(current);
+
+            const y = Math.floor(current / width);
+            const x = current - y * width;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+
+            for (const [dx, dy] of lightBackdropNeighbor8) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              const ni = ny * width + nx;
+              if (lightBackdropMask[ni] !== 1 || lightBackdropVisited[ni] === 1) continue;
+              lightBackdropVisited[ni] = 1;
+              lightBackdropQueue[tail++] = ni;
+            }
+          }
+
+          const compWidth = maxX - minX + 1;
+          const compHeight = maxY - minY + 1;
+          const area = component.length;
+
+          const isBottomTouch = maxY >= Math.floor(height * 0.62);
+          const isLargeBrightMass =
+            compWidth >= Math.floor(width * 0.10) &&
+            compHeight >= Math.floor(height * 0.08) &&
+            area >= 40;
+
+          if (isBottomTouch && isLargeBrightMass) {
+            for (const idx of component) {
+              data[idx * 4 + 3] = 0;
+            }
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(sourceUrl);
+      }
+    };
+
+    img.onerror = () => resolve(sourceUrl);
+    img.src = sourceUrl;
+  });
 }
 
 export default function KeyringWorkbenchPage() {
@@ -1966,7 +2283,9 @@ const effectiveHoleAutoCutline = useMemo(() => {
       centroid: null,
     });
 
-    buildAutoCutlineFromImage(uploadState.previewUrl).then((result) => {
+    buildTransparentTraceSourceUrl(uploadState.previewUrl)
+      .then((traceSourceUrl: string) => buildAutoCutlineFromImage(traceSourceUrl))
+      .then((result) => {
       if (cancelled) return;
 
       if (result) {
@@ -2125,7 +2444,7 @@ const rawBounds = cbGetClosedBounds(result.points);
 
     setUploadGuide(
       previewable
-        ? "업로드 상태: 작업판에 즉시 반영됨"
+        ? "업로드 상태: 정책 판정 기준 반영됨"
         : "PDF / AI / PSD는 업로드 기록만 유지하고 실시간 미리보기는 생략"
     );
   };
@@ -2533,7 +2852,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {autoCutline.status === "ready" ? "생성 완료" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                      자동칼선 상태: {autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -2636,10 +2955,348 @@ const rawBounds = cbGetClosedBounds(result.points);
   );
 }
 
+async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<string> {
+  if (!inputUrl) return inputUrl;
+
+  type AutoCutlineCleanupDecision =
+    | "AUTO_PASS"
+    | "AUTO_TRIM"
+    | "REVIEW_REQUIRED"
+    | "REJECT";
+
+  type AutoCutlineCleanupPolicy = {
+    lowerStartRatio: number;
+    nearWhiteLuma: number;
+    nearWhiteChroma: number;
+    minEdgeContactPixels: number;
+    maxWhiteRemovalRatio: number;
+    minKeepCoverageRatio: number;
+    maxKeepCoverageRatio: number;
+  };
+
+  type AutoCutlineCleanupMetrics = {
+    totalArea: number;
+    keepArea: number;
+    coverageRatio: number;
+    bboxWidth: number;
+    bboxHeight: number;
+    bboxHeightRatio: number;
+    bboxBottomRatio: number;
+    edgeSeedCount: number;
+    whiteRemoved: number;
+    whiteRemovalRatio: number;
+  };
+
+  const computeAutoCutlineCleanupPolicy = (input: {
+    width: number;
+    height: number;
+    coverageRatio: number;
+    bboxHeightRatio: number;
+    bboxBottomRatio: number;
+  }): AutoCutlineCleanupPolicy => {
+    const lowerStartRatio = Math.min(
+      0.84,
+      Math.max(
+        0.5,
+        input.bboxBottomRatio - Math.max(0.12, input.bboxHeightRatio * 0.18)
+      )
+    );
+
+    const nearWhiteLuma =
+      input.coverageRatio >= 0.38 ? 224 :
+      input.coverageRatio >= 0.22 ? 228 : 232;
+
+    const nearWhiteChroma =
+      input.coverageRatio >= 0.38 ? 26 :
+      input.coverageRatio >= 0.22 ? 30 : 36;
+
+    const minEdgeContactPixels = Math.max(
+      8,
+      Math.floor(Math.min(input.width, input.height) * 0.03)
+    );
+
+    const maxWhiteRemovalRatio =
+      input.coverageRatio >= 0.38 ? 0.10 :
+      input.coverageRatio >= 0.22 ? 0.14 : 0.18;
+
+    return {
+      lowerStartRatio,
+      nearWhiteLuma,
+      nearWhiteChroma,
+      minEdgeContactPixels,
+      maxWhiteRemovalRatio,
+      minKeepCoverageRatio: 0.03,
+      maxKeepCoverageRatio: 0.90,
+    };
+  };
+
+  const decideAutoCutlineCleanup = (
+    metrics: AutoCutlineCleanupMetrics,
+    policy: AutoCutlineCleanupPolicy
+  ): AutoCutlineCleanupDecision => {
+    if (metrics.coverageRatio < policy.minKeepCoverageRatio) {
+      return "REJECT";
+    }
+
+    if (metrics.coverageRatio > policy.maxKeepCoverageRatio) {
+      return "REVIEW_REQUIRED";
+    }
+
+    if (metrics.edgeSeedCount < policy.minEdgeContactPixels || metrics.whiteRemoved === 0) {
+      return "AUTO_PASS";
+    }
+
+    if (metrics.whiteRemovalRatio > policy.maxWhiteRemovalRatio) {
+      return "REVIEW_REQUIRED";
+    }
+
+    return "AUTO_TRIM";
+  };
+
+  return await new Promise<string>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        const width = Math.max(1, img.naturalWidth || img.width || 0);
+        const height = Math.max(1, img.naturalHeight || img.height || 0);
+        const total = width * height;
+        if (total <= 0) {
+          resolve(inputUrl);
+          return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          resolve(inputUrl);
+          return;
+        }
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const alphaThreshold = 16;
+
+        const alphaAt = (index: number) => data[index * 4 + 3];
+        const luminanceAt = (index: number) =>
+          data[index * 4] * 0.2126 +
+          data[index * 4 + 1] * 0.7152 +
+          data[index * 4 + 2] * 0.0722;
+
+        const chromaAt = (index: number) => {
+          const r = data[index * 4];
+          const g = data[index * 4 + 1];
+          const b = data[index * 4 + 2];
+          return Math.max(r, g, b) - Math.min(r, g, b);
+        };
+
+        const isOpaque = (index: number) => alphaAt(index) > alphaThreshold;
+
+        const forEachNeighbor = (
+          index: number,
+          visit: (next: number, nx: number, ny: number) => void
+        ) => {
+          const x = index % width;
+          const y = (index / width) | 0;
+
+          for (let dy = -1; dy <= 1; dy += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+              visit(ny * width + nx, nx, ny);
+            }
+          }
+        };
+
+        const visited = new Uint8Array(total);
+        let bestStart = -1;
+        let bestArea = 0;
+
+        for (let start = 0; start < total; start += 1) {
+          if (visited[start]) continue;
+          visited[start] = 1;
+          if (!isOpaque(start)) continue;
+
+          const queue: number[] = [start];
+          let head = 0;
+          let area = 0;
+
+          while (head < queue.length) {
+            const current = queue[head++];
+            area += 1;
+
+            forEachNeighbor(current, (next) => {
+              if (visited[next]) return;
+              visited[next] = 1;
+              if (isOpaque(next)) queue.push(next);
+            });
+          }
+
+          if (area > bestArea) {
+            bestArea = area;
+            bestStart = start;
+          }
+        }
+
+        if (bestStart < 0 || bestArea <= 0) {
+          resolve(inputUrl);
+          return;
+        }
+
+        const keep = new Uint8Array(total);
+        let keepMinX = width;
+        let keepMinY = height;
+        let keepMaxX = -1;
+        let keepMaxY = -1;
+
+        {
+          const queue: number[] = [bestStart];
+          keep[bestStart] = 1;
+          let head = 0;
+
+          while (head < queue.length) {
+            const current = queue[head++];
+            const x = current % width;
+            const y = (current / width) | 0;
+
+            if (x < keepMinX) keepMinX = x;
+            if (y < keepMinY) keepMinY = y;
+            if (x > keepMaxX) keepMaxX = x;
+            if (y > keepMaxY) keepMaxY = y;
+
+            forEachNeighbor(current, (next) => {
+              if (keep[next] || !isOpaque(next)) return;
+              keep[next] = 1;
+              queue.push(next);
+            });
+          }
+        }
+
+        const bboxWidth = Math.max(1, keepMaxX - keepMinX + 1);
+        const bboxHeight = Math.max(1, keepMaxY - keepMinY + 1);
+        const coverageRatio = bestArea / total;
+        const bboxHeightRatio = bboxHeight / Math.max(1, height);
+        const bboxBottomRatio = (keepMaxY + 1) / Math.max(1, height);
+
+        const cleanupPolicy = computeAutoCutlineCleanupPolicy({
+          width,
+          height,
+          coverageRatio,
+          bboxHeightRatio,
+          bboxBottomRatio,
+        });
+
+        const lowerStartY = Math.max(
+          keepMinY,
+          Math.floor(height * cleanupPolicy.lowerStartRatio)
+        );
+
+        const isNearWhite = (index: number) =>
+          keep[index] &&
+          isOpaque(index) &&
+          luminanceAt(index) >= cleanupPolicy.nearWhiteLuma &&
+          chromaAt(index) <= cleanupPolicy.nearWhiteChroma;
+
+        const edgeWhite = new Uint8Array(total);
+        const whiteQueue: number[] = [];
+        let edgeSeedCount = 0;
+
+        const trySeedWhite = (index: number, y: number) => {
+          if (y < lowerStartY) return;
+          if (!isNearWhite(index)) return;
+          if (edgeWhite[index]) return;
+          edgeWhite[index] = 1;
+          edgeSeedCount += 1;
+          whiteQueue.push(index);
+        };
+
+        for (let x = keepMinX; x <= keepMaxX; x += 1) {
+          const bottom = (height - 1) * width + x;
+          trySeedWhite(bottom, height - 1);
+        }
+
+        for (let y = lowerStartY; y < height; y += 1) {
+          trySeedWhite(y * width + keepMinX, y);
+          trySeedWhite(y * width + keepMaxX, y);
+        }
+
+        let whiteRemoved = 0;
+        let head = 0;
+
+        while (head < whiteQueue.length) {
+          const current = whiteQueue[head++];
+          whiteRemoved += 1;
+
+          forEachNeighbor(current, (next, _nx, ny) => {
+            if (ny < lowerStartY) return;
+            if (edgeWhite[next]) return;
+            if (!isNearWhite(next)) return;
+            edgeWhite[next] = 1;
+            whiteQueue.push(next);
+          });
+        }
+
+        const cleanupMetrics: AutoCutlineCleanupMetrics = {
+          totalArea: total,
+          keepArea: Math.max(1, bestArea),
+          coverageRatio,
+          bboxWidth,
+          bboxHeight,
+          bboxHeightRatio,
+          bboxBottomRatio,
+          edgeSeedCount,
+          whiteRemoved,
+          whiteRemovalRatio: whiteRemoved / Math.max(1, bestArea),
+        };
+
+        const cleanupDecision = decideAutoCutlineCleanup(
+          cleanupMetrics,
+          cleanupPolicy
+        );
+
+        for (let i = 0; i < total; i += 1) {
+          if (!keep[i]) {
+            data[i * 4 + 3] = 0;
+            continue;
+          }
+
+          if (cleanupDecision === "AUTO_TRIM" && edgeWhite[i]) {
+            data[i * 4 + 3] = 0;
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(inputUrl);
+      }
+    };
+
+    img.onerror = () => resolve(inputUrl);
+    img.src = inputUrl;
+  });
+}
 
 
+async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTransparentTraceSourceUrlCore>): Promise<Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>> {
+  const intermediateUrl = await buildTransparentTraceSourceUrlCore(...args);
 
+  if (typeof intermediateUrl !== "string" || intermediateUrl.length === 0) {
+    return intermediateUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
+  }
 
+  const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
+  return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
+}
 
 
 
