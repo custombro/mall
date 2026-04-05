@@ -1579,7 +1579,7 @@ function KeyringCanvas({
   }, [previewUrl]);
 
   const autoRenderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
-  const shapeRenderImageUrl = autoRenderImageUrl;
+  const shapeRenderImageUrl = imageUrl ?? previewUrl ?? transparentPreviewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
   const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
@@ -1701,10 +1701,10 @@ const previewImageClipPath =
             <>
               <image
                 href={shapeRenderImageUrl!}
-                x={ART_FRAME.x}
-                y={ART_FRAME.y}
-                width={ART_FRAME.width}
-                height={ART_FRAME.height}
+                x={scaledArtFrame.x}
+                y={scaledArtFrame.y}
+                width={scaledArtFrame.width}
+                height={scaledArtFrame.height}
                 preserveAspectRatio="xMidYMid slice"
                 clipPath={`url(#${clipId})`}
               />
@@ -2635,6 +2635,8 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
+
 
 
 
