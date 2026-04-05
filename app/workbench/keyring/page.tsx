@@ -1579,7 +1579,7 @@ function KeyringCanvas({
   }, [previewUrl]);
 
   const autoRenderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
-  const shapeRenderImageUrl = imageUrl ?? previewUrl ?? transparentPreviewUrl;
+  const shapeRenderImageUrl = transparentPreviewUrl ?? imageUrl ?? previewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
   const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
@@ -2635,6 +2635,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       </main>
   );
 }
+
 
 
 
