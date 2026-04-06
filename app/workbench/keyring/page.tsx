@@ -43,6 +43,7 @@ function cbSimplifyClosedPoints(points: Array<{ x: number; y: number }>, minGap 
   return simplified.length >= 3 ? simplified : points.map((point) => ({ x: point.x, y: point.y }));
 }
 
+
 function cbResampleClosedPoints(points: Array<{ x: number; y: number }>, targetCount = 48) {
   if (points.length < 3) return points.map((point) => ({ x: point.x, y: point.y }));
 
@@ -537,30 +538,8 @@ function projectHoleToAutoCutlineHalfOutside(
     }
   }
 
-  let sumX = 0;
-  let sumY = 0;
-  for (const point of points) {
-    sumX += point.x;
-    sumY += point.y;
-  }
+  return bestPoint;
 
-  const centroid = {
-    x: sumX / points.length,
-    y: sumY / points.length,
-  };
-
-  const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
-  const seatDepth = Math.max(
-    getHoleVisualRadius(holeSize) * 0.52,
-    getHoleOuterCutlineRadius(holeSize) * 0.34,
-  );
-  const safeOutside = Math.max(1.2, getHoleVisualRadius(holeSize) * 0.08);
-  const outsideShift = Math.max(seatDepth, safeOutside);
-
-  return {
-    x: bestPoint.x + outward.x * outsideShift,
-    y: bestPoint.y + outward.y * outsideShift,
-  };
 }
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
   const holeInset = getHoleOuterCutlineRadius(holeSize) + getAutoCutlineMarginVisualPxByMm(2);
@@ -1418,6 +1397,8 @@ function KeyringCanvas({
   imageUrl,
   previewUrl,
   autoCutline,
+  autoCutlinePreviewEnabled,
+  autoCutlinePreviewMinGap,
   artScale,
 }: {
   hole: HolePosition;
@@ -1426,6 +1407,8 @@ function KeyringCanvas({
   imageUrl: string | null;
   previewUrl: string | null;
   autoCutline: AutoCutlineState;
+  autoCutlinePreviewEnabled: boolean;
+  autoCutlinePreviewMinGap: number;
   artScale: number;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
@@ -1643,8 +1626,8 @@ function KeyringCanvas({
 })();
 
   const autoCutlinePreviewPath =
-    (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0)
-      ? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)
+    (shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0)
+      ? cbBuildSmoothClosedPath(cbSimplifyClosedPoints(autoCutlinePreviewPoints, autoCutlinePreviewMinGap))
       : null;
   const baseShapeUnionPreviewPath =
     shapeMode === "원형" || shapeMode === "사각형"
@@ -1781,9 +1764,9 @@ const previewImageClipPath =
             />
           ) : null}
 
-          {(shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
+          {(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
             <path
-              d={normalizePreviewPath(autoCutlinePreviewPath) || cbBuildSmoothClosedPath(autoCutlinePreviewPoints)}
+              d={normalizePreviewPath(autoCutlinePreviewPath) || cbBuildSmoothClosedPath(cbSimplifyClosedPoints(autoCutlinePreviewPoints, autoCutlinePreviewMinGap))}
               fill="none"
               stroke="#ff2b2b"
               strokeWidth="2.5"
@@ -1835,7 +1818,7 @@ const previewImageClipPath =
                   : "업로드 대기"}
           </text>
         </>
-          )}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
+          )}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
         <g>
           <circle
             cx={hole.x}
@@ -2325,13 +2308,12 @@ const rawBounds = cbGetClosedBounds(result.points);
   const isJpegUploadForAutoCutline =
     /^image\/jpe?g$/i.test(((uploadState as { mimeType?: string } | null)?.mimeType ?? "")) ||
     /\.jpe?g$/i.test(uploadStateFileName);
-  const holeProjectionAutoCutline: AutoCutlineState = isJpegUploadForAutoCutline
-    ? { ...autoCutline, status: "idle" as const, path: null, points: [], centroid: null }
-    : autoCutline;
+  const effectiveHoleShapeMode = shapeMode;
+  const projectHoleForCurrentUpload = (pointer: HolePosition) => projectHole(pointer, holeSize, shapeMode, autoCutline);
 
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode, holeProjectionAutoCutline));
-  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path, isJpegUploadForAutoCutline]);
+    setHole((prev) => projectHoleForCurrentUpload(prev));
+  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
 
   useEffect(() => {
     return () => {
@@ -2351,9 +2333,7 @@ const rawBounds = cbGetClosedBounds(result.points);
   }, [holeSize, material, ring, shapeMode, thickness]);
 
   const totalPrice = unitPrice * quantity;
-  const autoCutlineLocked =
-    shapeMode === "자동칼선" &&
-    (autoCutline.status !== "ready" || isJpegUploadForAutoCutline);
+  const autoCutlineLocked = shapeMode === "자동칼선" && autoCutline.status !== "ready";
 
   const productionStatus = useMemo(() => {
     if (shapeMode === "자동칼선" && !uploadState?.previewUrl) {
@@ -2364,7 +2344,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       };
     }
 
-    if (shapeMode === "자동칼선" && (autoCutline.status !== "ready" || isJpegUploadForAutoCutline)) {
+    if (shapeMode === "자동칼선" && autoCutline.status !== "ready") {
       return {
         label: "계산 중",
         tone: "amber" as const,
@@ -2393,7 +2373,7 @@ const rawBounds = cbGetClosedBounds(result.points);
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(projectHole({ x, y }, holeSize, shapeMode, holeProjectionAutoCutline));
+    setHole(projectHoleForCurrentUpload({ x, y }));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -2813,7 +2793,9 @@ const rawBounds = cbGetClosedBounds(result.points);
               previewUrl={uploadState?.previewUrl ?? null}
                   autoCutline={effectiveAutoCutline}
                 artScale={artScale}
-                />
+          autoCutlinePreviewEnabled={true}
+          autoCutlinePreviewMinGap={isJpegUploadForAutoCutline ? 11.5 : 2.4}
+        />
               </div>
             </div>
           </section>
