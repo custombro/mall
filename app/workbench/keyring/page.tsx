@@ -1007,10 +1007,27 @@ function cbBuildBaseShapeUnionPreviewPath(
   ctx.closePath();
   ctx.fill();
 
-  const image = ctx.getImageData(0, 0, VIEW_WIDTH, VIEW_HEIGHT).data;
+  const imageData = ctx.getImageData(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  const image = imageData.data;
   const mask: boolean[][] = Array.from({ length: VIEW_HEIGHT }, () =>
     Array.from({ length: VIEW_WIDTH }, () => false),
   );
+
+  let transparentPixelCount = 0;
+  let visiblePixelCount = 0;
+
+  for (let i = 0; i < image.length; i += 4) {
+    const alpha = image[i + 3];
+    if (alpha > 16) {
+      visiblePixelCount += 1;
+    } else {
+      transparentPixelCount += 1;
+    }
+  }
+
+  const hasMeaningfulTransparency =
+    transparentPixelCount > 0 &&
+    transparentPixelCount / Math.max(1, transparentPixelCount + visiblePixelCount) > 0.01;
 
   let count = 0;
   let sumX = 0;
@@ -1018,8 +1035,14 @@ function cbBuildBaseShapeUnionPreviewPath(
 
   for (let y = 0; y < VIEW_HEIGHT; y += 1) {
     for (let x = 0; x < VIEW_WIDTH; x += 1) {
-      const idx = (y * VIEW_WIDTH + x) * 4 + 3;
-      if (image[idx] > 16) {
+      const pixelIndex = (y * VIEW_WIDTH + x) * 4;
+      const r = image[pixelIndex];
+      const g = image[pixelIndex + 1];
+      const b = image[pixelIndex + 2];
+      const a = image[pixelIndex + 3];
+      const keepPixel = hasMeaningfulTransparency ? a > 16 : isForeground(r, g, b, a);
+
+      if (keepPixel) {
         mask[y][x] = true;
         count += 1;
         sumX += x;
