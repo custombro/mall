@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import {
@@ -1643,7 +1643,7 @@ function KeyringCanvas({
 })();
 
   const autoCutlinePreviewPath =
-    shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0
+    (shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0)
       ? cbBuildSmoothClosedPath(autoCutlinePreviewPoints)
       : null;
   const baseShapeUnionPreviewPath =
@@ -1781,7 +1781,7 @@ const previewImageClipPath =
             />
           ) : null}
 
-          {autoCutline.status === "ready" && autoCutline.path ? (
+          {(shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
             <path
               d={normalizePreviewPath(autoCutlinePreviewPath) || cbBuildSmoothClosedPath(autoCutlinePreviewPoints)}
               fill="none"
@@ -1835,7 +1835,7 @@ const previewImageClipPath =
                   : "업로드 대기"}
           </text>
         </>
-      )}      {shapeMode !== "자동칼선" || (shapeMode === "자동칼선" && !(autoCutline.status === "ready" && autoCutline.path)) ? null : (
+          )}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
         <g>
           <circle
             cx={hole.x}
@@ -2318,9 +2318,20 @@ const rawBounds = cbGetClosedBounds(result.points);
     };
   }, [shapeMode, uploadState?.previewUrl]);
 
+  const uploadStateFileName =
+    ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
+      (uploadState as { fileName?: string; name?: string } | null)?.name ??
+      "");
+  const isJpegUploadForAutoCutline =
+    /^image\/jpe?g$/i.test(((uploadState as { mimeType?: string } | null)?.mimeType ?? "")) ||
+    /\.jpe?g$/i.test(uploadStateFileName);
+  const holeProjectionAutoCutline: AutoCutlineState = isJpegUploadForAutoCutline
+    ? { ...autoCutline, status: "idle" as const, path: null, points: [], centroid: null }
+    : autoCutline;
+
   useEffect(() => {
-    setHole((prev) => projectHole(prev, holeSize, shapeMode, autoCutline));
-  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
+    setHole((prev) => projectHole(prev, holeSize, shapeMode, holeProjectionAutoCutline));
+  }, [holeSize, shapeMode, autoCutline.status, autoCutline.path, isJpegUploadForAutoCutline]);
 
   useEffect(() => {
     return () => {
@@ -2340,7 +2351,9 @@ const rawBounds = cbGetClosedBounds(result.points);
   }, [holeSize, material, ring, shapeMode, thickness]);
 
   const totalPrice = unitPrice * quantity;
-  const autoCutlineLocked = shapeMode === "자동칼선" && autoCutline.status !== "ready";
+  const autoCutlineLocked =
+    shapeMode === "자동칼선" &&
+    (autoCutline.status !== "ready" || isJpegUploadForAutoCutline);
 
   const productionStatus = useMemo(() => {
     if (shapeMode === "자동칼선" && !uploadState?.previewUrl) {
@@ -2351,7 +2364,7 @@ const rawBounds = cbGetClosedBounds(result.points);
       };
     }
 
-    if (shapeMode === "자동칼선" && autoCutline.status !== "ready") {
+    if (shapeMode === "자동칼선" && (autoCutline.status !== "ready" || isJpegUploadForAutoCutline)) {
       return {
         label: "계산 중",
         tone: "amber" as const,
@@ -2380,7 +2393,7 @@ const rawBounds = cbGetClosedBounds(result.points);
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
     const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(projectHole({ x, y }, holeSize, shapeMode, autoCutline));
+    setHole(projectHole({ x, y }, holeSize, shapeMode, holeProjectionAutoCutline));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -2591,7 +2604,7 @@ const rawBounds = cbGetClosedBounds(result.points);
             <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
+              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
             </div>
           </aside>
 
@@ -2852,7 +2865,7 @@ const rawBounds = cbGetClosedBounds(result.points);
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                      자동칼선 상태: {isJpegUploadForAutoCutline ? "JPG 검수 필요" : autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -2901,7 +2914,7 @@ const rawBounds = cbGetClosedBounds(result.points);
               <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>자동칼선 업로드 시 빨간 칼선 1차 생성</div>
+              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
@@ -2965,13 +2978,14 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
     | "REJECT";
 
   type AutoCutlineCleanupPolicy = {
-    lowerStartRatio: number;
-    nearWhiteLuma: number;
-    nearWhiteChroma: number;
-    minEdgeContactPixels: number;
-    maxWhiteRemovalRatio: number;
+    borderDistanceThreshold: number;
+    lightBackgroundLumaFloor: number;
+    lightBackgroundChromaMax: number;
     minKeepCoverageRatio: number;
     maxKeepCoverageRatio: number;
+    maxBorderTouchRatio: number;
+    maxBottomMatteSpanRatio: number;
+    matteBandStartRatio: number;
   };
 
   type AutoCutlineCleanupMetrics = {
@@ -2980,53 +2994,43 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
     coverageRatio: number;
     bboxWidth: number;
     bboxHeight: number;
-    bboxHeightRatio: number;
-    bboxBottomRatio: number;
-    edgeSeedCount: number;
-    whiteRemoved: number;
-    whiteRemovalRatio: number;
+    borderTouchRatio: number;
+    removedBackgroundRatio: number;
+    bottomMatteSpanRatio: number;
+    mattePixelRatio: number;
   };
 
   const computeAutoCutlineCleanupPolicy = (input: {
     width: number;
     height: number;
-    coverageRatio: number;
-    bboxHeightRatio: number;
-    bboxBottomRatio: number;
+    borderMeanLuma: number;
+    borderStdLuma: number;
+    borderMeanChroma: number;
   }): AutoCutlineCleanupPolicy => {
-    const lowerStartRatio = Math.min(
-      0.84,
-      Math.max(
-        0.5,
-        input.bboxBottomRatio - Math.max(0.12, input.bboxHeightRatio * 0.18)
-      )
+    const borderDistanceThreshold = Math.min(
+      72,
+      Math.max(26, 34 + input.borderStdLuma * 2.1)
     );
 
-    const nearWhiteLuma =
-      input.coverageRatio >= 0.38 ? 224 :
-      input.coverageRatio >= 0.22 ? 228 : 232;
-
-    const nearWhiteChroma =
-      input.coverageRatio >= 0.38 ? 26 :
-      input.coverageRatio >= 0.22 ? 30 : 36;
-
-    const minEdgeContactPixels = Math.max(
-      8,
-      Math.floor(Math.min(input.width, input.height) * 0.03)
+    const lightBackgroundLumaFloor = Math.max(
+      168,
+      Math.min(245, input.borderMeanLuma - Math.max(10, input.borderStdLuma * 0.8))
     );
 
-    const maxWhiteRemovalRatio =
-      input.coverageRatio >= 0.38 ? 0.10 :
-      input.coverageRatio >= 0.22 ? 0.14 : 0.18;
+    const lightBackgroundChromaMax = Math.max(
+      22,
+      Math.min(56, input.borderMeanChroma + 16)
+    );
 
     return {
-      lowerStartRatio,
-      nearWhiteLuma,
-      nearWhiteChroma,
-      minEdgeContactPixels,
-      maxWhiteRemovalRatio,
-      minKeepCoverageRatio: 0.03,
-      maxKeepCoverageRatio: 0.90,
+      borderDistanceThreshold,
+      lightBackgroundLumaFloor,
+      lightBackgroundChromaMax,
+      minKeepCoverageRatio: 0.025,
+      maxKeepCoverageRatio: 0.88,
+      maxBorderTouchRatio: 0.06,
+      maxBottomMatteSpanRatio: 0.16,
+      matteBandStartRatio: 0.58,
     };
   };
 
@@ -3042,15 +3046,19 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
       return "REVIEW_REQUIRED";
     }
 
-    if (metrics.edgeSeedCount < policy.minEdgeContactPixels || metrics.whiteRemoved === 0) {
-      return "AUTO_PASS";
-    }
-
-    if (metrics.whiteRemovalRatio > policy.maxWhiteRemovalRatio) {
+    if (metrics.borderTouchRatio > policy.maxBorderTouchRatio) {
       return "REVIEW_REQUIRED";
     }
 
-    return "AUTO_TRIM";
+    if (metrics.bottomMatteSpanRatio > policy.maxBottomMatteSpanRatio) {
+      return "REVIEW_REQUIRED";
+    }
+
+    if (metrics.mattePixelRatio > 0.002) {
+      return "AUTO_TRIM";
+    }
+
+    return "AUTO_PASS";
   };
 
   return await new Promise<string>((resolve) => {
@@ -3097,6 +3105,13 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
           return Math.max(r, g, b) - Math.min(r, g, b);
         };
 
+        const colorDistanceTo = (index: number, mr: number, mg: number, mb: number) => {
+          const dr = data[index * 4] - mr;
+          const dg = data[index * 4 + 1] - mg;
+          const db = data[index * 4 + 2] - mb;
+          return Math.sqrt(dr * dr + dg * dg + db * db);
+        };
+
         const isOpaque = (index: number) => alphaAt(index) > alphaThreshold;
 
         const forEachNeighbor = (
@@ -3117,14 +3132,111 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
           }
         };
 
+        const borderIndexes: number[] = [];
+        for (let x = 0; x < width; x += 1) {
+          borderIndexes.push(x);
+          if (height > 1) borderIndexes.push((height - 1) * width + x);
+        }
+        for (let y = 1; y + 1 < height; y += 1) {
+          borderIndexes.push(y * width);
+          if (width > 1) borderIndexes.push(y * width + (width - 1));
+        }
+
+        let sumR = 0;
+        let sumG = 0;
+        let sumB = 0;
+        let sumL = 0;
+        let sumL2 = 0;
+        let sumC = 0;
+        let borderCount = 0;
+
+        for (const index of borderIndexes) {
+          if (!isOpaque(index)) continue;
+          const r = data[index * 4];
+          const g = data[index * 4 + 1];
+          const b = data[index * 4 + 2];
+          const l = luminanceAt(index);
+          const c = chromaAt(index);
+          sumR += r;
+          sumG += g;
+          sumB += b;
+          sumL += l;
+          sumL2 += l * l;
+          sumC += c;
+          borderCount += 1;
+        }
+
+        const meanR = borderCount > 0 ? sumR / borderCount : 255;
+        const meanG = borderCount > 0 ? sumG / borderCount : 255;
+        const meanB = borderCount > 0 ? sumB / borderCount : 255;
+        const borderMeanLuma = borderCount > 0 ? sumL / borderCount : 255;
+        const borderMeanChroma = borderCount > 0 ? sumC / borderCount : 0;
+        const borderStdLuma = borderCount > 1
+          ? Math.sqrt(Math.max(0, sumL2 / borderCount - borderMeanLuma * borderMeanLuma))
+          : 0;
+
+        const cleanupPolicy = computeAutoCutlineCleanupPolicy({
+          width,
+          height,
+          borderMeanLuma,
+          borderStdLuma,
+          borderMeanChroma,
+        });
+
+        const isBackgroundCandidate = (index: number) => {
+          if (!isOpaque(index)) return true;
+
+          const luma = luminanceAt(index);
+          const chroma = chromaAt(index);
+          const distance = colorDistanceTo(index, meanR, meanG, meanB);
+
+          const closeToBorderColor = distance <= cleanupPolicy.borderDistanceThreshold;
+          const closeToLightBorder =
+            borderMeanLuma >= 170 &&
+            luma >= cleanupPolicy.lightBackgroundLumaFloor &&
+            chroma <= cleanupPolicy.lightBackgroundChromaMax;
+
+          return closeToBorderColor || closeToLightBorder;
+        };
+
+        const background = new Uint8Array(total);
+        const backgroundQueue: number[] = [];
+        let bgHead = 0;
+        let backgroundCount = 0;
+
+        const seedBackground = (index: number) => {
+          if (background[index]) return;
+          if (!isBackgroundCandidate(index)) return;
+          background[index] = 1;
+          backgroundQueue.push(index);
+          backgroundCount += 1;
+        };
+
+        for (const index of borderIndexes) {
+          seedBackground(index);
+        }
+
+        while (bgHead < backgroundQueue.length) {
+          const current = backgroundQueue[bgHead++];
+
+          forEachNeighbor(current, (next) => {
+            if (background[next]) return;
+            if (!isBackgroundCandidate(next)) return;
+            background[next] = 1;
+            backgroundQueue.push(next);
+            backgroundCount += 1;
+          });
+        }
+
         const visited = new Uint8Array(total);
+        const keep = new Uint8Array(total);
         let bestStart = -1;
         let bestArea = 0;
 
         for (let start = 0; start < total; start += 1) {
           if (visited[start]) continue;
           visited[start] = 1;
-          if (!isOpaque(start)) continue;
+          if (!isOpaque(start) || background[start]) continue;
 
           const queue: number[] = [start];
           let head = 0;
@@ -3137,7 +3249,8 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
             forEachNeighbor(current, (next) => {
               if (visited[next]) return;
               visited[next] = 1;
-              if (isOpaque(next)) queue.push(next);
+              if (!isOpaque(next) || background[next]) return;
+              queue.push(next);
             });
           }
 
@@ -3148,11 +3261,10 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
         }
 
         if (bestStart < 0 || bestArea <= 0) {
-          resolve(inputUrl);
+          resolve("");
           return;
         }
 
-        const keep = new Uint8Array(total);
         let keepMinX = width;
         let keepMinY = height;
         let keepMaxX = -1;
@@ -3174,7 +3286,8 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
             if (y > keepMaxY) keepMaxY = y;
 
             forEachNeighbor(current, (next) => {
-              if (keep[next] || !isOpaque(next)) return;
+              if (keep[next]) return;
+              if (!isOpaque(next) || background[next]) return;
               keep[next] = 1;
               queue.push(next);
             });
@@ -3184,66 +3297,82 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
         const bboxWidth = Math.max(1, keepMaxX - keepMinX + 1);
         const bboxHeight = Math.max(1, keepMaxY - keepMinY + 1);
         const coverageRatio = bestArea / total;
-        const bboxHeightRatio = bboxHeight / Math.max(1, height);
-        const bboxBottomRatio = (keepMaxY + 1) / Math.max(1, height);
+        const removedBackgroundRatio = backgroundCount / total;
 
-        const cleanupPolicy = computeAutoCutlineCleanupPolicy({
-          width,
-          height,
-          coverageRatio,
-          bboxHeightRatio,
-          bboxBottomRatio,
-        });
+        let borderTouchCount = 0;
+        for (let x = keepMinX; x <= keepMaxX; x += 1) {
+          const top = x;
+          const bottom = (height - 1) * width + x;
+          if (keep[top]) borderTouchCount += 1;
+          if (height > 1 && keep[bottom]) borderTouchCount += 1;
+        }
+        for (let y = keepMinY + 1; y < keepMaxY; y += 1) {
+          const left = y * width;
+          const right = y * width + (width - 1);
+          if (keep[left]) borderTouchCount += 1;
+          if (width > 1 && keep[right]) borderTouchCount += 1;
+        }
 
-        const lowerStartY = Math.max(
-          keepMinY,
-          Math.floor(height * cleanupPolicy.lowerStartRatio)
-        );
+        const matte = new Uint8Array(total);
+        const matteQueue: number[] = [];
+        let matteHead = 0;
+        let mattePixelCount = 0;
+        let matteMinX = width;
+        let matteMaxX = -1;
 
-        const isNearWhite = (index: number) =>
-          keep[index] &&
-          isOpaque(index) &&
-          luminanceAt(index) >= cleanupPolicy.nearWhiteLuma &&
-          chromaAt(index) <= cleanupPolicy.nearWhiteChroma;
+        const matteStartY = keepMinY + Math.floor(bboxHeight * cleanupPolicy.matteBandStartRatio);
 
-        const edgeWhite = new Uint8Array(total);
-        const whiteQueue: number[] = [];
-        let edgeSeedCount = 0;
+        const isBottomMatteCandidate = (index: number, y: number) => {
+          if (!keep[index]) return false;
+          if (y < matteStartY) return false;
 
-        const trySeedWhite = (index: number, y: number) => {
-          if (y < lowerStartY) return;
-          if (!isNearWhite(index)) return;
-          if (edgeWhite[index]) return;
-          edgeWhite[index] = 1;
-          edgeSeedCount += 1;
-          whiteQueue.push(index);
+          const luma = luminanceAt(index);
+          const chroma = chromaAt(index);
+          const distance = colorDistanceTo(index, meanR, meanG, meanB);
+
+          const closeToBorderColor = distance <= cleanupPolicy.borderDistanceThreshold * 0.92;
+          const closeToLightBorder =
+            borderMeanLuma >= 160 &&
+            luma >= cleanupPolicy.lightBackgroundLumaFloor - 6 &&
+            chroma <= cleanupPolicy.lightBackgroundChromaMax + 6;
+
+          return closeToBorderColor || closeToLightBorder;
+        };
+
+        const seedMatte = (index: number, y: number) => {
+          if (matte[index]) return;
+          if (!isBottomMatteCandidate(index, y)) return;
+          matte[index] = 1;
+          matteQueue.push(index);
+          mattePixelCount += 1;
+          const x = index % width;
+          if (x < matteMinX) matteMinX = x;
+          if (x > matteMaxX) matteMaxX = x;
         };
 
         for (let x = keepMinX; x <= keepMaxX; x += 1) {
-          const bottom = (height - 1) * width + x;
-          trySeedWhite(bottom, height - 1);
+          const index = keepMaxY * width + x;
+          seedMatte(index, keepMaxY);
         }
 
-        for (let y = lowerStartY; y < height; y += 1) {
-          trySeedWhite(y * width + keepMinX, y);
-          trySeedWhite(y * width + keepMaxX, y);
-        }
+        while (matteHead < matteQueue.length) {
+          const current = matteQueue[matteHead++];
 
-        let whiteRemoved = 0;
-        let head = 0;
-
-        while (head < whiteQueue.length) {
-          const current = whiteQueue[head++];
-          whiteRemoved += 1;
-
-          forEachNeighbor(current, (next, _nx, ny) => {
-            if (ny < lowerStartY) return;
-            if (edgeWhite[next]) return;
-            if (!isNearWhite(next)) return;
-            edgeWhite[next] = 1;
-            whiteQueue.push(next);
+          forEachNeighbor(current, (next, nx, ny) => {
+            if (matte[next]) return;
+            if (!isBottomMatteCandidate(next, ny)) return;
+            matte[next] = 1;
+            matteQueue.push(next);
+            mattePixelCount += 1;
+            if (nx < matteMinX) matteMinX = nx;
+            if (nx > matteMaxX) matteMaxX = nx;
           });
         }
+
+        const bottomMatteSpanRatio =
+          mattePixelCount > 0 && matteMaxX >= matteMinX
+            ? (matteMaxX - matteMinX + 1) / Math.max(1, bboxWidth)
+            : 0;
 
         const cleanupMetrics: AutoCutlineCleanupMetrics = {
           totalArea: total,
@@ -3251,11 +3380,10 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
           coverageRatio,
           bboxWidth,
           bboxHeight,
-          bboxHeightRatio,
-          bboxBottomRatio,
-          edgeSeedCount,
-          whiteRemoved,
-          whiteRemovalRatio: whiteRemoved / Math.max(1, bestArea),
+          borderTouchRatio: borderTouchCount / Math.max(1, 2 * bboxWidth + 2 * bboxHeight),
+          removedBackgroundRatio,
+          bottomMatteSpanRatio,
+          mattePixelRatio: mattePixelCount / Math.max(1, bestArea),
         };
 
         const cleanupDecision = decideAutoCutlineCleanup(
@@ -3263,13 +3391,21 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
           cleanupPolicy
         );
 
+        if (
+          cleanupDecision === "REVIEW_REQUIRED" ||
+          cleanupDecision === "REJECT"
+        ) {
+          resolve("");
+          return;
+        }
+
         for (let i = 0; i < total; i += 1) {
           if (!keep[i]) {
             data[i * 4 + 3] = 0;
             continue;
           }
 
-          if (cleanupDecision === "AUTO_TRIM" && edgeWhite[i]) {
+          if (cleanupDecision === "AUTO_TRIM" && matte[i]) {
             data[i * 4 + 3] = 0;
           }
         }
@@ -3277,11 +3413,11 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
         ctx.putImageData(imageData, 0, 0);
         resolve(canvas.toDataURL("image/png"));
       } catch {
-        resolve(inputUrl);
+        resolve("");
       }
     };
 
-    img.onerror = () => resolve(inputUrl);
+    img.onerror = () => resolve("");
     img.src = inputUrl;
   });
 }
@@ -3297,6 +3433,15 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
+
+
+
+
+
+
+
+
 
 
 
