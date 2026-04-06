@@ -538,7 +538,22 @@ function projectHoleToAutoCutlineHalfOutside(
     }
   }
 
-  return bestPoint;
+  let sumX = 0;
+  let sumY = 0;
+  for (const point of points) {
+    sumX += point.x;
+    sumY += point.y;
+  }
+  const centroid = {
+    x: sumX / points.length,
+    y: sumY / points.length,
+  };
+  const outward = normalize(bestPoint.x - centroid.x, bestPoint.y - centroid.y);
+  const attachInset = Math.max(0, getHoleOuterCutlineRadius(holeSize) - getHoleVisualRadius(holeSize));
+  return {
+    x: bestPoint.x - outward.x * attachInset,
+    y: bestPoint.y - outward.y * attachInset,
+  };
 
 }
 function projectHoleToEllipse(pointer: HolePosition, holeSize: HoleSize): HolePosition {
