@@ -2187,6 +2187,71 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
   });
 }
 
+/* CB_WHITE_JPG_SELFTEST_SAFE_REGION_START */
+type WhiteJpgSelftestCase<TInput, TOutput> = {
+  name: string
+  input: TInput
+  assert: (output: TOutput) => boolean
+  describeFailure?: (output: TOutput) => string
+}
+
+type WhiteJpgSelftestResult = {
+  name: string
+  ok: boolean
+  reason: string
+}
+
+type WhiteJpgSelftestSummary = {
+  total: number
+  pass: number
+  fail: number
+  results: WhiteJpgSelftestResult[]
+}
+
+function runWhiteJpgSelftestCases<TInput, TOutput>(
+  cases: WhiteJpgSelftestCase<TInput, TOutput>[],
+  execute: (input: TInput) => TOutput,
+): WhiteJpgSelftestSummary {
+  const results: WhiteJpgSelftestResult[] = cases.map((testCase) => {
+    try {
+      const output = execute(testCase.input)
+      const ok = testCase.assert(output)
+      const reason = ok
+        ? 'PASS'
+        : (testCase.describeFailure?.(output) ?? 'ASSERT_FAILED')
+
+      return {
+        name: testCase.name,
+        ok,
+        reason,
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return {
+        name: testCase.name,
+        ok: false,
+        reason: `THREW:${message}`,
+      }
+    }
+  })
+
+  const pass = results.filter((result) => result.ok).length
+
+  return {
+    total: results.length,
+    pass,
+    fail: results.length - pass,
+    results,
+  }
+}
+/* CB_WHITE_JPG_SELFTEST_SAFE_REGION_END */
+/* CB_WHITE_JPG_DEPLOY_MARKER_REGION_START */
+const CB_WHITE_JPG_DEPLOY_MARKER = 'CB_WHITE_JPG_DEPLOY_MARKER_20260408_001418'
+
+try {
+  ;(globalThis as typeof globalThis & { __CB_WHITE_JPG_DEPLOY_MARKER__?: string }).__CB_WHITE_JPG_DEPLOY_MARKER__ = CB_WHITE_JPG_DEPLOY_MARKER
+} catch {}
+/* CB_WHITE_JPG_DEPLOY_MARKER_REGION_END */
 export default function KeyringWorkbenchPage() {
   const [shapeMode, setShapeMode] = useState<ShapeMode>("원형");
   const [material, setMaterial] = useState<Material>("투명 아크릴");
