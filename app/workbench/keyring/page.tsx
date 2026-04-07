@@ -2247,8 +2247,20 @@ function runWhiteJpgSelftestCases<TInput, TOutput>(
 /* CB_WHITE_JPG_SELFTEST_SAFE_REGION_END */
 /* CB_WHITE_JPG_TRACE_SELFTEST_BINDING_START */
 type WhiteJpgTraceSelftestInput = "center-square" | "left-large-right-small"
+
 type WhiteJpgTraceSelftestOutput = {
   traceSourceUrl: string
+  opaquePixelCount: number
+  bounds: {
+    minX: number
+    minY: number
+    maxX: number
+    maxY: number
+    width: number
+    height: number
+  }
+  centroidX: number
+  centroidY: number
 }
 
 function buildWhiteJpgSyntheticSourceUrl(mode: WhiteJpgTraceSelftestInput): string {
@@ -2275,19 +2287,108 @@ function buildWhiteJpgSyntheticSourceUrl(mode: WhiteJpgTraceSelftestInput): stri
   return canvas.toDataURL("image/jpeg", 0.92)
 }
 
+async function analyzeWhiteJpgTraceSourceUrl(traceSourceUrl: string): Promise<WhiteJpgTraceSelftestOutput> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.decoding = "async"
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas")
+        canvas.width = img.naturalWidth || img.width
+        canvas.height = img.naturalHeight || img.height
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true })
+        if (!ctx) {
+          reject(new Error("CTX_UNAVAILABLE"))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0)
+        const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+        let minX = width
+        let minY = height
+        let maxX = -1
+        let maxY = -1
+        let opaquePixelCount = 0
+        let sumX = 0
+        let sumY = 0
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const alpha = data[(y * width + x) * 4 + 3]
+            if (alpha >= 32) {
+              opaquePixelCount += 1
+              sumX += x
+              sumY += y
+              if (x < minX) minX = x
+              if (y < minY) minY = y
+              if (x > maxX) maxX = x
+              if (y > maxY) maxY = y
+            }
+          }
+        }
+
+        if (opaquePixelCount === 0 || maxX < minX || maxY < minY) {
+          reject(new Error("NO_OPAQUE_PIXELS"))
+          return
+        }
+
+        resolve({
+          traceSourceUrl,
+          opaquePixelCount,
+          bounds: {
+            minX,
+            minY,
+            maxX,
+            maxY,
+            width: maxX - minX + 1,
+            height: maxY - minY + 1,
+          },
+          centroidX: sumX / opaquePixelCount,
+          centroidY: sumY / opaquePixelCount,
+        })
+      } catch (error) {
+        reject(error)
+      }
+    }
+    img.onerror = () => reject(new Error("IMAGE_LOAD_FAILED"))
+    img.src = traceSourceUrl
+  })
+}
+
 async function runWhiteJpgTraceSourceSelftests(): Promise<WhiteJpgSelftestSummary> {
   const cases: WhiteJpgSelftestCase<WhiteJpgTraceSelftestInput, WhiteJpgTraceSelftestOutput>[] = [
     {
       name: "WHITE_JPG_CENTER_SQUARE_TRACE_SOURCE",
       input: "center-square",
-      assert: (output) => typeof output.traceSourceUrl === "string" && output.traceSourceUrl.startsWith("data:image/"),
-      describeFailure: (output) => `TRACE_SOURCE_INVALID:${String(output.traceSourceUrl).slice(0, 64)}`,
+      assert: (output) =>
+        output.opaquePixelCount > 2000 &&
+        output.bounds.minX >= 24 &&
+        output.bounds.minX <= 60 &&
+        output.bounds.maxX >= 96 &&
+        output.bounds.maxX <= 136 &&
+        output.bounds.minY >= 18 &&
+        output.bounds.minY <= 44 &&
+        output.bounds.maxY >= 72 &&
+        output.bounds.maxY <= 102,
+      describeFailure: (output) =>
+        `BOUNDS=${output.bounds.minX},${output.bounds.minY},${output.bounds.maxX},${output.bounds.maxY}|OPAQUE=${output.opaquePixelCount}`,
     },
     {
       name: "WHITE_JPG_LARGEST_ISLAND_TRACE_SOURCE",
       input: "left-large-right-small",
-      assert: (output) => typeof output.traceSourceUrl === "string" && output.traceSourceUrl.startsWith("data:image/"),
-      describeFailure: (output) => `TRACE_SOURCE_INVALID:${String(output.traceSourceUrl).slice(0, 64)}`,
+      assert: (output) =>
+        output.opaquePixelCount > 2500 &&
+        output.bounds.minX >= 8 &&
+        output.bounds.minX <= 30 &&
+        output.bounds.maxX >= 70 &&
+        output.bounds.maxX <= 108 &&
+        output.bounds.width >= 55 &&
+        output.bounds.width <= 95 &&
+        output.centroidX <= 70,
+      describeFailure: (output) =>
+        `BOUNDS=${output.bounds.minX},${output.bounds.minY},${output.bounds.maxX},${output.bounds.maxY}|WIDTH=${output.bounds.width}|CENTROID_X=${output.centroidX.toFixed(2)}|OPAQUE=${output.opaquePixelCount}`,
     },
   ]
 
@@ -2296,8 +2397,8 @@ async function runWhiteJpgTraceSourceSelftests(): Promise<WhiteJpgSelftestSummar
   for (const testCase of cases) {
     try {
       const sourceUrl = buildWhiteJpgSyntheticSourceUrl(testCase.input)
-      const traceSourceUrl = await buildTransparentTraceSourceUrlCore(sourceUrl)
-      const output: WhiteJpgTraceSelftestOutput = { traceSourceUrl }
+      const traceSourceUrl = await buildTransparentTraceSourceUrl(sourceUrl)
+      const output = await analyzeWhiteJpgTraceSourceUrl(traceSourceUrl)
       const ok = testCase.assert(output)
       const reason = ok ? "PASS" : (testCase.describeFailure?.(output) ?? "ASSERT_FAILED")
 
