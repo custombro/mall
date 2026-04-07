@@ -43,7 +43,6 @@ function cbSimplifyClosedPoints(points: Array<{ x: number; y: number }>, minGap 
   return simplified.length >= 3 ? simplified : points.map((point) => ({ x: point.x, y: point.y }));
 }
 
-
 function cbResampleClosedPoints(points: Array<{ x: number; y: number }>, targetCount = 48) {
   if (points.length < 3) return points.map((point) => ({ x: point.x, y: point.y }));
 
@@ -1921,12 +1920,16 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
 
     img.onload = () => {
       try {
-        const width = Math.max(1, img.naturalWidth || img.width || 1);
-        const height = Math.max(1, img.naturalHeight || img.height || 1);
+        const naturalWidth = Math.max(1, img.naturalWidth || img.width || 1);
+        const naturalHeight = Math.max(1, img.naturalHeight || img.height || 1);
+        const maxSide = 1024;
+        const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
+        const workWidth = Math.max(1, Math.round(naturalWidth * scale));
+        const workHeight = Math.max(1, Math.round(naturalHeight * scale));
 
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = workWidth;
+        canvas.height = workHeight;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
         if (!ctx) {
@@ -1934,291 +1937,161 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
           return;
         }
 
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.clearRect(0, 0, workWidth, workHeight);
+        ctx.drawImage(img, 0, 0, workWidth, workHeight);
 
-        const imageData = ctx.getImageData(0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, workWidth, workHeight);
         const data = imageData.data;
-        const total = width * height;
 
-        const getStats = (idx: number) => {
-          const p = idx * 4;
-          const a = data[p + 3];
-          const r = data[p];
-          const g = data[p + 1];
-          const b = data[p + 2];
-          const maxRgb = Math.max(r, g, b);
-          const minRgb = Math.min(r, g, b);
-          const spread = maxRgb - minRgb;
-          const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          return { r, g, b, a, spread, luminance };
+        let hasMeaningfulTransparency = false;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] < 245) {
+            hasMeaningfulTransparency = true;
+            break;
+          }
+        }
+
+        if (hasMeaningfulTransparency) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        const borderSamples: Array<{ r: number; g: number; b: number }> = [];
+
+        const pushBorderSample = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
+          const idx = (y * workWidth + x) * 4;
+          borderSamples.push({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2],
+          });
         };
 
-        const borderStats = (() => {
-          let count = 0;
-          let sumR = 0;
-          let sumG = 0;
-          let sumB = 0;
-          let sumL = 0;
-          let sumS = 0;
+        for (let x = 0; x < workWidth; x += 1) {
+          pushBorderSample(x, 0);
+          pushBorderSample(x, workHeight - 1);
+        }
+        for (let y = 1; y < workHeight - 1; y += 1) {
+          pushBorderSample(0, y);
+          pushBorderSample(workWidth - 1, y);
+        }
 
-          const collect = (x: number, y: number) => {
-            const s = getStats(y * width + x);
-            if (s.a <= 20) return;
-            sumR += s.r;
-            sumG += s.g;
-            sumB += s.b;
-            sumL += s.luminance;
-            sumS += s.spread;
-            count += 1;
-          };
+        if (borderSamples.length < 24) {
+          resolve(sourceUrl);
+          return;
+        }
 
-          for (let x = 0; x < width; x++) {
-            collect(x, 0);
-            collect(x, height - 1);
-          }
-          for (let y = 1; y < height - 1; y++) {
-            collect(0, y);
-            collect(width - 1, y);
-          }
+        let sumR = 0;
+        let sumG = 0;
+        let sumB = 0;
+        let sumChroma = 0;
 
-          if (count <= 0) return null;
+        for (const sample of borderSamples) {
+          sumR += sample.r;
+          sumG += sample.g;
+          sumB += sample.b;
+          sumChroma += Math.max(sample.r, sample.g, sample.b) - Math.min(sample.r, sample.g, sample.b);
+        }
 
-          return {
-            r: sumR / count,
-            g: sumG / count,
-            b: sumB / count,
-            l: sumL / count,
-            s: sumS / count,
-          };
-        })();
+        const borderAvgR = sumR / borderSamples.length;
+        const borderAvgG = sumG / borderSamples.length;
+        const borderAvgB = sumB / borderSamples.length;
+        const borderBrightness = (borderAvgR + borderAvgG + borderAvgB) / 3;
+        const borderChroma = sumChroma / borderSamples.length;
 
-        const isBackgroundLike = (idx: number) => {
-          const s = getStats(idx);
-          if (s.a <= 20) return true;
+        const matchesBorderWhite = (x: number, y: number) => {
+          const idx = (y * workWidth + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const brightness = (r + g + b) / 3;
+          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+          const borderDistance = Math.sqrt(
+            (r - borderAvgR) * (r - borderAvgR) +
+              (g - borderAvgG) * (g - borderAvgG) +
+              (b - borderAvgB) * (b - borderAvgB),
+          );
 
-          const veryBrightFlat = s.luminance >= 244 && s.spread <= 16;
-          if (veryBrightFlat) return true;
-
-          if (!borderStats) return false;
-
-          const colorDelta =
-            Math.abs(s.r - borderStats.r) +
-            Math.abs(s.g - borderStats.g) +
-            Math.abs(s.b - borderStats.b);
-          const luminanceDelta = Math.abs(s.luminance - borderStats.l);
-          const spreadCap = Math.max(24, borderStats.s + 12);
-
-          return colorDelta <= 54 && luminanceDelta <= 24 && s.spread <= spreadCap;
+          return (
+            brightness >= borderBrightness - 18 &&
+            chroma <= Math.max(24, borderChroma + 10) &&
+            borderDistance <= 48
+          );
         };
 
-        const background = new Uint8Array(total);
-        const visitedBg = new Uint8Array(total);
-        const bgQueue = new Int32Array(total);
-        let bgHead = 0;
-        let bgTail = 0;
+        let borderWhiteLikeCount = 0;
+        for (let x = 0; x < workWidth; x += 1) {
+          if (matchesBorderWhite(x, 0)) borderWhiteLikeCount += 1;
+          if (matchesBorderWhite(x, workHeight - 1)) borderWhiteLikeCount += 1;
+        }
+        for (let y = 1; y < workHeight - 1; y += 1) {
+          if (matchesBorderWhite(0, y)) borderWhiteLikeCount += 1;
+          if (matchesBorderWhite(workWidth - 1, y)) borderWhiteLikeCount += 1;
+        }
 
-        const pushBg = (idx: number) => {
-          if (idx < 0 || idx >= total) return;
-          if (visitedBg[idx] === 1) return;
-          if (!isBackgroundLike(idx)) return;
-          visitedBg[idx] = 1;
-          background[idx] = 1;
-          bgQueue[bgTail++] = idx;
+        const borderChecks = Math.max(1, workWidth * 2 + Math.max(0, workHeight - 2) * 2);
+        const borderWhiteRatio = borderWhiteLikeCount / borderChecks;
+
+        if (borderBrightness < 232 || borderChroma > 24 || borderWhiteRatio < 0.58) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        const backgroundMask: boolean[][] = Array.from({ length: workHeight }, () =>
+          Array.from({ length: workWidth }, () => false),
+        );
+        const queue: Array<{ x: number; y: number }> = [];
+        let head = 0;
+
+        const enqueue = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
+          if (backgroundMask[y][x]) return;
+          if (!matchesBorderWhite(x, y)) return;
+          backgroundMask[y][x] = true;
+          queue.push({ x, y });
         };
 
-        for (let x = 0; x < width; x++) {
-          pushBg(x);
-          pushBg((height - 1) * width + x);
+        for (let x = 0; x < workWidth; x += 1) {
+          enqueue(x, 0);
+          enqueue(x, workHeight - 1);
         }
-        for (let y = 1; y < height - 1; y++) {
-          pushBg(y * width);
-          pushBg(y * width + (width - 1));
+        for (let y = 1; y < workHeight - 1; y += 1) {
+          enqueue(0, y);
+          enqueue(workWidth - 1, y);
         }
 
-        const floodNeighbor4 = [
-          [0, -1], [-1, 0], [1, 0], [0, 1],
-        ] as const;
+        while (head < queue.length) {
+          const current = queue[head];
+          head += 1;
 
-        while (bgHead < bgTail) {
-          const current = bgQueue[bgHead++];
-          const y = Math.floor(current / width);
-          const x = current - y * width;
+          enqueue(current.x - 1, current.y);
+          enqueue(current.x + 1, current.y);
+          enqueue(current.x, current.y - 1);
+          enqueue(current.x, current.y + 1);
+          enqueue(current.x - 1, current.y - 1);
+          enqueue(current.x + 1, current.y - 1);
+          enqueue(current.x - 1, current.y + 1);
+          enqueue(current.x + 1, current.y + 1);
+        }
 
-          for (const [dx, dy] of floodNeighbor4) {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-            pushBg(ny * width + nx);
+        let removedBackgroundPixels = 0;
+        for (let y = 0; y < workHeight; y += 1) {
+          for (let x = 0; x < workWidth; x += 1) {
+            if (!backgroundMask[y][x]) continue;
+            const idx = (y * workWidth + x) * 4;
+            data[idx + 3] = 0;
+            removedBackgroundPixels += 1;
           }
         }
 
-        for (let i = 0; i < total; i++) {
-          const p = i * 4;
-          const s = getStats(i);
-          const y = Math.floor(i / width);
-          const yRatio = y / Math.max(1, height - 1);
-
-          const softBottomShadow =
-            yRatio >= 0.84 &&
-            s.luminance >= 150 &&
-            s.luminance <= 235 &&
-            s.spread <= 28 &&
-            s.a >= 35 &&
-            s.a <= 220;
-
-          if (background[i] === 1 || softBottomShadow) {
-            data[p + 3] = 0;
-          }
-        }
-
-        const floorMask = new Uint8Array(total);
-        for (let i = 0; i < total; i++) {
-          if (data[i * 4 + 3] <= 20) continue;
-
-          const s = getStats(i);
-          const y = Math.floor(i / width);
-          const yRatio = y / Math.max(1, height - 1);
-
-          if (yRatio < 0.58) continue;
-          if (s.luminance < 70 || s.luminance > 255) continue;
-          if (s.spread > 52) continue;
-
-          floorMask[i] = 1;
-        }
-
-        const floorVisited = new Uint8Array(total);
-        const floorQueue = new Int32Array(total);
-        const floorNeighbor8 = [
-          [-1, -1], [0, -1], [1, -1],
-          [-1,  0],          [1,  0],
-          [-1,  1], [0,  1], [1,  1],
-        ] as const;
-
-        for (let seed = 0; seed < total; seed++) {
-          if (floorMask[seed] !== 1 || floorVisited[seed] === 1) continue;
-
-          let head = 0;
-          let tail = 0;
-          floorQueue[tail++] = seed;
-          floorVisited[seed] = 1;
-
-          const component: number[] = [];
-          let minX = width;
-          let maxX = 0;
-          let minY = height;
-          let maxY = 0;
-
-          while (head < tail) {
-            const current = floorQueue[head++];
-            component.push(current);
-
-            const y = Math.floor(current / width);
-            const x = current - y * width;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-
-            for (const [dx, dy] of floorNeighbor8) {
-              const nx = x + dx;
-              const ny = y + dy;
-              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-              const ni = ny * width + nx;
-              if (floorMask[ni] !== 1 || floorVisited[ni] === 1) continue;
-              floorVisited[ni] = 1;
-              floorQueue[tail++] = ni;
-            }
-          }
-
-          const compWidth = maxX - minX + 1;
-          const compHeight = maxY - minY + 1;
-          const area = component.length;
-
-          const isWideShallow = compWidth >= Math.max(10, compHeight * 0.95);
-          const isLow = maxY >= Math.floor(height * 0.68);
-          const isThinEnough = compHeight <= Math.floor(height * 0.34);
-          const isLargeEnough = area >= 20;
-
-          if (isWideShallow && isLow && isThinEnough && isLargeEnough) {
-            for (const idx of component) {
-              data[idx * 4 + 3] = 0;
-            }
-          }
-        }
-        const lightBackdropMask = new Uint8Array(total);
-        for (let i = 0; i < total; i++) {
-          if (data[i * 4 + 3] <= 20) continue;
-
-          const s = getStats(i);
-          if (s.luminance < 120 || s.luminance > 255) continue;
-          if (s.spread > 34) continue;
-
-          lightBackdropMask[i] = 1;
-        }
-
-        const lightBackdropVisited = new Uint8Array(total);
-        const lightBackdropQueue = new Int32Array(total);
-        const lightBackdropNeighbor8 = [
-          [-1, -1], [0, -1], [1, -1],
-          [-1,  0],          [1,  0],
-          [-1,  1], [0,  1], [1,  1],
-        ] as const;
-
-        for (let seed = 0; seed < total; seed++) {
-          if (lightBackdropMask[seed] !== 1 || lightBackdropVisited[seed] === 1) continue;
-
-          let head = 0;
-          let tail = 0;
-          lightBackdropQueue[tail++] = seed;
-          lightBackdropVisited[seed] = 1;
-
-          const component: number[] = [];
-          let minX = width;
-          let maxX = 0;
-          let minY = height;
-          let maxY = 0;
-
-          while (head < tail) {
-            const current = lightBackdropQueue[head++];
-            component.push(current);
-
-            const y = Math.floor(current / width);
-            const x = current - y * width;
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-
-            for (const [dx, dy] of lightBackdropNeighbor8) {
-              const nx = x + dx;
-              const ny = y + dy;
-              if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-              const ni = ny * width + nx;
-              if (lightBackdropMask[ni] !== 1 || lightBackdropVisited[ni] === 1) continue;
-              lightBackdropVisited[ni] = 1;
-              lightBackdropQueue[tail++] = ni;
-            }
-          }
-
-          const compWidth = maxX - minX + 1;
-          const compHeight = maxY - minY + 1;
-          const area = component.length;
-
-          const isBottomTouch = maxY >= Math.floor(height * 0.62);
-          const isLargeBrightMass =
-            compWidth >= Math.floor(width * 0.10) &&
-            compHeight >= Math.floor(height * 0.08) &&
-            area >= 40;
-
-          if (isBottomTouch && isLargeBrightMass) {
-            for (const idx of component) {
-              data[idx * 4 + 3] = 0;
-            }
-          }
+        if (removedBackgroundPixels < Math.max(20, Math.floor(workWidth * workHeight * 0.02))) {
+          resolve(sourceUrl);
+          return;
         }
 
         ctx.putImageData(imageData, 0, 0);
+
         resolve(canvas.toDataURL("image/png"));
       } catch {
         resolve(sourceUrl);
@@ -2263,6 +2136,1256 @@ const effectiveHoleAutoCutline = useMemo(() => {
   return effectiveAutoCutline;
 }, [effectiveAutoCutline]);
 
+const buildAutoCutlineFromForegroundMask = async (
+  url: string,
+): Promise<{ path: string; points: Point[]; centroid: Point } | null> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = ANALYSIS_WIDTH;
+        canvas.height = ANALYSIS_HEIGHT;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+
+        ctx.clearRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+
+        const scale = Math.min(ANALYSIS_WIDTH / img.width, ANALYSIS_HEIGHT / img.height);
+        const drawWidth = Math.max(1, img.width * scale);
+        const drawHeight = Math.max(1, img.height * scale);
+        const drawX = (ANALYSIS_WIDTH - drawWidth) / 2;
+        const drawY = (ANALYSIS_HEIGHT - drawHeight) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+        const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+        const data = imageData.data;
+
+        let transparentPixelCount = 0;
+        let visiblePixelCount = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const alpha = data[i + 3];
+          if (alpha > 16) {
+            visiblePixelCount += 1;
+          } else {
+            transparentPixelCount += 1;
+          }
+        }
+
+        const hasMeaningfulTransparency =
+          transparentPixelCount > 0 &&
+          transparentPixelCount / Math.max(1, transparentPixelCount + visiblePixelCount) > 0.01;
+
+        const borderSamples: Array<{ r: number; g: number; b: number; a: number }> = [];
+        const sampleStep = 3;
+
+        const pushBorderSample = (x: number, y: number) => {
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const a = data[idx + 3];
+          if (a <= 12) return;
+          borderSamples.push({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2],
+            a,
+          });
+        };
+
+        let sampleLeft = Math.max(0, Math.floor(drawX));
+        let sampleTop = Math.max(0, Math.floor(drawY));
+        let sampleRight = Math.min(ANALYSIS_WIDTH - 1, Math.ceil(drawX + drawWidth - 1));
+        let sampleBottom = Math.min(ANALYSIS_HEIGHT - 1, Math.ceil(drawY + drawHeight - 1));
+
+        const isWhiteMarginPixel = (x: number, y: number) => {
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const a = data[idx + 3];
+          if (a < 96) return true;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const brightness = (r + g + b) / 3;
+          const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(b - r));
+          return brightness >= 228 && maxDiff <= 24;
+        };
+
+        const whiteMarginRatioForColumn = (x: number) => {
+          let bg = 0;
+          let total = 0;
+          for (let y = sampleTop; y <= sampleBottom; y += 2) {
+            total += 1;
+            if (isWhiteMarginPixel(x, y)) bg += 1;
+          }
+          return bg / Math.max(1, total);
+        };
+
+        const whiteMarginRatioForRow = (y: number) => {
+          let bg = 0;
+          let total = 0;
+          for (let x = sampleLeft; x <= sampleRight; x += 2) {
+            total += 1;
+            if (isWhiteMarginPixel(x, y)) bg += 1;
+          }
+          return bg / Math.max(1, total);
+        };
+
+        if (drawWidth >= 32 && drawHeight >= 32) {
+          while (sampleLeft < sampleRight - 12 && whiteMarginRatioForColumn(sampleLeft) >= 0.94) sampleLeft += 1;
+          while (sampleRight > sampleLeft + 12 && whiteMarginRatioForColumn(sampleRight) >= 0.94) sampleRight -= 1;
+          while (sampleTop < sampleBottom - 12 && whiteMarginRatioForRow(sampleTop) >= 0.94) sampleTop += 1;
+          while (sampleBottom > sampleTop + 12 && whiteMarginRatioForRow(sampleBottom) >= 0.94) sampleBottom -= 1;
+        }
+
+        const subjectPixelRatioForColumn = (x: number) => {
+          let fg = 0;
+          let total = 0;
+          for (let y = sampleTop; y <= sampleBottom; y += 2) {
+            total += 1;
+            if (!isWhiteMarginPixel(x, y)) fg += 1;
+          }
+          return fg / Math.max(1, total);
+        };
+
+        const subjectPixelRatioForRow = (y: number) => {
+          let fg = 0;
+          let total = 0;
+          for (let x = sampleLeft; x <= sampleRight; x += 2) {
+            total += 1;
+            if (!isWhiteMarginPixel(x, y)) fg += 1;
+          }
+          return fg / Math.max(1, total);
+        };
+
+        if (drawWidth >= 32 && drawHeight >= 32) {
+          while (sampleLeft < sampleRight - 12 && subjectPixelRatioForColumn(sampleLeft) <= 0.04) sampleLeft += 1;
+          while (sampleRight > sampleLeft + 12 && subjectPixelRatioForColumn(sampleRight) <= 0.04) sampleRight -= 1;
+          while (sampleTop < sampleBottom - 12 && subjectPixelRatioForRow(sampleTop) <= 0.04) sampleTop += 1;
+          while (sampleBottom > sampleTop + 12 && subjectPixelRatioForRow(sampleBottom) <= 0.04) sampleBottom -= 1;
+        }
+
+        for (let x = sampleLeft; x <= sampleRight; x += sampleStep) {
+          pushBorderSample(x, sampleTop);
+          pushBorderSample(x, sampleBottom);
+        }
+        for (let y = sampleTop; y <= sampleBottom; y += sampleStep) {
+          pushBorderSample(sampleLeft, y);
+          pushBorderSample(sampleRight, y);
+        }
+
+        if (borderSamples.length < 8) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += sampleStep) {
+            pushBorderSample(x, 0);
+            pushBorderSample(x, ANALYSIS_HEIGHT - 1);
+          }
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += sampleStep) {
+            pushBorderSample(0, y);
+            pushBorderSample(ANALYSIS_WIDTH - 1, y);
+          }
+        }
+
+        const borderSums = borderSamples.reduce(
+          (acc, sample) => ({
+            r: acc.r + sample.r,
+            g: acc.g + sample.g,
+            b: acc.b + sample.b,
+          }),
+          { r: 0, g: 0, b: 0 },
+        );
+
+        const borderCount = Math.max(1, borderSamples.length);
+        const avgBorder = {
+          r: borderSums.r / borderCount,
+          g: borderSums.g / borderCount,
+          b: borderSums.b / borderCount,
+        };
+        const avgBorderBrightness = (avgBorder.r + avgBorder.g + avgBorder.b) / 3;
+
+        const colorDistanceFromBorder = (r: number, g: number, b: number) =>
+          Math.hypot(r - avgBorder.r, g - avgBorder.g, b - avgBorder.b);
+
+        const bgCandidate: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            const brightness = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            const dist = colorDistanceFromBorder(r, g, b);
+
+            const transparentLike = a <= 24;
+              const whiteLike = a >= 96 && brightness >= Math.max(196, avgBorderBrightness - 6) && chroma <= 48;
+            const edgeColorLike =
+              a >= 96 &&
+              dist <= 48 &&
+              Math.abs(brightness - avgBorderBrightness) <= 40 &&
+              chroma <= 60;
+
+            bgCandidate[y][x] = transparentLike || whiteLike || edgeColorLike;
+          }
+        }
+
+        const edgeBackground: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        const queue: Array<{ x: number; y: number }> = [];
+        const pushBg = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
+          if (edgeBackground[y][x] || !bgCandidate[y][x]) return;
+          edgeBackground[y][x] = true;
+          queue.push({ x, y });
+        };
+
+        for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+          pushBg(x, 0);
+          pushBg(x, ANALYSIS_HEIGHT - 1);
+        }
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          pushBg(0, y);
+          pushBg(ANALYSIS_WIDTH - 1, y);
+        }
+
+          for (let x = sampleLeft; x <= sampleRight; x += 1) {
+            pushBg(x, sampleTop);
+            pushBg(x, sampleBottom);
+          }
+          for (let y = sampleTop; y <= sampleBottom; y += 1) {
+            pushBg(sampleLeft, y);
+            pushBg(sampleRight, y);
+          }
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          if (!current) break;
+          pushBg(current.x - 1, current.y);
+          pushBg(current.x + 1, current.y);
+          pushBg(current.x, current.y - 1);
+          pushBg(current.x, current.y + 1);
+          pushBg(current.x - 1, current.y - 1);
+          pushBg(current.x + 1, current.y - 1);
+          pushBg(current.x - 1, current.y + 1);
+          pushBg(current.x + 1, current.y + 1);
+        }
+
+        const seedMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            const brightness = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            const dist = colorDistanceFromBorder(r, g, b);
+
+            seedMask[y][x] = hasMeaningfulTransparency
+              ? a > 16
+              : !edgeBackground[y][x] &&
+                a > 28 &&
+                (isForeground(r, g, b, a) ||
+                  dist >= 34 ||
+                  brightness <= avgBorderBrightness - 18 ||
+                  chroma >= 20);
+          }
+        }
+
+        const neighborOffsets = [
+          { x: -1, y: 0 },
+          { x: 1, y: 0 },
+          { x: 0, y: -1 },
+          { x: 0, y: 1 },
+          { x: -1, y: -1 },
+          { x: 1, y: -1 },
+          { x: -1, y: 1 },
+          { x: 1, y: 1 },
+        ] as const;
+
+        const collectLargestComponent = (mask: boolean[][]) => {
+          const visited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+
+          let best: Point[] = [];
+
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              if (!mask[y][x] || visited[y][x]) continue;
+
+              const component: Point[] = [];
+              const queue: Array<{ x: number; y: number }> = [{ x, y }];
+              visited[y][x] = true;
+
+              while (queue.length > 0) {
+                const current = queue.shift();
+                if (!current) break;
+
+                component.push({ x: current.x, y: current.y });
+
+                for (const next of neighborOffsets) {
+                  const nextX = current.x + next.x;
+                  const nextY = current.y + next.y;
+                  if (
+                    nextX < 0 ||
+                    nextY < 0 ||
+                    nextX >= ANALYSIS_WIDTH ||
+                    nextY >= ANALYSIS_HEIGHT
+                  ) {
+                    continue;
+                  }
+                  if (visited[nextY][nextX] || !mask[nextY][nextX]) continue;
+                  visited[nextY][nextX] = true;
+                  queue.push({ x: nextX, y: nextY });
+                }
+              }
+
+              if (component.length > best.length) {
+                best = component;
+              }
+            }
+          }
+
+          return best;
+        };
+
+        const cornerPatch = Math.max(4, Math.floor(Math.min(ANALYSIS_WIDTH, ANALYSIS_HEIGHT) * 0.06));
+        const cornerSamples: Array<{ r: number; g: number; b: number; a: number }> = [];
+
+        const pushCornerSample = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const a = data[idx + 3];
+          if (a < 24) return;
+          cornerSamples.push({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2],
+            a,
+          });
+        };
+
+        for (let dy = 0; dy < cornerPatch; dy += 1) {
+          for (let dx = 0; dx < cornerPatch; dx += 1) {
+            pushCornerSample(dx, dy);
+            pushCornerSample(ANALYSIS_WIDTH - 1 - dx, dy);
+            pushCornerSample(dx, ANALYSIS_HEIGHT - 1 - dy);
+            pushCornerSample(ANALYSIS_WIDTH - 1 - dx, ANALYSIS_HEIGHT - 1 - dy);
+          }
+        }
+
+        let cornerAvgR = 255;
+        let cornerAvgG = 255;
+        let cornerAvgB = 255;
+        let cornerBrightness = 255;
+        let cornerChroma = 0;
+
+        if (cornerSamples.length > 0) {
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          let sumChroma = 0;
+
+          for (const sample of cornerSamples) {
+            sumR += sample.r;
+            sumG += sample.g;
+            sumB += sample.b;
+            sumChroma += Math.max(sample.r, sample.g, sample.b) - Math.min(sample.r, sample.g, sample.b);
+          }
+
+          cornerAvgR = sumR / cornerSamples.length;
+          cornerAvgG = sumG / cornerSamples.length;
+          cornerAvgB = sumB / cornerSamples.length;
+          cornerBrightness = (cornerAvgR + cornerAvgG + cornerAvgB) / 3;
+          cornerChroma = sumChroma / cornerSamples.length;
+        }
+
+        const whiteCornerMode =
+          !hasMeaningfulTransparency &&
+          cornerSamples.length >= 24 &&
+          cornerBrightness >= 236 &&
+          cornerChroma <= 18;
+
+        const whiteCornerBackground: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        const matchesWhiteCorner = (x: number, y: number) => {
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const a = data[idx + 3];
+          if (a < 24) return false;
+
+          const brightness = (r + g + b) / 3;
+          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+          const cornerDistance = Math.sqrt(
+            (r - cornerAvgR) * (r - cornerAvgR) +
+              (g - cornerAvgG) * (g - cornerAvgG) +
+              (b - cornerAvgB) * (b - cornerAvgB),
+          );
+
+          return (
+            brightness >= cornerBrightness - 16 &&
+            chroma <= Math.max(22, cornerChroma + 10) &&
+            cornerDistance <= 42
+          );
+        };
+
+        if (whiteCornerMode) {
+          const whiteQueue: Array<{ x: number; y: number }> = [];
+          let whiteHead = 0;
+
+          const enqueueWhite = (x: number, y: number) => {
+            if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
+            if (whiteCornerBackground[y][x]) return;
+            if (!matchesWhiteCorner(x, y)) return;
+            whiteCornerBackground[y][x] = true;
+            whiteQueue.push({ x, y });
+          };
+
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            enqueueWhite(x, 0);
+            enqueueWhite(x, ANALYSIS_HEIGHT - 1);
+          }
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            enqueueWhite(0, y);
+            enqueueWhite(ANALYSIS_WIDTH - 1, y);
+          }
+
+          while (whiteHead < whiteQueue.length) {
+            const current = whiteQueue[whiteHead];
+            whiteHead += 1;
+
+            for (const next of neighborOffsets) {
+              enqueueWhite(current.x + next.x, current.y + next.y);
+            }
+          }
+        }
+
+        const subjectBounds = {
+          minX: 0,
+          minY: 0,
+          maxX: ANALYSIS_WIDTH - 1,
+          maxY: ANALYSIS_HEIGHT - 1,
+        };
+
+        if (whiteCornerMode) {
+          const candidateMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+          const candidateVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+          const centerX = (ANALYSIS_WIDTH - 1) / 2;
+          const centerY = (ANALYSIS_HEIGHT - 1) / 2;
+
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              const idx = (y * ANALYSIS_WIDTH + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              if (whiteCornerBackground[y][x] || a < 28) continue;
+
+              const brightness = (r + g + b) / 3;
+              const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+              const cornerDistance = Math.sqrt(
+                (r - cornerAvgR) * (r - cornerAvgR) +
+                  (g - cornerAvgG) * (g - cornerAvgG) +
+                  (b - cornerAvgB) * (b - cornerAvgB),
+              );
+
+              candidateMask[y][x] =
+                cornerDistance >= 28 ||
+                brightness <= cornerBrightness - 10 ||
+                chroma >= Math.max(18, cornerChroma + 6) ||
+                (x > ANALYSIS_WIDTH * 0.18 &&
+                  x < ANALYSIS_WIDTH * 0.82 &&
+                  y > ANALYSIS_HEIGHT * 0.1 &&
+                  y < ANALYSIS_HEIGHT * 0.92 &&
+                  brightness <= cornerBrightness - 4 &&
+                  chroma >= Math.max(10, cornerChroma + 2));
+            }
+          }
+
+          let bestScore = -Infinity;
+          let bestMinX = 0;
+          let bestMinY = 0;
+          let bestMaxX = ANALYSIS_WIDTH - 1;
+          let bestMaxY = ANALYSIS_HEIGHT - 1;
+
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              if (!candidateMask[y][x] || candidateVisited[y][x]) continue;
+
+              const queue: Array<{ x: number; y: number }> = [{ x, y }];
+              let head = 0;
+              candidateVisited[y][x] = true;
+
+              let count = 0;
+              let minX = x;
+              let minY = y;
+              let maxX = x;
+              let maxY = y;
+              let touchLeft = false;
+              let touchRight = false;
+              let touchTop = false;
+              let touchBottom = false;
+
+              while (head < queue.length) {
+                const current = queue[head];
+                head += 1;
+                count += 1;
+
+                if (current.x < minX) minX = current.x;
+                if (current.y < minY) minY = current.y;
+                if (current.x > maxX) maxX = current.x;
+                if (current.y > maxY) maxY = current.y;
+
+                if (current.x <= 0) touchLeft = true;
+                if (current.x >= ANALYSIS_WIDTH - 1) touchRight = true;
+                if (current.y <= 0) touchTop = true;
+                if (current.y >= ANALYSIS_HEIGHT - 1) touchBottom = true;
+
+                for (const next of neighborOffsets) {
+                  const nextX = current.x + next.x;
+                  const nextY = current.y + next.y;
+                  if (
+                    nextX < 0 ||
+                    nextY < 0 ||
+                    nextX >= ANALYSIS_WIDTH ||
+                    nextY >= ANALYSIS_HEIGHT
+                  ) {
+                    continue;
+                  }
+                  if (candidateVisited[nextY][nextX] || !candidateMask[nextY][nextX]) continue;
+                  candidateVisited[nextY][nextX] = true;
+                  queue.push({ x: nextX, y: nextY });
+                }
+              }
+
+              const boxW = maxX - minX + 1;
+              const boxH = maxY - minY + 1;
+              const fillRatio = count / Math.max(1, boxW * boxH);
+              const compCenterX = (minX + maxX) / 2;
+              const compCenterY = (minY + maxY) / 2;
+              const centerPenalty =
+                (Math.abs(compCenterX - centerX) / ANALYSIS_WIDTH) +
+                (Math.abs(compCenterY - centerY) / ANALYSIS_HEIGHT);
+              const edgeTouches =
+                (touchLeft ? 1 : 0) +
+                (touchRight ? 1 : 0) +
+                (touchTop ? 1 : 0) +
+                (touchBottom ? 1 : 0);
+
+              let score = count;
+              score += Math.max(0, 180 - centerPenalty * 320);
+              if (edgeTouches >= 3) score -= 220;
+              if (fillRatio > 0.9 && boxW > ANALYSIS_WIDTH * 0.55 && boxH > ANALYSIS_HEIGHT * 0.55) score -= 320;
+              if (minY <= ANALYSIS_HEIGHT * 0.06 && boxW > ANALYSIS_WIDTH * 0.45) score -= 140;
+              if (boxH <= ANALYSIS_HEIGHT * 0.08) score -= 120;
+
+              if (score > bestScore) {
+                bestScore = score;
+                bestMinX = minX;
+                bestMinY = minY;
+                bestMaxX = maxX;
+                bestMaxY = maxY;
+              }
+            }
+          }
+
+          if (bestScore > 0) {
+            const padX = Math.max(4, Math.floor((bestMaxX - bestMinX + 1) * 0.12));
+            const padY = Math.max(4, Math.floor((bestMaxY - bestMinY + 1) * 0.12));
+            subjectBounds.minX = Math.max(0, bestMinX - padX);
+            subjectBounds.minY = Math.max(0, bestMinY - padY);
+            subjectBounds.maxX = Math.min(ANALYSIS_WIDTH - 1, bestMaxX + padX);
+            subjectBounds.maxY = Math.min(ANALYSIS_HEIGHT - 1, bestMaxY + padY);
+            const countInkForColumn = (targetX: number) => {
+              let count = 0;
+              for (let targetY = subjectBounds.minY; targetY <= subjectBounds.maxY; targetY += 1) {
+                if (whiteCornerBackground[targetY][targetX]) continue;
+
+                const idx = (targetY * ANALYSIS_WIDTH + targetX) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const brightness = (r + g + b) / 3;
+                const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+                const cornerDistance = Math.sqrt(
+                  (r - cornerAvgR) * (r - cornerAvgR) +
+                    (g - cornerAvgG) * (g - cornerAvgG) +
+                    (b - cornerAvgB) * (b - cornerAvgB),
+                );
+
+                const rightX = Math.min(ANALYSIS_WIDTH - 1, targetX + 1);
+                const downY = Math.min(ANALYSIS_HEIGHT - 1, targetY + 1);
+                const rightIdx = (targetY * ANALYSIS_WIDTH + rightX) * 4;
+                const downIdx = (downY * ANALYSIS_WIDTH + targetX) * 4;
+                const grad =
+                  Math.abs(r - data[rightIdx]) +
+                  Math.abs(g - data[rightIdx + 1]) +
+                  Math.abs(b - data[rightIdx + 2]) +
+                  Math.abs(r - data[downIdx]) +
+                  Math.abs(g - data[downIdx + 1]) +
+                  Math.abs(b - data[downIdx + 2]);
+
+                const inkLike =
+                  cornerDistance >= 30 ||
+                  brightness <= cornerBrightness - 14 ||
+                  chroma >= Math.max(16, cornerChroma + 6) ||
+                  grad >= 42;
+
+                if (inkLike) count += 1;
+              }
+              return count;
+            };
+
+            const countInkForRow = (targetY: number) => {
+              let count = 0;
+              for (let targetX = subjectBounds.minX; targetX <= subjectBounds.maxX; targetX += 1) {
+                if (whiteCornerBackground[targetY][targetX]) continue;
+
+                const idx = (targetY * ANALYSIS_WIDTH + targetX) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const brightness = (r + g + b) / 3;
+                const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+                const cornerDistance = Math.sqrt(
+                  (r - cornerAvgR) * (r - cornerAvgR) +
+                    (g - cornerAvgG) * (g - cornerAvgG) +
+                    (b - cornerAvgB) * (b - cornerAvgB),
+                );
+
+                const rightX = Math.min(ANALYSIS_WIDTH - 1, targetX + 1);
+                const downY = Math.min(ANALYSIS_HEIGHT - 1, targetY + 1);
+                const rightIdx = (targetY * ANALYSIS_WIDTH + rightX) * 4;
+                const downIdx = (downY * ANALYSIS_WIDTH + targetX) * 4;
+                const grad =
+                  Math.abs(r - data[rightIdx]) +
+                  Math.abs(g - data[rightIdx + 1]) +
+                  Math.abs(b - data[rightIdx + 2]) +
+                  Math.abs(r - data[downIdx]) +
+                  Math.abs(g - data[downIdx + 1]) +
+                  Math.abs(b - data[downIdx + 2]);
+
+                const inkLike =
+                  cornerDistance >= 30 ||
+                  brightness <= cornerBrightness - 14 ||
+                  chroma >= Math.max(16, cornerChroma + 6) ||
+                  grad >= 42;
+
+                if (inkLike) count += 1;
+              }
+              return count;
+            };
+
+            const originalBoxW = subjectBounds.maxX - subjectBounds.minX + 1;
+            const originalBoxH = subjectBounds.maxY - subjectBounds.minY + 1;
+            const columnThreshold = Math.max(3, Math.floor(originalBoxH * 0.08));
+            const rowThreshold = Math.max(3, Math.floor(originalBoxW * 0.06));
+
+            let trimMinX = subjectBounds.minX;
+            let trimMaxX = subjectBounds.maxX;
+            let trimMinY = subjectBounds.minY;
+            let trimMaxY = subjectBounds.maxY;
+
+            while (trimMinX < trimMaxX && countInkForColumn(trimMinX) < columnThreshold) {
+              trimMinX += 1;
+            }
+            while (trimMaxX > trimMinX && countInkForColumn(trimMaxX) < columnThreshold) {
+              trimMaxX -= 1;
+            }
+            while (trimMinY < trimMaxY && countInkForRow(trimMinY) < rowThreshold) {
+              trimMinY += 1;
+            }
+            while (trimMaxY > trimMinY && countInkForRow(trimMaxY) < rowThreshold) {
+              trimMaxY -= 1;
+            }
+
+            const trimmedW = trimMaxX - trimMinX + 1;
+            const trimmedH = trimMaxY - trimMinY + 1;
+
+            if (
+              trimmedW >= Math.max(18, Math.floor(originalBoxW * 0.35)) &&
+              trimmedH >= Math.max(18, Math.floor(originalBoxH * 0.35))
+            ) {
+              const trimPadX = Math.max(2, Math.floor(trimmedW * 0.04));
+              const trimPadY = Math.max(2, Math.floor(trimmedH * 0.04));
+              subjectBounds.minX = Math.max(0, trimMinX - trimPadX);
+              subjectBounds.maxX = Math.min(ANALYSIS_WIDTH - 1, trimMaxX + trimPadX);
+              subjectBounds.minY = Math.max(0, trimMinY - trimPadY);
+              subjectBounds.maxY = Math.min(ANALYSIS_HEIGHT - 1, trimMaxY + trimPadY);
+            }
+          }
+        }
+
+        const centerAnchorMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+        let useCenterAnchor = false;
+
+        if (whiteCornerMode) {
+          const anchorScoreMap: number[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => 0),
+          );
+          const anchorCandidateMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+          const anchorVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+          const midLeft = Math.floor(ANALYSIS_WIDTH * 0.18);
+          const midRight = Math.ceil(ANALYSIS_WIDTH * 0.82);
+          const midTop = Math.floor(ANALYSIS_HEIGHT * 0.08);
+          const midBottom = Math.ceil(ANALYSIS_HEIGHT * 0.92);
+          const centerX = (ANALYSIS_WIDTH - 1) / 2;
+          const centerY = (ANALYSIS_HEIGHT - 1) / 2;
+          let bestPixelScore = 0;
+
+          for (let y = midTop; y <= midBottom; y += 1) {
+            for (let x = midLeft; x <= midRight; x += 1) {
+              if (whiteCornerBackground[y][x]) continue;
+              if (x < subjectBounds.minX || x > subjectBounds.maxX || y < subjectBounds.minY || y > subjectBounds.maxY) continue;
+
+              const idx = (y * ANALYSIS_WIDTH + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              if (a < 24) continue;
+
+              const brightness = (r + g + b) / 3;
+              const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+              const cornerDistance = Math.sqrt(
+                (r - cornerAvgR) * (r - cornerAvgR) +
+                  (g - cornerAvgG) * (g - cornerAvgG) +
+                  (b - cornerAvgB) * (b - cornerAvgB),
+              );
+
+              const rightX = Math.min(ANALYSIS_WIDTH - 1, x + 1);
+              const downY = Math.min(ANALYSIS_HEIGHT - 1, y + 1);
+              const rightIdx = (y * ANALYSIS_WIDTH + rightX) * 4;
+              const downIdx = (downY * ANALYSIS_WIDTH + x) * 4;
+              const grad =
+                Math.abs(r - data[rightIdx]) +
+                Math.abs(g - data[rightIdx + 1]) +
+                Math.abs(b - data[rightIdx + 2]) +
+                Math.abs(r - data[downIdx]) +
+                Math.abs(g - data[downIdx + 1]) +
+                Math.abs(b - data[downIdx + 2]);
+
+              const centerBiasX = 1 - Math.min(1, Math.abs(x - centerX) / (ANALYSIS_WIDTH * 0.5));
+              const centerBiasY = 1 - Math.min(1, Math.abs(y - centerY) / (ANALYSIS_HEIGHT * 0.5));
+              const centerBias = Math.max(0, (centerBiasX + centerBiasY) / 2);
+
+              let pixelScore = 0;
+              pixelScore += Math.max(0, cornerDistance - 10) * 0.9;
+              pixelScore += Math.max(0, cornerBrightness - brightness - 2) * 1.15;
+              pixelScore += Math.max(0, chroma - Math.max(4, cornerChroma + 1)) * 1.2;
+              pixelScore += Math.max(0, grad - 12) * 0.55;
+              pixelScore += centerBias * 18;
+
+              if (
+                brightness >= cornerBrightness - 2 &&
+                chroma <= Math.max(6, cornerChroma + 2) &&
+                grad < 20
+              ) {
+                pixelScore *= 0.25;
+              }
+
+              anchorScoreMap[y][x] = pixelScore;
+              if (pixelScore > bestPixelScore) bestPixelScore = pixelScore;
+            }
+          }
+
+          const scoreThreshold = Math.max(14, bestPixelScore * 0.42);
+          const strictCenterThreshold = Math.max(10, bestPixelScore * 0.28);
+
+          for (let y = midTop; y <= midBottom; y += 1) {
+            for (let x = midLeft; x <= midRight; x += 1) {
+              const score = anchorScoreMap[y][x];
+              const inStrictCenter =
+                x >= ANALYSIS_WIDTH * 0.3 &&
+                x <= ANALYSIS_WIDTH * 0.7 &&
+                y >= ANALYSIS_HEIGHT * 0.16 &&
+                y <= ANALYSIS_HEIGHT * 0.84;
+
+              anchorCandidateMask[y][x] =
+                score >= scoreThreshold ||
+                (inStrictCenter && score >= strictCenterThreshold);
+            }
+          }
+
+          let bestAnchor: Point[] = [];
+          let bestAnchorScore = -Infinity;
+
+          for (let y = midTop; y <= midBottom; y += 1) {
+            for (let x = midLeft; x <= midRight; x += 1) {
+              if (!anchorCandidateMask[y][x] || anchorVisited[y][x]) continue;
+
+              const queue: Array<{ x: number; y: number }> = [{ x, y }];
+              const component: Point[] = [];
+              let head = 0;
+              anchorVisited[y][x] = true;
+
+              let minX = x;
+              let minY = y;
+              let maxX = x;
+              let maxY = y;
+              let compScore = 0;
+
+              while (head < queue.length) {
+                const current = queue[head];
+                head += 1;
+                component.push({ x: current.x, y: current.y });
+                compScore += anchorScoreMap[current.y][current.x];
+
+                if (current.x < minX) minX = current.x;
+                if (current.y < minY) minY = current.y;
+                if (current.x > maxX) maxX = current.x;
+                if (current.y > maxY) maxY = current.y;
+
+                for (const next of neighborOffsets) {
+                  const nextX = current.x + next.x;
+                  const nextY = current.y + next.y;
+                  if (nextX < midLeft || nextX > midRight || nextY < midTop || nextY > midBottom) continue;
+                  if (anchorVisited[nextY][nextX] || !anchorCandidateMask[nextY][nextX]) continue;
+                  anchorVisited[nextY][nextX] = true;
+                  queue.push({ x: nextX, y: nextY });
+                }
+              }
+
+              const compCenterX = (minX + maxX) / 2;
+              const compCenterY = (minY + maxY) / 2;
+              const centerPenalty =
+                Math.abs(compCenterX - centerX) / ANALYSIS_WIDTH +
+                Math.abs(compCenterY - centerY) / ANALYSIS_HEIGHT;
+              const boxW = maxX - minX + 1;
+              const boxH = maxY - minY + 1;
+
+              let score = compScore;
+              score += Math.max(0, 140 - centerPenalty * 260);
+              if (boxW >= ANALYSIS_WIDTH * 0.58 && boxH >= ANALYSIS_HEIGHT * 0.58) score -= 220;
+              if (boxH <= ANALYSIS_HEIGHT * 0.08) score -= 140;
+
+              if (score > bestAnchorScore) {
+                bestAnchorScore = score;
+                bestAnchor = component;
+              }
+            }
+          }
+
+          if (bestAnchor.length >= 16) {
+            const anchorGrowVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+              Array.from({ length: ANALYSIS_WIDTH }, () => false),
+            );
+            const anchorGrowQueue: Array<{ x: number; y: number }> = [];
+            let anchorGrowHead = 0;
+            const growThreshold = Math.max(6, bestPixelScore * 0.16);
+
+            for (const point of bestAnchor) {
+              if (anchorGrowVisited[point.y][point.x]) continue;
+              anchorGrowVisited[point.y][point.x] = true;
+              centerAnchorMask[point.y][point.x] = true;
+              anchorGrowQueue.push({ x: point.x, y: point.y });
+            }
+
+            while (anchorGrowHead < anchorGrowQueue.length) {
+              const current = anchorGrowQueue[anchorGrowHead];
+              anchorGrowHead += 1;
+
+              for (const next of neighborOffsets) {
+                const nextX = current.x + next.x;
+                const nextY = current.y + next.y;
+                if (nextX < 0 || nextY < 0 || nextX >= ANALYSIS_WIDTH || nextY >= ANALYSIS_HEIGHT) continue;
+                if (anchorGrowVisited[nextY][nextX]) continue;
+                if (whiteCornerBackground[nextY][nextX]) continue;
+                if (nextX < subjectBounds.minX || nextX > subjectBounds.maxX || nextY < subjectBounds.minY || nextY > subjectBounds.maxY) continue;
+                if (anchorScoreMap[nextY][nextX] < growThreshold) continue;
+
+                anchorGrowVisited[nextY][nextX] = true;
+                centerAnchorMask[nextY][nextX] = true;
+                anchorGrowQueue.push({ x: nextX, y: nextY });
+              }
+            }
+
+            useCenterAnchor = true;
+          }
+        }
+
+        const subjectSeedMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const insideSubjectBounds =
+              x >= subjectBounds.minX &&
+              x <= subjectBounds.maxX &&
+              y >= subjectBounds.minY &&
+              y <= subjectBounds.maxY;
+            const anchorAllowed = !whiteCornerMode || !useCenterAnchor || centerAnchorMask[y][x];
+            subjectSeedMask[y][x] =
+              seedMask[y][x] &&
+              !(whiteCornerMode && whiteCornerBackground[y][x]) &&
+              (!whiteCornerMode || insideSubjectBounds) &&
+              anchorAllowed;
+          }
+        }
+
+        const coreMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            const brightness = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            const dist = colorDistanceFromBorder(r, g, b);
+
+            coreMask[y][x] = hasMeaningfulTransparency
+              ? a > 40
+              : subjectSeedMask[y][x] &&
+                !edgeBackground[y][x] &&
+                a > 42 &&
+                (dist >= 40 ||
+                  brightness <= avgBorderBrightness - 14 ||
+                  chroma >= 22 ||
+                  brightness <= cornerBrightness - 20);
+          }
+        }
+
+        const corePixels = collectLargestComponent(coreMask);
+        let bestPixels: Point[] = [];
+
+        if (corePixels.length >= 18) {
+          const grownVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+            Array.from({ length: ANALYSIS_WIDTH }, () => false),
+          );
+          const growQueue: Array<{ x: number; y: number }> = [];
+          let growHead = 0;
+
+          for (const point of corePixels) {
+            if (grownVisited[point.y][point.x] || !subjectSeedMask[point.y][point.x]) continue;
+            grownVisited[point.y][point.x] = true;
+            growQueue.push({ x: point.x, y: point.y });
+            bestPixels.push({ x: point.x, y: point.y });
+          }
+
+          while (growHead < growQueue.length) {
+            const current = growQueue[growHead];
+            growHead += 1;
+
+            for (const next of neighborOffsets) {
+              const nextX = current.x + next.x;
+              const nextY = current.y + next.y;
+              if (
+                nextX < 0 ||
+                nextY < 0 ||
+                nextX >= ANALYSIS_WIDTH ||
+                nextY >= ANALYSIS_HEIGHT
+              ) {
+                continue;
+              }
+              if (grownVisited[nextY][nextX] || !subjectSeedMask[nextY][nextX]) continue;
+              grownVisited[nextY][nextX] = true;
+              growQueue.push({ x: nextX, y: nextY });
+              bestPixels.push({ x: nextX, y: nextY });
+            }
+          }
+        }
+
+        if (bestPixels.length < 48) {
+          bestPixels = collectLargestComponent(subjectSeedMask);
+        }
+
+        if (bestPixels.length < 48) {
+          resolve(null);
+          return;
+        }
+
+        const mainMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+        for (const point of bestPixels) {
+          mainMask[point.y][point.x] = true;
+        }
+
+        for (let pass = 0; pass < 2; pass += 1) {
+          const nextMask = mainMask.map((row) => row.slice());
+          for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
+            for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
+              if (!mainMask[y][x]) continue;
+
+              let neighborCount = 0;
+              for (const next of [
+                [x - 1, y],
+                [x + 1, y],
+                [x, y - 1],
+                [x, y + 1],
+                [x - 1, y - 1],
+                [x + 1, y - 1],
+                [x - 1, y + 1],
+                [x + 1, y + 1],
+              ]) {
+                if (mainMask[next[1]][next[0]]) neighborCount += 1;
+              }
+
+              if (neighborCount <= 1) {
+                nextMask[y][x] = false;
+              }
+            }
+          }
+
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              mainMask[y][x] = nextMask[y][x];
+            }
+          }
+        }
+
+        const cloneMask = (source: boolean[][]) => source.map((row) => row.slice());
+
+        const countNeighbors = (source: boolean[][], x: number, y: number) => {
+          let total = 0;
+          for (let yy = Math.max(0, y - 1); yy <= Math.min(ANALYSIS_HEIGHT - 1, y + 1); yy += 1) {
+            for (let xx = Math.max(0, x - 1); xx <= Math.min(ANALYSIS_WIDTH - 1, x + 1); xx += 1) {
+              if (xx === x && yy === y) continue;
+              if (source[yy][xx]) total += 1;
+            }
+          }
+          return total;
+        };
+
+        for (let pass = 0; pass < 2; pass += 1) {
+          const nextMask = cloneMask(mainMask);
+          for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
+            for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
+              if (mainMask[y][x] && countNeighbors(mainMask, x, y) <= 2) {
+                nextMask[y][x] = false;
+              }
+            }
+          }
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              mainMask[y][x] = nextMask[y][x];
+            }
+          }
+        }
+
+        for (let pass = 0; pass < 2; pass += 1) {
+          const nextMask = cloneMask(mainMask);
+          for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
+            for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
+              if (!mainMask[y][x] && countNeighbors(mainMask, x, y) >= 6) {
+                nextMask[y][x] = true;
+              }
+            }
+          }
+          for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+            for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+              mainMask[y][x] = nextMask[y][x];
+            }
+          }
+        }
+
+        let sumX = 0;
+        let sumY = 0;
+        let count = 0;
+        const boundaryPoints: Point[] = [];
+
+        for (let y = 1; y < ANALYSIS_HEIGHT - 1; y += 1) {
+          for (let x = 1; x < ANALYSIS_WIDTH - 1; x += 1) {
+            if (!mainMask[y][x]) continue;
+
+            sumX += x;
+            sumY += y;
+            count += 1;
+
+            const isBoundary =
+              !mainMask[y][x - 1] ||
+              !mainMask[y][x + 1] ||
+              !mainMask[y - 1][x] ||
+              !mainMask[y + 1][x];
+
+            if (isBoundary) {
+              boundaryPoints.push({ x, y });
+            }
+          }
+        }
+
+        if (count < 48 || boundaryPoints.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        const centroid = { x: sumX / count, y: sumY / count };
+        const keyOf = (x: number, y: number) => `${x},${y}`;
+        const pointFromKey = (key: string): Point => {
+          const [sx, sy] = key.split(",");
+          return { x: Number(sx), y: Number(sy) };
+        };
+        const isFilled = (x: number, y: number) =>
+          x >= 0 &&
+          y >= 0 &&
+          x < ANALYSIS_WIDTH &&
+          y < ANALYSIS_HEIGHT &&
+          mainMask[y][x];
+
+        const segments: Array<[Point, Point]> = [];
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            if (!mainMask[y][x]) continue;
+
+            if (!isFilled(x - 1, y)) segments.push([{ x, y }, { x, y: y + 1 }]);
+            if (!isFilled(x, y - 1)) segments.push([{ x, y }, { x: x + 1, y }]);
+            if (!isFilled(x + 1, y)) segments.push([{ x: x + 1, y }, { x: x + 1, y: y + 1 }]);
+            if (!isFilled(x, y + 1)) segments.push([{ x, y: y + 1 }, { x: x + 1, y: y + 1 }]);
+          }
+        }
+
+        if (segments.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        const adjacency = new Map<string, Array<{ edgeIndex: number; nextKey: string }>>();
+        const addAdjacency = (from: Point, to: Point, edgeIndex: number) => {
+          const fromKey = keyOf(from.x, from.y);
+          const toKey = keyOf(to.x, to.y);
+          const list = adjacency.get(fromKey) ?? [];
+          list.push({ edgeIndex, nextKey: toKey });
+          adjacency.set(fromKey, list);
+        };
+
+        segments.forEach(([start, end], edgeIndex) => {
+          addAdjacency(start, end, edgeIndex);
+          addAdjacency(end, start, edgeIndex);
+        });
+
+        const visitedEdges = new Set<number>();
+        const loops: Point[][] = [];
+
+        segments.forEach(([start, end], edgeIndex) => {
+          if (visitedEdges.has(edgeIndex)) return;
+
+          const startKey = keyOf(start.x, start.y);
+          let currentKey = keyOf(end.x, end.y);
+          const loopKeys = [startKey, currentKey];
+          visitedEdges.add(edgeIndex);
+
+          let guard = 0;
+          while (currentKey !== startKey && guard < segments.length + 8) {
+            guard += 1;
+            const nextAdj = (adjacency.get(currentKey) ?? []).find(
+              (candidate) => !visitedEdges.has(candidate.edgeIndex),
+            );
+
+            if (!nextAdj) break;
+
+            visitedEdges.add(nextAdj.edgeIndex);
+            currentKey = nextAdj.nextKey;
+            loopKeys.push(currentKey);
+          }
+
+          if (currentKey === startKey && loopKeys.length >= 5) {
+            const deduped = loopKeys.slice(0, -1).map(pointFromKey);
+            if (deduped.length >= 4) {
+              loops.push(deduped);
+            }
+          }
+        });
+
+        const polygonArea = (points: Point[]) => {
+          let area = 0;
+          for (let i = 0; i < points.length; i += 1) {
+            const a = points[i];
+            const b = points[(i + 1) % points.length];
+            area += a.x * b.y - b.x * a.y;
+          }
+          return area / 2;
+        };
+
+        const outerLoop = loops.sort(
+          (a, b) => Math.abs(polygonArea(b)) - Math.abs(polygonArea(a)),
+        )[0];
+
+        if (!outerLoop || outerLoop.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        const smoothClosedPoints = (points: Point[], radius = 2) => {
+          if (points.length < radius * 2 + 3) {
+            return points.map((point) => ({ x: point.x, y: point.y }));
+          }
+
+          return points.map((_, index) => {
+            let sumX = 0;
+            let sumY = 0;
+            let samples = 0;
+
+            for (let offset = -radius; offset <= radius; offset += 1) {
+              const point = points[(index + offset + points.length) % points.length];
+              sumX += point.x;
+              sumY += point.y;
+              samples += 1;
+            }
+
+            return { x: sumX / samples, y: sumY / samples };
+          });
+        };
+
+        const lightlySmoothedLoop = smoothClosedPoints(outerLoop, 1);
+        const simplifiedPoints = cbSimplifyClosedPoints(lightlySmoothedLoop, 1.15);
+        const resampledPoints = cbResampleClosedPoints(simplifiedPoints, 112);
+        const finalPoints = smoothClosedPoints(cbSimplifyClosedPoints(resampledPoints, 1.25), 1);
+
+        if (finalPoints.length < 24) {
+          resolve(null);
+          return;
+        }
+
+        resolve({
+          path: cbBuildClosedLinePath(finalPoints),
+          points: finalPoints,
+          centroid,
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+};
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -2305,7 +3428,7 @@ const effectiveHoleAutoCutline = useMemo(() => {
     });
 
     buildTransparentTraceSourceUrl(uploadState.previewUrl)
-      .then((traceSourceUrl: string) => buildAutoCutlineFromImage(traceSourceUrl))
+      .then((traceSourceUrl: string) => buildAutoCutlineFromForegroundMask(traceSourceUrl))
       .then((result) => {
       if (cancelled) return;
 
@@ -2319,7 +3442,7 @@ const rawBounds = cbGetClosedBounds(result.points);
 
         setAutoCutline({
           status: "ready",
-          path: cbBuildSmoothClosedPath(result.points),
+          path: result.path,
           points: result.points,
           centroid: rawCentroid,
         });
@@ -2756,7 +3879,6 @@ const rawBounds = cbGetClosedBounds(result.points);
                 <span>칼선 여백: 좌측 mm 버튼</span>
               </div>
             </div>
-
 
             <div
               className={`mt-4 overflow-hidden rounded-[28px] border ${
@@ -3431,6 +4553,7 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
         }
 
         ctx.putImageData(imageData, 0, 0);
+
         resolve(canvas.toDataURL("image/png"));
       } catch {
         resolve("");
@@ -3442,7 +4565,6 @@ async function retainLargestOpaqueIslandFromDataUrl(inputUrl: string): Promise<s
   });
 }
 
-
 async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTransparentTraceSourceUrlCore>): Promise<Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>> {
   const intermediateUrl = await buildTransparentTraceSourceUrlCore(...args);
 
@@ -3453,17 +4575,4 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
