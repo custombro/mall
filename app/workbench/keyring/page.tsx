@@ -3961,24 +3961,60 @@ if (typeof window !== "undefined") {
       {
         name: "WHITE_JPG_CENTER_SQUARE_AUTO_CUTLINE",
         input: "center-square",
-        assert: (output) =>
-          !!output &&
-          output.points.length >= 8 &&
-          output.centroid.x >= 45 &&
-          output.centroid.x <= 110 &&
-          output.centroid.y >= 30 &&
-          output.centroid.y <= 90,
-        describeFailure: (output) =>
-          output
-            ? "POINTS=" +
-              output.points.length +
-              "|CENTROID=" +
-              output.centroid.x.toFixed(2) +
-              "," +
-              output.centroid.y.toFixed(2) +
-              "|PATHLEN=" +
-              output.path.length
-            : "NULL_RESULT",
+        assert: (output) => {
+          if (!output || output.points.length < 8) return false
+          const xs = output.points.map((point) => point.x)
+          const ys = output.points.map((point) => point.y)
+          const minX = Math.min(...xs)
+          const maxX = Math.max(...xs)
+          const minY = Math.min(...ys)
+          const maxY = Math.max(...ys)
+          const width = maxX - minX
+          const height = maxY - minY
+          const centerX = (minX + maxX) / 2
+          const centerY = (minY + maxY) / 2
+
+          return (
+            width >= 60 &&
+            width <= 150 &&
+            height >= 45 &&
+            height <= 130 &&
+            Math.abs(output.centroid.x - centerX) <= Math.max(6, width * 0.14) &&
+            Math.abs(output.centroid.y - centerY) <= Math.max(6, height * 0.14)
+          )
+        },
+        describeFailure: (output) => {
+          if (!output) return "NULL_RESULT"
+          const xs = output.points.map((point) => point.x)
+          const ys = output.points.map((point) => point.y)
+          const minX = Math.min(...xs)
+          const maxX = Math.max(...xs)
+          const minY = Math.min(...ys)
+          const maxY = Math.max(...ys)
+          const width = maxX - minX
+          const height = maxY - minY
+          const centerX = (minX + maxX) / 2
+          const centerY = (minY + maxY) / 2
+
+          return (
+            "POINTS=" +
+            output.points.length +
+            "|CENTROID=" +
+            output.centroid.x.toFixed(2) +
+            "," +
+            output.centroid.y.toFixed(2) +
+            "|BOX_CENTER=" +
+            centerX.toFixed(2) +
+            "," +
+            centerY.toFixed(2) +
+            "|WIDTH=" +
+            width.toFixed(2) +
+            "|HEIGHT=" +
+            height.toFixed(2) +
+            "|PATHLEN=" +
+            output.path.length
+          )
+        },
       },
       {
         name: "WHITE_JPG_LARGEST_ISLAND_AUTO_CUTLINE",
