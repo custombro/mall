@@ -2245,6 +2245,106 @@ function runWhiteJpgSelftestCases<TInput, TOutput>(
   }
 }
 /* CB_WHITE_JPG_SELFTEST_SAFE_REGION_END */
+/* CB_WHITE_JPG_TRACE_SELFTEST_BINDING_START */
+type WhiteJpgTraceSelftestInput = "center-square" | "left-large-right-small"
+type WhiteJpgTraceSelftestOutput = {
+  traceSourceUrl: string
+}
+
+function buildWhiteJpgSyntheticSourceUrl(mode: WhiteJpgTraceSelftestInput): string {
+  const canvas = document.createElement("canvas")
+  canvas.width = 160
+  canvas.height = 120
+
+  const ctx = canvas.getContext("2d")
+  if (!ctx) {
+    throw new Error("CTX_UNAVAILABLE")
+  }
+
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  ctx.fillStyle = "#111111"
+  if (mode === "center-square") {
+    ctx.fillRect(40, 30, 80, 60)
+  } else {
+    ctx.fillRect(18, 20, 78, 78)
+    ctx.fillRect(118, 44, 16, 16)
+  }
+
+  return canvas.toDataURL("image/jpeg", 0.92)
+}
+
+async function runWhiteJpgTraceSourceSelftests(): Promise<WhiteJpgSelftestSummary> {
+  const cases: WhiteJpgSelftestCase<WhiteJpgTraceSelftestInput, WhiteJpgTraceSelftestOutput>[] = [
+    {
+      name: "WHITE_JPG_CENTER_SQUARE_TRACE_SOURCE",
+      input: "center-square",
+      assert: (output) => typeof output.traceSourceUrl === "string" && output.traceSourceUrl.startsWith("data:image/"),
+      describeFailure: (output) => `TRACE_SOURCE_INVALID:${String(output.traceSourceUrl).slice(0, 64)}`,
+    },
+    {
+      name: "WHITE_JPG_LARGEST_ISLAND_TRACE_SOURCE",
+      input: "left-large-right-small",
+      assert: (output) => typeof output.traceSourceUrl === "string" && output.traceSourceUrl.startsWith("data:image/"),
+      describeFailure: (output) => `TRACE_SOURCE_INVALID:${String(output.traceSourceUrl).slice(0, 64)}`,
+    },
+  ]
+
+  const results: WhiteJpgSelftestResult[] = []
+
+  for (const testCase of cases) {
+    try {
+      const sourceUrl = buildWhiteJpgSyntheticSourceUrl(testCase.input)
+      const traceSourceUrl = await buildTransparentTraceSourceUrlCore(sourceUrl)
+      const output: WhiteJpgTraceSelftestOutput = { traceSourceUrl }
+      const ok = testCase.assert(output)
+      const reason = ok ? "PASS" : (testCase.describeFailure?.(output) ?? "ASSERT_FAILED")
+
+      results.push({
+        name: testCase.name,
+        ok,
+        reason,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      results.push({
+        name: testCase.name,
+        ok: false,
+        reason: `THREW:${message}`,
+      })
+    }
+  }
+
+  const pass = results.filter((result) => result.ok).length
+  return {
+    total: results.length,
+    pass,
+    fail: results.length - pass,
+    results,
+  }
+}
+
+function bindWhiteJpgTraceSourceSelftests(): void {
+  if (typeof window === "undefined") return
+
+  const globalWindow = window as Window & typeof globalThis & {
+    __CB_WHITE_JPG_TRACE_SELFTEST_BOUND__?: boolean
+    __CB_WHITE_JPG_TRACE_SELFTEST__?: () => Promise<WhiteJpgSelftestSummary>
+    __CB_WHITE_JPG_TRACE_SELFTEST_LAST__?: WhiteJpgSelftestSummary | null
+  }
+
+  globalWindow.__CB_WHITE_JPG_TRACE_SELFTEST_BOUND__ = true
+  globalWindow.__CB_WHITE_JPG_TRACE_SELFTEST__ = async () => {
+    const summary = await runWhiteJpgTraceSourceSelftests()
+    globalWindow.__CB_WHITE_JPG_TRACE_SELFTEST_LAST__ = summary
+    console.info("[CB_WHITE_JPG_TRACE_SELFTEST]", `${summary.pass}/${summary.total}`, summary)
+    return summary
+  }
+}
+
+bindWhiteJpgTraceSourceSelftests()
+/* CB_WHITE_JPG_TRACE_SELFTEST_BINDING_END */
 export default function KeyringWorkbenchPage() {
   const [shapeMode, setShapeMode] = useState<ShapeMode>("원형");
   const [material, setMaterial] = useState<Material>("투명 아크릴");
