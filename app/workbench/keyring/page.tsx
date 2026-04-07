@@ -2483,9 +2483,7 @@ const buildAutoCutlineFromForegroundMask = async (
   url: string,
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> => {
 /* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_START */
-useEffect(() => {
-  if (typeof window === "undefined") return
-
+if (typeof window !== "undefined") {
   const globalWindow = window as Window & typeof globalThis & {
     __CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BOUND__?: boolean
     __CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST__?: () => Promise<WhiteJpgSelftestSummary>
@@ -2575,7 +2573,7 @@ useEffect(() => {
     console.info("[CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST]", `${summary.pass}/${summary.total}`, summary)
     return summary
   }
-}, [buildAutoCutlineFromForegroundMask, buildTransparentTraceSourceUrl])
+}
 /* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_END */
 
   return new Promise((resolve) => {
