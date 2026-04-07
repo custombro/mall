@@ -2482,6 +2482,102 @@ const effectiveHoleAutoCutline = useMemo(() => {
 const buildAutoCutlineFromForegroundMask = async (
   url: string,
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> => {
+/* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_START */
+useEffect(() => {
+  if (typeof window === "undefined") return
+
+  const globalWindow = window as Window & typeof globalThis & {
+    __CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BOUND__?: boolean
+    __CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST__?: () => Promise<WhiteJpgSelftestSummary>
+    __CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_LAST__?: WhiteJpgSelftestSummary | null
+  }
+
+  globalWindow.__CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BOUND__ = true
+  globalWindow.__CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST__ = async () => {
+    const cases: WhiteJpgSelftestCase<WhiteJpgTraceSelftestInput, { path: string; points: Point[]; centroid: Point } | null>[] = [
+      {
+        name: "WHITE_JPG_CENTER_SQUARE_AUTO_CUTLINE",
+        input: "center-square",
+        assert: (output) =>
+          !!output &&
+          output.points.length >= 8 &&
+          output.centroid.x >= 45 &&
+          output.centroid.x <= 110 &&
+          output.centroid.y >= 30 &&
+          output.centroid.y <= 90,
+        describeFailure: (output) =>
+          output
+            ? "POINTS=" +
+              output.points.length +
+              "|CENTROID=" +
+              output.centroid.x.toFixed(2) +
+              "," +
+              output.centroid.y.toFixed(2) +
+              "|PATHLEN=" +
+              output.path.length
+            : "NULL_RESULT",
+      },
+      {
+        name: "WHITE_JPG_LARGEST_ISLAND_AUTO_CUTLINE",
+        input: "left-large-right-small",
+        assert: (output) =>
+          !!output &&
+          output.points.length >= 8 &&
+          output.centroid.x <= 72,
+        describeFailure: (output) =>
+          output
+            ? "POINTS=" +
+              output.points.length +
+              "|CENTROID=" +
+              output.centroid.x.toFixed(2) +
+              "," +
+              output.centroid.y.toFixed(2) +
+              "|PATHLEN=" +
+              output.path.length
+            : "NULL_RESULT",
+      },
+    ]
+
+    const results: WhiteJpgSelftestResult[] = []
+
+    for (const testCase of cases) {
+      try {
+        const sourceUrl = buildWhiteJpgSyntheticSourceUrl(testCase.input)
+        const traceSourceUrl = await buildTransparentTraceSourceUrl(sourceUrl)
+        const output = await buildAutoCutlineFromForegroundMask(traceSourceUrl)
+        const ok = testCase.assert(output)
+        const reason = ok ? "PASS" : (testCase.describeFailure?.(output) ?? "ASSERT_FAILED")
+
+        results.push({
+          name: testCase.name,
+          ok,
+          reason,
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        results.push({
+          name: testCase.name,
+          ok: false,
+          reason: `THREW:${message}`,
+        })
+      }
+    }
+
+    const pass = results.filter((result) => result.ok).length
+    const summary: WhiteJpgSelftestSummary = {
+      total: results.length,
+      pass,
+      fail: results.length - pass,
+      results,
+    }
+
+    globalWindow.__CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_LAST__ = summary
+    console.info("[CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST]", `${summary.pass}/${summary.total}`, summary)
+    return summary
+  }
+}, [buildAutoCutlineFromForegroundMask, buildTransparentTraceSourceUrl])
+/* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_END */
+
   return new Promise((resolve) => {
     const img = new Image();
 
