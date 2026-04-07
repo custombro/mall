@@ -2245,13 +2245,6 @@ function runWhiteJpgSelftestCases<TInput, TOutput>(
   }
 }
 /* CB_WHITE_JPG_SELFTEST_SAFE_REGION_END */
-/* CB_WHITE_JPG_DEPLOY_MARKER_REGION_START */
-const CB_WHITE_JPG_DEPLOY_MARKER = 'CB_WHITE_JPG_DEPLOY_MARKER_20260408_001418'
-
-try {
-  ;(globalThis as typeof globalThis & { __CB_WHITE_JPG_DEPLOY_MARKER__?: string }).__CB_WHITE_JPG_DEPLOY_MARKER__ = CB_WHITE_JPG_DEPLOY_MARKER
-} catch {}
-/* CB_WHITE_JPG_DEPLOY_MARKER_REGION_END */
 export default function KeyringWorkbenchPage() {
   const [shapeMode, setShapeMode] = useState<ShapeMode>("원형");
   const [material, setMaterial] = useState<Material>("투명 아크릴");
