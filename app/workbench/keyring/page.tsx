@@ -1956,16 +1956,38 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
           return;
         }
 
-        const borderSamples: Array<{ r: number; g: number; b: number }> = [];
-
-        const pushBorderSample = (x: number, y: number) => {
-          if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
+        const getPixel = (x: number, y: number) => {
           const idx = (y * workWidth + x) * 4;
-          borderSamples.push({
+          return {
+            idx,
             r: data[idx],
             g: data[idx + 1],
             b: data[idx + 2],
-          });
+            a: data[idx + 3],
+          };
+        };
+
+        const getGrad = (x: number, y: number) => {
+          const current = getPixel(x, y);
+          const rightX = Math.min(workWidth - 1, x + 1);
+          const downY = Math.min(workHeight - 1, y + 1);
+          const right = getPixel(rightX, y);
+          const down = getPixel(x, downY);
+          return (
+            Math.abs(current.r - right.r) +
+            Math.abs(current.g - right.g) +
+            Math.abs(current.b - right.b) +
+            Math.abs(current.r - down.r) +
+            Math.abs(current.g - down.g) +
+            Math.abs(current.b - down.b)
+          );
+        };
+
+        const borderSamples: Array<{ r: number; g: number; b: number }> = [];
+        const pushBorderSample = (x: number, y: number) => {
+          if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
+          const pixel = getPixel(x, y);
+          borderSamples.push({ r: pixel.r, g: pixel.g, b: pixel.b });
         };
 
         for (let x = 0; x < workWidth; x += 1) {
@@ -1986,7 +2008,6 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
         let sumG = 0;
         let sumB = 0;
         let sumChroma = 0;
-
         for (const sample of borderSamples) {
           sumR += sample.r;
           sumG += sample.g;
@@ -2001,18 +2022,14 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
         const borderChroma = sumChroma / borderSamples.length;
 
         const matchesBorderWhite = (x: number, y: number) => {
-          const idx = (y * workWidth + x) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          const brightness = (r + g + b) / 3;
-          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+          const pixel = getPixel(x, y);
+          const brightness = (pixel.r + pixel.g + pixel.b) / 3;
+          const chroma = Math.max(pixel.r, pixel.g, pixel.b) - Math.min(pixel.r, pixel.g, pixel.b);
           const borderDistance = Math.sqrt(
-            (r - borderAvgR) * (r - borderAvgR) +
-              (g - borderAvgG) * (g - borderAvgG) +
-              (b - borderAvgB) * (b - borderAvgB),
+            (pixel.r - borderAvgR) * (pixel.r - borderAvgR) +
+              (pixel.g - borderAvgG) * (pixel.g - borderAvgG) +
+              (pixel.b - borderAvgB) * (pixel.b - borderAvgB),
           );
-
           return (
             brightness >= borderBrightness - 18 &&
             chroma <= Math.max(24, borderChroma + 10) &&
@@ -2038,6 +2055,73 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
           return;
         }
 
+        const centerProtectionMap: boolean[][] = Array.from({ length: workHeight }, () =>
+          Array.from({ length: workWidth }, () => false),
+        );
+
+        const centerLeft = Math.floor(workWidth * 0.16);
+        const centerRight = Math.ceil(workWidth * 0.84);
+        const centerTop = Math.floor(workHeight * 0.08);
+        const centerBottom = Math.ceil(workHeight * 0.92);
+        const centerX = (workWidth - 1) / 2;
+        const centerY = (workHeight - 1) / 2;
+        let bestProtectScore = 0;
+        const protectScoreMap: number[][] = Array.from({ length: workHeight }, () =>
+          Array.from({ length: workWidth }, () => 0),
+        );
+
+        for (let y = centerTop; y <= centerBottom; y += 1) {
+          for (let x = centerLeft; x <= centerRight; x += 1) {
+            const pixel = getPixel(x, y);
+            if (pixel.a < 24) continue;
+
+            const brightness = (pixel.r + pixel.g + pixel.b) / 3;
+            const chroma = Math.max(pixel.r, pixel.g, pixel.b) - Math.min(pixel.r, pixel.g, pixel.b);
+            const borderDistance = Math.sqrt(
+              (pixel.r - borderAvgR) * (pixel.r - borderAvgR) +
+                (pixel.g - borderAvgG) * (pixel.g - borderAvgG) +
+                (pixel.b - borderAvgB) * (pixel.b - borderAvgB),
+            );
+            const grad = getGrad(x, y);
+
+            const centerBiasX = 1 - Math.min(1, Math.abs(x - centerX) / (workWidth * 0.5));
+            const centerBiasY = 1 - Math.min(1, Math.abs(y - centerY) / (workHeight * 0.5));
+            const centerBias = Math.max(0, (centerBiasX + centerBiasY) / 2);
+
+            let score = 0;
+            score += Math.max(0, borderDistance - 8) * 0.95;
+            score += Math.max(0, borderBrightness - brightness - 2) * 1.1;
+            score += Math.max(0, chroma - Math.max(4, borderChroma + 1)) * 1.05;
+            score += Math.max(0, grad - 10) * 0.55;
+            score += centerBias * 16;
+
+            if (matchesBorderWhite(x, y) && grad < 18 && chroma <= Math.max(8, borderChroma + 2)) {
+              score *= 0.28;
+            }
+
+            protectScoreMap[y][x] = score;
+            if (score > bestProtectScore) bestProtectScore = score;
+          }
+        }
+
+        const protectThreshold = Math.max(10, bestProtectScore * 0.36);
+        const strictCenterThreshold = Math.max(8, bestProtectScore * 0.24);
+
+        for (let y = centerTop; y <= centerBottom; y += 1) {
+          for (let x = centerLeft; x <= centerRight; x += 1) {
+            const inStrictCenter =
+              x >= workWidth * 0.28 &&
+              x <= workWidth * 0.72 &&
+              y >= workHeight * 0.16 &&
+              y <= workHeight * 0.84;
+
+            const score = protectScoreMap[y][x];
+            centerProtectionMap[y][x] =
+              score >= protectThreshold ||
+              (inStrictCenter && score >= strictCenterThreshold);
+          }
+        }
+
         const backgroundMask: boolean[][] = Array.from({ length: workHeight }, () =>
           Array.from({ length: workWidth }, () => false),
         );
@@ -2047,6 +2131,7 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
         const enqueue = (x: number, y: number) => {
           if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
           if (backgroundMask[y][x]) return;
+          if (centerProtectionMap[y][x]) return;
           if (!matchesBorderWhite(x, y)) return;
           backgroundMask[y][x] = true;
           queue.push({ x, y });
@@ -2079,8 +2164,8 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
         for (let y = 0; y < workHeight; y += 1) {
           for (let x = 0; x < workWidth; x += 1) {
             if (!backgroundMask[y][x]) continue;
-            const idx = (y * workWidth + x) * 4;
-            data[idx + 3] = 0;
+            const pixel = getPixel(x, y);
+            data[pixel.idx + 3] = 0;
             removedBackgroundPixels += 1;
           }
         }
@@ -2091,7 +2176,6 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
         }
 
         ctx.putImageData(imageData, 0, 0);
-
         resolve(canvas.toDataURL("image/png"));
       } catch {
         resolve(sourceUrl);
