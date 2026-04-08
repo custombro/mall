@@ -3840,6 +3840,48 @@ const buildAutoCutlineFromForegroundMask = async (
         cancelled = true;
       };
     }
+      /* CB_JPEG_REVIEW_LANE_START */
+      
+const jpegUploadMimeTypeForAutoCutline = ((uploadState as { mimeType?: string } | null)?.mimeType ?? "");
+      
+const jpegUploadFileNameForAutoCutline =
+      
+  ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
+      
+    (uploadState as { fileName?: string; name?: string } | null)?.name ??
+      
+    "");
+      
+const isJpegUploadForAutoCutlineLocal =
+      
+  /^image\/jpe?g$/i.test(jpegUploadMimeTypeForAutoCutline) ||
+      
+  /\.jpe?g$/i.test(jpegUploadFileNameForAutoCutline);
+      
+if (isJpegUploadForAutoCutlineLocal) {
+      
+  setAutoCutline((current) => ({
+      
+    ...current,
+      
+    status: "idle",
+      
+    path: null,
+      
+    points: [],
+      
+    centroid: null,
+      
+    sizeLabel: "",
+      
+    previewUrl: uploadState.previewUrl,
+      
+  }));
+      
+  return;
+      
+}
+      /* CB_JPEG_REVIEW_LANE_END */
 
     setAutoCutline({
       status: "processing",
@@ -4557,7 +4599,7 @@ if (typeof window !== "undefined") {
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {isJpegUploadForAutoCutline ? "JPG 검수 필요" : autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                      자동칼선 상태: {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -4649,7 +4691,7 @@ if (typeof window !== "undefined") {
                     : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                 }`}
               >
-                {autoCutlineLocked ? "자동칼선 생성 후 주문" : "주문으로"}
+                {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutlineLocked ? "자동칼선 생성 후 주문" : "주문으로"}
               </button>
             </div>
           </aside>
