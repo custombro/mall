@@ -2170,9 +2170,86 @@ async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<st
           }
         }
 
-        if (removedBackgroundPixels < Math.max(20, Math.floor(workWidth * workHeight * 0.02))) {
-          resolve(sourceUrl);
-          return;
+        const minimumRemovalPixels = Math.max(20, Math.floor(workWidth * workHeight * 0.02));
+
+        if (removedBackgroundPixels < minimumRemovalPixels) {
+          const looseBackgroundMask: boolean[][] = Array.from({ length: workHeight }, () =>
+            Array.from({ length: workWidth }, () => false),
+          );
+          const looseQueue: Array<{ x: number; y: number }> = [];
+          let looseHead = 0;
+
+          const matchesLooseBorderWhite = (x: number, y: number) => {
+            const pixel = getPixel(x, y);
+            const brightness = (pixel.r + pixel.g + pixel.b) / 3;
+            const chroma = Math.max(pixel.r, pixel.g, pixel.b) - Math.min(pixel.r, pixel.g, pixel.b);
+            const borderDistance = Math.sqrt(
+              (pixel.r - borderAvgR) * (pixel.r - borderAvgR) +
+                (pixel.g - borderAvgG) * (pixel.g - borderAvgG) +
+                (pixel.b - borderAvgB) * (pixel.b - borderAvgB),
+            );
+            const grad = getGrad(x, y);
+
+            return (
+              brightness >= borderBrightness - 32 &&
+              chroma <= Math.max(34, borderChroma + 16) &&
+              borderDistance <= 74 &&
+              grad <= 68
+            );
+          };
+
+          const enqueueLoose = (x: number, y: number) => {
+            if (x < 0 || y < 0 || x >= workWidth || y >= workHeight) return;
+            if (looseBackgroundMask[y][x]) return;
+            if (centerProtectionMap[y][x]) return;
+            if (!matchesLooseBorderWhite(x, y)) return;
+            looseBackgroundMask[y][x] = true;
+            looseQueue.push({ x, y });
+          };
+
+          for (let x = 0; x < workWidth; x += 1) {
+            enqueueLoose(x, 0);
+            enqueueLoose(x, workHeight - 1);
+          }
+          for (let y = 1; y < workHeight - 1; y += 1) {
+            enqueueLoose(0, y);
+            enqueueLoose(workWidth - 1, y);
+          }
+
+          while (looseHead < looseQueue.length) {
+            const current = looseQueue[looseHead];
+            looseHead += 1;
+
+            enqueueLoose(current.x - 1, current.y);
+            enqueueLoose(current.x + 1, current.y);
+            enqueueLoose(current.x, current.y - 1);
+            enqueueLoose(current.x, current.y + 1);
+            enqueueLoose(current.x - 1, current.y - 1);
+            enqueueLoose(current.x + 1, current.y - 1);
+            enqueueLoose(current.x - 1, current.y + 1);
+            enqueueLoose(current.x + 1, current.y + 1);
+          }
+
+          let looseRemovedBackgroundPixels = 0;
+          for (let y = 0; y < workHeight; y += 1) {
+            for (let x = 0; x < workWidth; x += 1) {
+              if (!looseBackgroundMask[y][x]) continue;
+              if (backgroundMask[y][x]) continue;
+              const pixel = getPixel(x, y);
+              data[pixel.idx + 3] = 0;
+              looseRemovedBackgroundPixels += 1;
+            }
+          }
+
+          removedBackgroundPixels += looseRemovedBackgroundPixels;
+
+          if (
+            removedBackgroundPixels <
+            Math.max(12, Math.floor(workWidth * workHeight * 0.006))
+          ) {
+            resolve(sourceUrl);
+            return;
+          }
         }
 
         ctx.putImageData(imageData, 0, 0);
