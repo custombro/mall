@@ -161,6 +161,8 @@ type HolePosition = Point;
 
 type UploadState = {
   name: string;
+  fileName: string;
+  mimeType: string;
   typeLabel: string;
   sizeLabel: string;
   previewUrl: string | null;
@@ -1605,6 +1607,11 @@ function KeyringCanvas({
   const hasUpload = Boolean(renderImageUrl);
   const showShapeImage = hasUpload && shapeMode !== "자동칼선";
   const showAutoImage = hasUpload && shapeMode === "자동칼선";
+  const [isClientReady, setIsClientReady] = useState(false);
+
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
   const minGuideOuterRadius = getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[0]);
   const maxGuideOuterRadius =
     getAutoCutlineGuideOuterRadius(holeSize, AUTO_CUTLINE_MARGIN_OPTIONS[AUTO_CUTLINE_MARGIN_OPTIONS.length - 1]);
@@ -1647,11 +1654,20 @@ function KeyringCanvas({
     if (y > maxY) maxY = y;
   }
 
-  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
-    minX = 0;
-    minY = 0;
-    maxX = 1;
-    maxY = 1;
+  const hasPoints = Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY);
+
+  if (!hasPoints) {
+    return {
+      x: ART_FRAME.x,
+      y: ART_FRAME.y,
+      minX: ART_FRAME.x,
+      minY: ART_FRAME.y,
+      maxX: ART_FRAME.x + ART_FRAME.width,
+      maxY: ART_FRAME.y + ART_FRAME.height,
+      width: ART_FRAME.width,
+      height: ART_FRAME.height,
+      hasPoints: false,
+    };
   }
 
   const x = minX;
@@ -1659,7 +1675,7 @@ function KeyringCanvas({
   const width = Math.max(1, maxX - minX);
   const height = Math.max(1, maxY - minY);
 
-  return { x, y, minX, minY, maxX, maxY, width, height };
+  return { x, y, minX, minY, maxX, maxY, width, height, hasPoints: true };
 })();
 
   const autoCutlinePreviewPath =
@@ -1674,12 +1690,55 @@ function KeyringCanvas({
 const autoCutlinePending = shapeMode === "자동칼선";
 const previewImageClipPath =
   shapeMode === "자동칼선"
-    ? autoCutlinePreviewPath
-    : shapeMode === "원형" || shapeMode === "사각형"
-      ? baseShapeUnionPreviewPath
-      : null;
+    ? isClientReady &&
+      typeof autoCutlinePreviewPath === "string" &&
+      autoCutlinePreviewPath.trim() !== ""
+      ? autoCutlinePreviewPath
+      : null
+    : baseShapeUnionPreviewPath;
 
-  return (
+const safeAutoCutlinePath =
+  isClientReady &&
+  shapeMode === "자동칼선" &&
+  typeof autoCutlinePreviewPath === "string" &&
+  autoCutlinePreviewPath.trim() !== ""
+    ? normalizePreviewPath(autoCutlinePreviewPath)
+    : undefined;
+
+const shouldRenderAutoCutlineSvgPath =
+  typeof safeAutoCutlinePath === "string" &&
+  safeAutoCutlinePath.trim() !== "";
+
+const hasStableAutoPreviewBounds =
+  Boolean(previewContourBounds.hasPoints) &&
+  Number.isFinite(previewContourBounds.x) &&
+  Number.isFinite(previewContourBounds.y) &&
+  Number.isFinite(previewContourBounds.width) &&
+  Number.isFinite(previewContourBounds.height) &&
+  previewContourBounds.width > 0 &&
+  previewContourBounds.height > 0;
+
+const effectiveAutoImageX = hasStableAutoPreviewBounds
+  ? previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)
+  : ART_FRAME.x;
+
+const effectiveAutoImageY = hasStableAutoPreviewBounds
+  ? previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)
+  : ART_FRAME.y;
+
+const effectiveAutoImageWidth = hasStableAutoPreviewBounds
+  ? Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))
+  : ART_FRAME.width;
+
+const effectiveAutoImageHeight = hasStableAutoPreviewBounds
+  ? Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0))
+  : ART_FRAME.height;
+
+const effectiveAutoImageClipPath =
+  hasStableAutoPreviewBounds && previewImageClipPath
+    ? "url(#cb-preview-image-clip)"
+    : undefined;
+return (
     <svg
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
       className="h-full w-full"
@@ -1692,11 +1751,13 @@ const previewImageClipPath =
           <stop offset="100%" stopColor="#1d2f47" stopOpacity="1" />
         </linearGradient>
         <clipPath id={clipId}>{renderClipShape(shapeMode)}</clipPath>
-        {normalizePreviewPath(previewImageClipPath) ? (
-          <clipPath id="cb-preview-image-clip">
+        <clipPath id="cb-preview-image-clip">
+          {isClientReady && shapeMode === "자동칼선" && normalizePreviewPath(previewImageClipPath) ? (
             <path d={normalizePreviewPath(previewImageClipPath)} />
-          </clipPath>
-        ) : null}
+          ) : (
+            renderClipShape(shapeMode)
+          )}
+        </clipPath>
       </defs>
 
       <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
@@ -1791,17 +1852,17 @@ const previewImageClipPath =
 
           {showAutoImage ? (
             <image
-              href={autoRenderImageUrl!}
-                x={previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)}
-                y={previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)}
-                width={Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))}
-                height={Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0))}
+              href={autoRenderImageUrl ?? renderImageUrl!}
+                x={effectiveAutoImageX}
+                y={effectiveAutoImageY}
+                width={effectiveAutoImageWidth}
+                height={effectiveAutoImageHeight}
               preserveAspectRatio="xMidYMid meet"
-              clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
+              clipPath={effectiveAutoImageClipPath}
             />
           ) : null}
 
-          {(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
+          {(isClientReady && shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
             <path
               d={normalizePreviewPath(autoCutlinePreviewPath) || cbBuildSmoothClosedPath(cbSimplifyClosedPoints(autoCutlinePreviewPoints, autoCutlinePreviewMinGap))}
               fill="none"
@@ -3840,48 +3901,6 @@ const buildAutoCutlineFromForegroundMask = async (
         cancelled = true;
       };
     }
-      /* CB_JPEG_REVIEW_LANE_START */
-      
-const jpegUploadMimeTypeForAutoCutline = ((uploadState as { mimeType?: string } | null)?.mimeType ?? "");
-      
-const jpegUploadFileNameForAutoCutline =
-      
-  ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
-      
-    (uploadState as { fileName?: string; name?: string } | null)?.name ??
-      
-    "");
-      
-const isJpegUploadForAutoCutlineLocal =
-      
-  /^image\/jpe?g$/i.test(jpegUploadMimeTypeForAutoCutline) ||
-      
-  /\.jpe?g$/i.test(jpegUploadFileNameForAutoCutline);
-      
-if (isJpegUploadForAutoCutlineLocal) {
-      
-  setAutoCutline((current) => ({
-      
-    ...current,
-      
-    status: "idle",
-      
-    path: null,
-      
-    points: [],
-      
-    centroid: null,
-      
-    sizeLabel: "",
-      
-    previewUrl: uploadState.previewUrl,
-      
-  }));
-      
-  return;
-      
-}
-      /* CB_JPEG_REVIEW_LANE_END */
 
     setAutoCutline({
       status: "processing",
@@ -3968,11 +3987,27 @@ const rawBounds = cbGetClosedBounds(result.points);
       };
     }
 
-    if (shapeMode === "자동칼선" && autoCutline.status !== "ready") {
+    if (shapeMode === "자동칼선" && autoCutline.status === "processing") {
       return {
         label: "계산 중",
         tone: "amber" as const,
         detail: "자동칼선 계산 완료 후 구멍 위치와 가이드 확인 가능",
+      };
+    }
+
+    if (shapeMode === "자동칼선" && autoCutline.status === "failed") {
+      return {
+        label: "검수 필요",
+        tone: "amber" as const,
+        detail: "배경이 복잡하거나 경계가 흐려 자동칼선이 실패했습니다. PNG/투명본을 권장합니다.",
+      };
+    }
+
+    if (shapeMode === "자동칼선" && autoCutline.status !== "ready") {
+      return {
+        label: "분석 대기",
+        tone: "amber" as const,
+        detail: "업로드 직후 분석을 준비 중입니다.",
       };
     }
 
@@ -4053,6 +4088,8 @@ const rawBounds = cbGetClosedBounds(result.points);
       }
       return {
         name: file.name,
+        fileName: file.name,
+        mimeType: file.type || "",
         typeLabel: file.type || "알 수 없는 형식",
         sizeLabel: formatFileSize(file.size),
         previewUrl: nextPreviewUrl,
@@ -4061,7 +4098,11 @@ const rawBounds = cbGetClosedBounds(result.points);
 
     setUploadGuide(
       previewable
-        ? "업로드 상태: 정책 판정 기준 반영됨"
+        ? /^image\/jpe?g$/i.test(file.type) || /\.jpe?g$/i.test(file.name)
+          ? "JPG 업로드 반영 완료 · 밝은 배경은 자동칼선 1차 추정, 실패 시 PNG/투명본 권장"
+          : /^image\/webp$/i.test(file.type) || /\.webp$/i.test(file.name)
+            ? "WEBP 업로드 반영 완료 · 자동칼선 1차 추정 후 결과를 확인하세요"
+            : "PNG 업로드 반영 완료 · 자동칼선 1차 추정을 시작합니다"
         : "PDF / AI / PSD는 업로드 기록만 유지하고 실시간 미리보기는 생략"
     );
   };
@@ -4337,7 +4378,7 @@ if (typeof window !== "undefined") {
             <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
+              <div>PNG는 자동칼선 1차 생성, JPG/WEBP는 밝은 배경 기준으로 1차 추정</div>
             </div>
           </aside>
 
@@ -4599,7 +4640,7 @@ if (typeof window !== "undefined") {
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                      자동칼선 상태: {autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패 · PNG/투명본 권장" : uploadState.previewUrl ? "분석 대기" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -4648,7 +4689,7 @@ if (typeof window !== "undefined") {
               <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
+              <div>PNG는 자동칼선 1차 생성, JPG/WEBP는 밝은 배경 기준으로 1차 추정</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
@@ -4665,7 +4706,7 @@ if (typeof window !== "undefined") {
               <div className="mb-2 text-sm font-semibold text-white/88">업로드 기준</div>
               <div>PNG / PSD / PDF / AI 권장</div>
               <div>가능하면 투명 배경, 300dpi 기준</div>
-              <div>JPG/WEBP는 밝은 배경 제거 후 자동칼선 1차 추정</div>
+              <div>JPG/WEBP도 자동칼선 1차 추정을 시도하며, 실패 시 PNG/투명본을 권장</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/68">
@@ -4691,7 +4732,15 @@ if (typeof window !== "undefined") {
                     : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                 }`}
               >
-                {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutlineLocked ? "자동칼선 생성 후 주문" : "주문으로"}
+                {!uploadState?.previewUrl && shapeMode === "자동칼선"
+                  ? "업로드 후 주문"
+                  : autoCutline.status === "processing" && shapeMode === "자동칼선"
+                    ? "자동칼선 계산중"
+                    : autoCutline.status === "failed" && shapeMode === "자동칼선"
+                      ? "자동칼선 재확인 필요"
+                      : autoCutlineLocked
+                        ? "자동칼선 생성 후 주문"
+                        : "주문으로"}
               </button>
             </div>
           </aside>
