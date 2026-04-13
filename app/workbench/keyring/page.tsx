@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -1682,7 +1682,7 @@ const previewImageClipPath =
   return (
     <svg
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-      className="h-full w-full"
+      className="block h-full w-full"
       role="img"
       aria-label="정면 작업판"
     >
@@ -4536,7 +4536,7 @@ if (typeof window !== "undefined") {
                 <div className="text-sm text-white/62">{productionStatus.detail}</div>
               </div>
 
-              <div className="h-[700px] w-full">
+              <div className="mx-auto aspect-[7/8] w-full max-w-[612px] overflow-hidden">
                 <KeyringCanvas
                   hole={hole}
                   shapeMode={shapeMode}
@@ -5167,4 +5167,5 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
 
