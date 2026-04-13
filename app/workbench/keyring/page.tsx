@@ -1777,17 +1777,19 @@ const previewImageClipPath =
           )}
         </>
       ) : (
-        <>
-          <rect
-            x={ART_FRAME.x}
-            y={ART_FRAME.y}
-            width={ART_FRAME.width}
-            height={ART_FRAME.height}
-            rx="28"
-            fill="rgba(255,255,255,0.03)"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="2"
-          />
+        <>
+          {!hasUpload ? (
+            <rect
+              x={scaledArtFrame.x}
+              y={scaledArtFrame.y}
+              width={scaledArtFrame.width}
+              height={scaledArtFrame.height}
+              rx="28"
+              fill="rgba(255,255,255,0.03)"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth="2"
+            />
+          ) : null}
 
           {showAutoImage ? (
             <image
@@ -1836,24 +1838,25 @@ const previewImageClipPath =
                 업로드 후 자동칼선 생성
               </text>
             </>
+          ) : null}
+          {!hasUpload || autoCutline.status !== "ready" ? (
+            <text
+              x="470"
+              y="108"
+              textAnchor="end"
+              fill="rgba(255,255,255,0.72)"
+              fontSize="12"
+              fontWeight="700"
+            >
+              {autoCutline.status === "ready"
+                ? "자동칼선 1차 생성"
+                : autoCutline.status === "processing"
+                  ? "자동칼선 계산중"
+                  : autoCutline.status === "failed"
+                    ? "자동칼선 생성 실패"
+                    : "업로드 대기"}
+            </text>
           ) : null}
-
-          <text
-            x="470"
-            y="108"
-            textAnchor="end"
-            fill="rgba(255,255,255,0.72)"
-            fontSize="12"
-            fontWeight="700"
-          >
-            {autoCutline.status === "ready"
-              ? "자동칼선 1차 생성"
-              : autoCutline.status === "processing"
-                ? "자동칼선 계산중"
-                : autoCutline.status === "failed"
-                  ? "자동칼선 생성 실패"
-                  : "업로드 대기"}
-          </text>
         </>
           )}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
         <g>
@@ -5124,6 +5127,7 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
 
 
 
