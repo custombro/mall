@@ -3840,50 +3840,7 @@ const buildAutoCutlineFromForegroundMask = async (
         cancelled = true;
       };
     }
-      /* CB_JPEG_REVIEW_LANE_START */
-      
-const jpegUploadMimeTypeForAutoCutline = ((uploadState as { mimeType?: string } | null)?.mimeType ?? "");
-      
-const jpegUploadFileNameForAutoCutline =
-      
-  ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
-      
-    (uploadState as { fileName?: string; name?: string } | null)?.name ??
-      
-    "");
-      
-const isJpegUploadForAutoCutlineLocal =
-      
-  /^image\/jpe?g$/i.test(jpegUploadMimeTypeForAutoCutline) ||
-      
-  /\.jpe?g$/i.test(jpegUploadFileNameForAutoCutline);
-      
-if (isJpegUploadForAutoCutlineLocal) {
-      
-  setAutoCutline((current) => ({
-      
-    ...current,
-      
-    status: "idle",
-      
-    path: null,
-      
-    points: [],
-      
-    centroid: null,
-      
-    sizeLabel: "",
-      
-    previewUrl: uploadState.previewUrl,
-      
-  }));
-      
-  return;
-      
-}
-      /* CB_JPEG_REVIEW_LANE_END */
-
-    setAutoCutline({
+setAutoCutline({
       status: "processing",
       path: null,
       points: [],
@@ -4337,7 +4294,7 @@ if (typeof window !== "undefined") {
             <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
+              <div>PNG/JPG 1차 생성, JPG는 자동칼선 검수 권장</div>
             </div>
           </aside>
 
@@ -4599,7 +4556,7 @@ if (typeof window !== "undefined") {
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
+                      자동칼선 상태: {autoCutline.status === "ready" ? (isJpegUploadForAutoCutline ? "JPG 1차 생성" : "1차 생성") : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -4648,7 +4605,7 @@ if (typeof window !== "undefined") {
               <div className="mb-2 text-sm font-semibold text-white/88">제작 기준</div>
               <div>업로드 후 작업판 내부 글씨 제거</div>
               <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>PNG/투명본은 1차 생성, JPG는 자동칼선 검수 필요</div>
+              <div>PNG/JPG 1차 생성, JPG는 자동칼선 검수 권장</div>
             </div>
 
             <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.04] p-4 text-sm leading-7 text-white/72">
@@ -4691,7 +4648,7 @@ if (typeof window !== "undefined") {
                     : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                 }`}
               >
-                {isJpegUploadForAutoCutline ? "JPG 자동칼선 미지원 / 기본형 선택" : autoCutlineLocked ? "자동칼선 생성 후 주문" : "주문으로"}
+                {autoCutlineLocked ? (isJpegUploadForAutoCutline ? "JPG 자동칼선 계산 후 주문" : "자동칼선 생성 후 주문") : "주문으로"}
               </button>
             </div>
           </aside>
@@ -5167,6 +5124,7 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
 
 
 
