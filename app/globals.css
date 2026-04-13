@@ -25,6 +25,128 @@ a {
   text-decoration: none;
 }
 
+
+.cb-shell-body {
+  background: #090b10;
+  color: #f4f4f5;
+}
+
+.cb-app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #090b10 0%, #0d111d 100%);
+}
+
+.cb-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 11, 16, 0.9);
+  backdrop-filter: blur(16px);
+}
+
+.cb-shell-header__inner {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: 1120px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+}
+
+.cb-shell-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cb-shell-brand__mark {
+  display: inline-flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.15);
+  color: #cffafe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cb-shell-brand strong {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(103, 232, 249, 0.9);
+}
+
+.cb-shell-brand small {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cb-route-dock {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1120px;
+  padding: 0 18px 14px;
+}
+
+.cb-route-dock__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cb-route-dock__item {
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+  transition: all 160ms ease;
+}
+
+.cb-route-dock__item:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.cb-route-dock__item.is-active {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.14);
+  color: #cffafe;
+}
+
+.cb-shell-page {
+  min-height: calc(100vh - 120px);
+  background: #f6f3ee;
+  color: #171717;
+}
+
+.cb-shell-content {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: 1120px;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 16px;
+}
+
+@media (min-width: 1024px) {
+  .cb-shell-content {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
 /* CB_SAFE_RESTORE_V17_START */
 :root {
   --cb-site-gutter: 6px;
