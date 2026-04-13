@@ -1648,10 +1648,10 @@ function KeyringCanvas({
   }
 
   if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
-    minX = 0;
-    minY = 0;
-    maxX = 1;
-    maxY = 1;
+    minX = scaledArtFrame.x;
+    minY = scaledArtFrame.y;
+    maxX = scaledArtFrame.x + scaledArtFrame.width;
+    maxY = scaledArtFrame.y + scaledArtFrame.height;
   }
 
   const x = minX;
@@ -4441,8 +4441,8 @@ if (typeof window !== "undefined") {
             >              <div
                 className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2 rounded-[24px] border border-cyan-300/12 opacity-80"
                 style={{
-                  width: "min(72vw, 600px)",
-                  height: "min(72vw, 600px)",
+                  width: "min(76vw, 612px)",
+                  height: "min(calc(76vw * 8 / 7), 699px)",
                   backgroundImage: `
                     linear-gradient(to right, rgba(143,192,255,0.08) 1px, transparent 1px),
                     linear-gradient(to bottom, rgba(143,192,255,0.08) 1px, transparent 1px),
@@ -5124,6 +5124,7 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
 
 
 
