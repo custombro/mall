@@ -4498,7 +4498,7 @@ if (typeof window !== "undefined") {
               />
               <div
                 className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2"
-                style={{ width: "min(72vw, 600px)", height: "min(72vw, 600px)" }}
+                style={{ width: "min(76vw, 612px)", height: "min(calc(76vw * 8 / 7), 699px)" }}
               >
                 <div className="absolute inset-x-3 top-1 flex items-center justify-between text-[10px] font-medium text-cyan-100/58">
                   <span>0</span>
@@ -5167,5 +5167,6 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
+
 
 
