@@ -1,13 +1,15 @@
 export type RouteDockItem = {
   label: string;
   href: string;
+  matchStartsWith?: string[];
 };
 
 const routeDockItems: RouteDockItem[] = [
-  { label: "작업대", href: "/mode-select" },
-  { label: "제작중", href: "/workbench/keyring" },
-  { label: "서랍", href: "/storage" },
-  { label: "전체", href: "/" },
+  { label: "홈", href: "/" },
+  { label: "제작", href: "/workbench", matchStartsWith: ["/workbench"] },
+  { label: "주문", href: "/orders", matchStartsWith: ["/orders"] },
+  { label: "주문확인", href: "/order-check", matchStartsWith: ["/order-check"] },
+  { label: "내정보", href: "/my", matchStartsWith: ["/my"] },
 ];
 
 export const ROUTE_DOCK_ITEMS = routeDockItems;

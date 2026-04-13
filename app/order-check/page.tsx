@@ -38,8 +38,8 @@ const summaryRows = [
 
 export default function OrderCheckPage() {
   return (
-    <main className="min-h-screen bg-[#f6f3ee] text-neutral-900">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 lg:px-6">
+    <main className="cb-shell-page">
+      <div className="cb-shell-content">
         <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-1">
