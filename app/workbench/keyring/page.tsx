@@ -1998,9 +1998,36 @@ const previewImageClipPath =
       : null;
 
   return (
-    <svg
+    <div className="relative h-full w-full">
+      {showAutoImage && useHtmlImageForAutoPreview ? (
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            left: ((autoPreviewImageX / VIEW_WIDTH) * 100).toFixed(4) + "%",
+            top: ((autoPreviewImageY / VIEW_HEIGHT) * 100).toFixed(4) + "%",
+            width: ((autoPreviewImageWidth / VIEW_WIDTH) * 100).toFixed(4) + "%",
+            height: ((autoPreviewImageHeight / VIEW_HEIGHT) * 100).toFixed(4) + "%",
+            zIndex: 1,
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={autoRenderImageUrl!}
+            alt=""
+            draggable={false}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+              userSelect: "none",
+            }}
+          />
+        </div>
+      ) : null}
+      <svg
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-      className="block h-full w-full"
+      className="absolute inset-0 h-full w-full"
       role="img"
       aria-label="정면 작업판"
     >
@@ -2017,8 +2044,8 @@ const previewImageClipPath =
         ) : null}
       </defs>
 
-      <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill="#041129" />
-      <rect x="70" y="72" width="420" height="514" rx="28" fill="rgba(0,0,0,0.16)" />
+      <rect x="0" y="0" width={VIEW_WIDTH} height={VIEW_HEIGHT} rx="28" fill={useHtmlImageForAutoPreview ? "transparent" : "#041129"} />
+      <rect x="70" y="72" width="420" height="514" rx="28" fill={useHtmlImageForAutoPreview ? "transparent" : "rgba(0,0,0,0.16)"} />
 
       {!autoCutlinePending ? (
         <>
@@ -2110,38 +2137,7 @@ const previewImageClipPath =
           ) : null}
 
           {showAutoImage ? (
-            useHtmlImageForAutoPreview ? (
-              <foreignObject
-                x={autoPreviewImageX}
-                y={autoPreviewImageY}
-                width={autoPreviewImageWidth}
-                height={autoPreviewImageHeight}
-              >
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  <img
-                    src={autoRenderImageUrl!}
-                    alt=""
-                    draggable={false}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                      display: "block",
-                      userSelect: "none",
-                    }}
-                  />
-                </div>
-              </foreignObject>
-            ) : (
+            useHtmlImageForAutoPreview ? null : (
               <image
                 href={autoRenderImageUrl!}
                 x={autoPreviewImageX}
@@ -2232,6 +2228,7 @@ const previewImageClipPath =
       <circle cx={hole.x} cy={hole.y} r={holeRadius} fill="#263247" />
         <circle cx={hole.x} cy={hole.y} r={Math.max(2.2, holeRadius * 0.42)} fill="#08111f" />
     </svg>
+    </div>
   );
 }
 
