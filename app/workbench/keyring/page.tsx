@@ -4201,7 +4201,9 @@ setAutoCutline({
     });
 
     buildTransparentTraceSourceUrl(uploadState.previewUrl)
-      .then((traceSourceUrl: string) => buildAutoCutlineFromForegroundMask(traceSourceUrl))
+      .then((traceSourceUrl: string) =>
+        buildAutoCutlineFromForegroundMask(traceSourceUrl || uploadState.previewUrl!),
+      )
       .then((result) => {
       if (cancelled) return;
 
@@ -5467,6 +5469,9 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   }
 
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
+  if (typeof filteredUrl !== "string" || filteredUrl.length === 0) {
+    return intermediateUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
+  }
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
 
