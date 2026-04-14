@@ -2010,7 +2010,8 @@ function KeyringCanvas({
       ctx.drawImage(img, 0, 0, width, height);
 
       if (preferOriginalPreview) {
-        retainLargestOpaqueIslandFromDataUrl(previewUrl)
+        buildTransparentTraceSourceUrl(previewUrl)
+          .then((tracedUrl) => retainLargestOpaqueIslandFromDataUrl(tracedUrl || previewUrl))
           .then((cleanedUrl) => {
             if (cancelled) return;
             if (typeof cleanedUrl === "string" && cleanedUrl.length > 0) {
@@ -4635,6 +4636,10 @@ setAutoCutline({
         if (tracedImageResult) {
           return tracedImageResult;
         }
+      }
+
+      if (isJpegUploadForAutoCutline) {
+        return null;
       }
 
       const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
