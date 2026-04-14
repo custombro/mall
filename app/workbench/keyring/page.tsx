@@ -1832,17 +1832,25 @@ function KeyringCanvas({
       let minY = height;
       let maxX = -1;
       let maxY = -1;
+      let opaquePixelCount = 0;
 
       for (let scanY = 0; scanY < height; scanY++) {
         for (let scanX = 0; scanX < width; scanX++) {
           const alpha = data[(scanY * width + scanX) * 4 + 3] ?? 0;
           if (alpha > 8) {
+            opaquePixelCount += 1;
             if (scanX < minX) minX = scanX;
             if (scanY < minY) minY = scanY;
             if (scanX > maxX) maxX = scanX;
             if (scanY > maxY) maxY = scanY;
           }
         }
+      }
+
+      const minOpaquePixels = Math.max(24, Math.floor(width * height * 0.0012));
+      if (opaquePixelCount < minOpaquePixels || maxX < minX || maxY < minY) {
+        setTransparentPreviewUrl(previewUrl);
+        return;
       }
 
       let exportCanvas = canvas;
