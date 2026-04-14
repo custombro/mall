@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_WORKBENCH_20260325_233025";
+const deployMarker = "DEPLOY_WORKBENCH_20260415_BRUSH_LAB";
 
 const workbenchGroups = [
   { name: "키링 작업", hint: "가장 자주 쓰는 기본 시작" },
@@ -23,10 +23,10 @@ const workbenchCards = [
     bullets: ["최근 저장본 불러오기", "수정 후 재주문", "기존 옵션 재사용"]
   },
   {
-    title: "다음 행동 연결",
-    badge: "이동",
-    summary: "작업 후 주문, 주문확인, 서랍으로 자연스럽게 이어지는 구조만 남겼다.",
-    bullets: ["주문으로 이동", "주문확인", "서랍 열기"]
+    title: "브러시 보정 실험",
+    badge: "LAB",
+    summary: "여러 파일을 한 번에 올리고, 한 장씩 골라 붓칠 보정 테스트를 바로 해볼 수 있다.",
+    bullets: ["다중 업로드", "선택 파일 작업", "붓칠 보정 테스트"]
   }
 ];
 
@@ -88,6 +88,7 @@ export default function WorkbenchPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 선택</p>
               <div className="mt-3 space-y-2">
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">키링 우선 시작</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">브러시 보정 실험실</div>
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">POP 바로 이동</div>
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">서랍 저장본 재사용</div>
               </div>
@@ -126,6 +127,12 @@ export default function WorkbenchPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   키링 작업 시작
+                </Link>
+                <Link href="/workbench/keyring/brush-assist-lab" className="rounded-full border border-black/10 bg-[#eef6ff] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  브러시 보정 실험실
+                </Link>
+                <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  단일 파일 데모
                 </Link>
                 <Link href="/pop-studio" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   POP 작업 시작
@@ -166,6 +173,9 @@ export default function WorkbenchPage() {
                 <div className="mt-4 space-y-2">
                   <Link href="/workbench/keyring" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
                     키링 작업 시작
+                  </Link>
+                  <Link href="/workbench/keyring/brush-assist-lab" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#eef6ff] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    브러시 보정 실험실
                   </Link>
                   <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     서랍 저장본 보기
