@@ -446,6 +446,13 @@ type Point = {
 
 type HolePosition = Point;
 
+type SubjectAssistBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 type UploadState = {
   id: string;
   name: string;
@@ -538,6 +545,31 @@ function formatFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
   return `${bytes}B`;
+}
+
+function cbNormalizeSubjectAssistBox(box: SubjectAssistBox | null): SubjectAssistBox | null {
+  if (!box) return null;
+
+  const left = clamp(Math.min(box.x, box.x + box.width), 0, VIEW_WIDTH);
+  const top = clamp(Math.min(box.y, box.y + box.height), 0, VIEW_HEIGHT);
+  const right = clamp(Math.max(box.x, box.x + box.width), 0, VIEW_WIDTH);
+  const bottom = clamp(Math.max(box.y, box.y + box.height), 0, VIEW_HEIGHT);
+
+  return {
+    x: left,
+    y: top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
+}
+
+function cbBuildSubjectAssistBox(start: Point, end: Point): SubjectAssistBox {
+  return {
+    x: Math.min(start.x, end.x),
+    y: Math.min(start.y, end.y),
+    width: Math.abs(end.x - start.x),
+    height: Math.abs(end.y - start.y),
+  };
 }
 
 function getHoleVisualRadius(holeSize: HoleSize) {
@@ -1387,6 +1419,121 @@ function cbBuildBaseShapeUnionPreviewPath(
 
   return cbBuildSmoothClosedPath(outlinePoints);
 }
+async function buildSubjectAssistSourceUrl(
+  sourceUrl: string,
+  assistBox: SubjectAssistBox,
+  artScale: number,
+): Promise<string> {
+  const normalizedAssistBox = cbNormalizeSubjectAssistBox(assistBox);
+  if (!normalizedAssistBox || normalizedAssistBox.width < 18 || normalizedAssistBox.height < 18) {
+    return sourceUrl;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.crossOrigin = "anonymous";
+
+    img.onload = () => {
+      try {
+        const previewFrame = getAutoCutlinePreviewFrameForScale(artScale);
+        const previewScale = Math.min(previewFrame.width / img.width, previewFrame.height / img.height);
+        const previewDrawWidth = Math.max(1, img.width * previewScale);
+        const previewDrawHeight = Math.max(1, img.height * previewScale);
+        const previewDrawX = previewFrame.x + (previewFrame.width - previewDrawWidth) / 2;
+        const previewDrawY = previewFrame.y + (previewFrame.height - previewDrawHeight) / 2;
+
+        const boxLeft = Math.max(previewDrawX, normalizedAssistBox.x);
+        const boxTop = Math.max(previewDrawY, normalizedAssistBox.y);
+        const boxRight = Math.min(previewDrawX + previewDrawWidth, normalizedAssistBox.x + normalizedAssistBox.width);
+        const boxBottom = Math.min(previewDrawY + previewDrawHeight, normalizedAssistBox.y + normalizedAssistBox.height);
+
+        if (boxRight - boxLeft < 12 || boxBottom - boxTop < 12) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        const padX = Math.max(10, (boxRight - boxLeft) * 0.16);
+        const padY = Math.max(10, (boxBottom - boxTop) * 0.16);
+
+        const safeLeft = Math.max(previewDrawX, boxLeft - padX);
+        const safeTop = Math.max(previewDrawY, boxTop - padY);
+        const safeRight = Math.min(previewDrawX + previewDrawWidth, boxRight + padX);
+        const safeBottom = Math.min(previewDrawY + previewDrawHeight, boxBottom + padY);
+
+        const normalizedLeft = (safeLeft - previewDrawX) / previewDrawWidth;
+        const normalizedTop = (safeTop - previewDrawY) / previewDrawHeight;
+        const normalizedRight = (safeRight - previewDrawX) / previewDrawWidth;
+        const normalizedBottom = (safeBottom - previewDrawY) / previewDrawHeight;
+
+        const analysisScale = Math.min(ANALYSIS_WIDTH / img.width, ANALYSIS_HEIGHT / img.height);
+        const analysisDrawWidth = Math.max(1, img.width * analysisScale);
+        const analysisDrawHeight = Math.max(1, img.height * analysisScale);
+        const analysisDrawX = (ANALYSIS_WIDTH - analysisDrawWidth) / 2;
+        const analysisDrawY = (ANALYSIS_HEIGHT - analysisDrawHeight) / 2;
+
+        const maskLeft = Math.max(0, Math.floor(analysisDrawX + normalizedLeft * analysisDrawWidth));
+        const maskTop = Math.max(0, Math.floor(analysisDrawY + normalizedTop * analysisDrawHeight));
+        const maskRight = Math.min(ANALYSIS_WIDTH, Math.ceil(analysisDrawX + normalizedRight * analysisDrawWidth));
+        const maskBottom = Math.min(ANALYSIS_HEIGHT, Math.ceil(analysisDrawY + normalizedBottom * analysisDrawHeight));
+
+        if (maskRight - maskLeft < 8 || maskBottom - maskTop < 8) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = ANALYSIS_WIDTH;
+        canvas.height = ANALYSIS_HEIGHT;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!ctx) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        ctx.clearRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+        ctx.drawImage(img, analysisDrawX, analysisDrawY, analysisDrawWidth, analysisDrawHeight);
+
+        const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+        const data = imageData.data;
+        let keptPixels = 0;
+
+        for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+          for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+            const inside =
+              x >= maskLeft &&
+              x < maskRight &&
+              y >= maskTop &&
+              y < maskBottom;
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            if (!inside) {
+              data[idx + 3] = 0;
+              continue;
+            }
+            if (data[idx + 3] > 16) {
+              keptPixels += 1;
+            }
+          }
+        }
+
+        if (keptPixels < 24) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(sourceUrl);
+      }
+    };
+
+    img.onerror = () => resolve(sourceUrl);
+    img.src = sourceUrl;
+  });
+}
+
 async function buildAutoCutlineFromImage(
   url: string,
 ): Promise<{ path: string; points: Point[]; centroid: Point } | null> {
@@ -1804,6 +1951,8 @@ function KeyringCanvas({
   autoCutlinePreviewEnabled,
   autoCutlinePreviewMinGap,
   artScale,
+  focusAssistBox,
+  focusAssistMode,
 }: {
   hole: HolePosition;
   shapeMode: ShapeMode;
@@ -1815,6 +1964,8 @@ function KeyringCanvas({
   autoCutlinePreviewEnabled: boolean;
   autoCutlinePreviewMinGap: number;
   artScale: number;
+  focusAssistBox?: SubjectAssistBox | null;
+  focusAssistMode?: boolean;
 }) {
   const fillId = `cb_fill_${shapeMode}`;
   const clipId = `cb_clip_${shapeMode}`;
@@ -2262,7 +2413,30 @@ const previewImageClipPath =
             </text>
           ) : null}
         </>
-          )}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
+          )}      {shapeMode === "자동칼선" && focusAssistBox ? (
+        <g pointerEvents="none">
+          <rect
+            x={focusAssistBox.x}
+            y={focusAssistBox.y}
+            width={focusAssistBox.width}
+            height={focusAssistBox.height}
+            rx="18"
+            fill={focusAssistMode ? "rgba(169,215,255,0.12)" : "rgba(169,215,255,0.08)"}
+            stroke={focusAssistMode ? "#a9d7ff" : "rgba(169,215,255,0.82)"}
+            strokeWidth="2.2"
+            strokeDasharray="10 8"
+          />
+          <text
+            x={focusAssistBox.x + 10}
+            y={Math.max(18, focusAssistBox.y - 8)}
+            fill="#d7efff"
+            fontSize="11"
+            fontWeight="700"
+          >
+            주제 선택 보정
+          </text>
+        </g>
+      ) : null}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
         <g>
           <circle
             cx={hole.x}
@@ -2960,6 +3134,10 @@ const [quantity, setQuantity] = useState(10);
     activeUploadIndex >= 0 ? `${activeUploadIndex + 1}/${uploadItems.length}` : "-";
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
   const [artScale, setArtScale] = useState(1);
+  const [focusAssistMode, setFocusAssistMode] = useState(false);
+  const [focusAssistBox, setFocusAssistBox] = useState<SubjectAssistBox | null>(null);
+  const [focusAssistDraftBox, setFocusAssistDraftBox] = useState<SubjectAssistBox | null>(null);
+  const focusAssistDragStartRef = useRef<Point | null>(null);
   const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
     status: "idle",
     path: null,
@@ -4329,6 +4507,15 @@ const finalPoints = cbSimplifyClosedPoints(
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadItemsRef = useRef<UploadState[]>([]);
+  const normalizedFocusAssistBox = useMemo(
+    () => cbNormalizeSubjectAssistBox(focusAssistBox),
+    [focusAssistBox],
+  );
+  const visibleFocusAssistBox = focusAssistDraftBox ?? normalizedFocusAssistBox;
+  const hasCommittedFocusAssist =
+    Boolean(normalizedFocusAssistBox) &&
+    (normalizedFocusAssistBox?.width ?? 0) >= 18 &&
+    (normalizedFocusAssistBox?.height ?? 0) >= 18;
 
   useEffect(() => {
     uploadItemsRef.current = uploadItems;
@@ -4381,25 +4568,45 @@ setAutoCutline({
       centroid: null,
     });
 
-    buildTransparentTraceSourceUrl(uploadState.previewUrl)
-      .then(async (traceSourceUrl: string) => {
-        const originalSource = uploadState.previewUrl!;
-        const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
+    const originalSource = uploadState.previewUrl!;
 
-        if (originalResult) {
-          return originalResult;
+    const runAutoCutline = async () => {
+      if (hasCommittedFocusAssist && normalizedFocusAssistBox) {
+        const assistedSource = await buildSubjectAssistSourceUrl(
+          originalSource,
+          normalizedFocusAssistBox,
+          artScale,
+        );
+
+        const assistedMaskResult = await buildAutoCutlineFromForegroundMask(assistedSource);
+        if (assistedMaskResult) {
+          return assistedMaskResult;
         }
 
-        if (traceSourceUrl && traceSourceUrl !== originalSource) {
-          const traceResult = await buildAutoCutlineFromForegroundMask(traceSourceUrl);
-          if (traceResult) {
-            return traceResult;
-          }
+        const assistedImageResult = await buildAutoCutlineFromImage(assistedSource);
+        if (assistedImageResult) {
+          return assistedImageResult;
         }
+      }
 
-        return buildAutoCutlineFromImage(originalSource);
-      })
-      .then((result) => {
+      const traceSourceUrl = await buildTransparentTraceSourceUrl(originalSource);
+      const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
+
+      if (originalResult) {
+        return originalResult;
+      }
+
+      if (traceSourceUrl && traceSourceUrl !== originalSource) {
+        const traceResult = await buildAutoCutlineFromForegroundMask(traceSourceUrl);
+        if (traceResult) {
+          return traceResult;
+        }
+      }
+
+      return buildAutoCutlineFromImage(originalSource);
+    };
+
+    runAutoCutline().then((result) => {
       if (cancelled) return;
 
       if (result) {
@@ -4430,7 +4637,16 @@ const rawBounds = cbGetClosedBounds(result.points);
     return () => {
       cancelled = true;
     };
-  }, [shapeMode, uploadState?.previewUrl]);
+  }, [
+    shapeMode,
+    uploadState?.previewUrl,
+    artScale,
+    hasCommittedFocusAssist,
+    normalizedFocusAssistBox?.x,
+    normalizedFocusAssistBox?.y,
+    normalizedFocusAssistBox?.width,
+    normalizedFocusAssistBox?.height,
+  ]);
 
   const uploadStateFileName =
     ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
@@ -4495,16 +4711,42 @@ const rawBounds = cbGetClosedBounds(result.points);
     };
   }, [autoCutline.status, holeSize, shapeMode, uploadState?.previewUrl]);
 
+  const getPointerInView = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: clamp(((event.clientX - rect.left) / rect.width) * VIEW_WIDTH, 0, VIEW_WIDTH),
+      y: clamp(((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT, 0, VIEW_HEIGHT),
+    };
+  };
+
   const updateHole = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (autoCutlineLocked) return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * VIEW_WIDTH;
-    const y = ((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT;
-    setHole(projectHoleForCurrentUpload({ x, y }));
+    const pointer = getPointerInView(event);
+    setHole(projectHoleForCurrentUpload(pointer));
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const canStartFocusAssist =
+      shapeMode === "자동칼선" &&
+      focusAssistMode &&
+      Boolean(uploadState?.previewUrl);
+
+    if (canStartFocusAssist) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+      const pointer = getPointerInView(event);
+      focusAssistDragStartRef.current = pointer;
+      setFocusAssistDraftBox({
+        x: pointer.x,
+        y: pointer.y,
+        width: 1,
+        height: 1,
+      });
+      setDragging(false);
+      return;
+    }
+
     if (autoCutlineLocked) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -4513,11 +4755,33 @@ const rawBounds = cbGetClosedBounds(result.points);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (focusAssistDragStartRef.current) {
+      const pointer = getPointerInView(event);
+      setFocusAssistDraftBox(cbBuildSubjectAssistBox(focusAssistDragStartRef.current, pointer));
+      return;
+    }
+
     if (!dragging || autoCutlineLocked) return;
     updateHole(event);
   };
 
   const stopDrag = () => {
+    if (focusAssistDragStartRef.current) {
+      const nextBox = cbNormalizeSubjectAssistBox(focusAssistDraftBox);
+      focusAssistDragStartRef.current = null;
+      setFocusAssistDraftBox(null);
+
+      if (nextBox && nextBox.width >= 18 && nextBox.height >= 18) {
+        setFocusAssistBox(nextBox);
+        setFocusAssistMode(false);
+        setUploadGuide(
+          `주제 선택 보정 박스 적용 · ${Math.round(nextBox.width)}×${Math.round(nextBox.height)} · 칼선 다시 계산`,
+        );
+      } else {
+        setUploadGuide("주제 선택 보정 박스가 너무 작음 · 캐릭터 주변을 다시 드래그");
+      }
+    }
+
     setDragging(false);
   };
 
@@ -4535,6 +4799,10 @@ const rawBounds = cbGetClosedBounds(result.points);
       return [];
     });
     setActiveUploadId(null);
+    setFocusAssistMode(false);
+    setFocusAssistBox(null);
+    setFocusAssistDraftBox(null);
+    focusAssistDragStartRef.current = null;
     setUploadGuide("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
     setAutoCutline({
       status: "idle",
@@ -4553,6 +4821,10 @@ const rawBounds = cbGetClosedBounds(result.points);
       nextSelectedIndex >= 0 ? uploadItemsRef.current[nextSelectedIndex] : null;
 
     setActiveUploadId(id);
+    setFocusAssistMode(false);
+    setFocusAssistBox(null);
+    setFocusAssistDraftBox(null);
+    focusAssistDragStartRef.current = null;
     setAutoCutline({
       status: "idle",
       path: null,
@@ -4594,6 +4866,10 @@ const rawBounds = cbGetClosedBounds(result.points);
 
     setUploadItems((prev) => [...prev, ...nextItems]);
     setActiveUploadId(nextItems[0]?.id ?? null);
+    setFocusAssistMode(false);
+    setFocusAssistBox(null);
+    setFocusAssistDraftBox(null);
+    focusAssistDragStartRef.current = null;
     setUploadGuide(
       previewableCount > 0
         ? `업로드 ${files.length}개 완료 · 미리보기 ${previewableCount}개 · 목록에서 작업 파일 선택 가능`
@@ -5012,7 +5288,11 @@ if (typeof window !== "undefined") {
             <div
               className={`mt-4 overflow-hidden rounded-[28px] border ${
                 dragging ? "border-[#7fbaff]/70" : "border-white/10"
-              } relative bg-[#02091f] p-4 transition cursor-grab active:cursor-grabbing select-none`}
+              } relative bg-[#02091f] p-4 transition ${
+                shapeMode === "자동칼선" && focusAssistMode && uploadState?.previewUrl
+                  ? "cursor-crosshair"
+                  : "cursor-grab active:cursor-grabbing"
+              } select-none`}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={stopDrag}
@@ -5079,13 +5359,15 @@ if (typeof window !== "undefined") {
                   shapeMode={shapeMode}
                   holeSize={holeSize}
                   imageUrl={uploadState?.previewUrl ?? null}
-              previewUrl={uploadState?.previewUrl ?? null}
+                  previewUrl={uploadState?.previewUrl ?? null}
                   autoCutline={effectiveAutoCutline}
-                preferOriginalPreview={isJpegUploadForAutoCutline}
-                artScale={artScale}
-          autoCutlinePreviewEnabled={true}
-          autoCutlinePreviewMinGap={isJpegUploadForAutoCutline ? 11.5 : 2.4}
-        />
+                  preferOriginalPreview={isJpegUploadForAutoCutline}
+                  artScale={artScale}
+                  autoCutlinePreviewEnabled={true}
+                  autoCutlinePreviewMinGap={isJpegUploadForAutoCutline ? 11.5 : 2.4}
+                  focusAssistBox={visibleFocusAssistBox}
+                  focusAssistMode={focusAssistMode}
+                />
               </div>
             </div>
           </section>
@@ -5192,6 +5474,62 @@ if (typeof window !== "undefined") {
                     <div>
                       자동칼선 상태: {autoCutline.status === "ready" ? (isJpegUploadForAutoCutline ? "JPG 1차 생성" : "1차 생성") : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
                     </div>
+                  ) : null}
+
+                  {shapeMode === "자동칼선" && uploadState.previewUrl ? (
+                    <>
+                      <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-3 text-[12px] leading-6 text-cyan-100">
+                        자동 결과가 배경째 잡히면 캐릭터보다 조금 크게 박스를 드래그
+                      </div>
+
+                      <div className="mt-3 grid gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !focusAssistMode;
+                            setFocusAssistMode(next);
+                            setFocusAssistDraftBox(null);
+                            focusAssistDragStartRef.current = null;
+                            setUploadGuide(
+                              next
+                                ? "주제 선택 보정 시작 · 작업대에서 캐릭터 주변을 드래그"
+                                : "주제 선택 보정 대기",
+                            );
+                          }}
+                          className={`rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
+                            focusAssistMode
+                              ? "bg-[#a9d7ff] text-[#0a1730]"
+                              : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          {focusAssistMode ? "드래그 대기중" : "주제 선택 보정"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFocusAssistMode(false);
+                            setFocusAssistBox(null);
+                            setFocusAssistDraftBox(null);
+                            focusAssistDragStartRef.current = null;
+                            setAutoCutline({
+                              status: "idle",
+                              path: null,
+                              points: [],
+                              centroid: null,
+                            });
+                            setUploadGuide("주제 선택 보정 해제 · 자동 감지 기준으로 다시 계산");
+                          }}
+                          className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/[0.08]"
+                        >
+                          보정 해제
+                        </button>
+                      </div>
+
+                      <div className="mt-3 text-xs leading-6 text-white/60">
+                        현재 박스: {hasCommittedFocusAssist && normalizedFocusAssistBox ? `${Math.round(normalizedFocusAssistBox.width)}×${Math.round(normalizedFocusAssistBox.height)}` : "없음"}
+                      </div>
+                    </>
                   ) : null}
                 </div>
               ) : null}
