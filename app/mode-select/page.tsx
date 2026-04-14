@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_MODE_SELECT_20260325_235219";
+const deployMarker = "DEPLOY_MODE_SELECT_20260415_BRUSH_LAB";
 
 const modeGroups = [
   { name: "키링 시작", hint: "가장 많이 쓰는 제작 시작" },
@@ -23,10 +23,10 @@ const modeCards = [
     bullets: ["서랍 열기", "최근 저장본 재사용", "수정 후 재주문"]
   },
   {
-    title: "상태와 다음 행동",
-    badge: "이동",
-    summary: "작업 후 주문, 주문확인, 작업대로 바로 이어지는 흐름만 남겼다.",
-    bullets: ["주문으로 이동", "주문확인", "작업대로 이동"]
+    title: "브러시 보정 실험",
+    badge: "LAB",
+    summary: "여러 파일 업로드 후 한 장씩 선택하고 붓칠 기준으로 분리 성능을 바로 확인한다.",
+    bullets: ["다중 업로드", "선택 파일 작업", "붓칠 보정 테스트"]
   }
 ];
 
@@ -90,6 +90,7 @@ export default function ModeSelectPage() {
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">키링 우선 시작</div>
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">POP 바로 이동</div>
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">서랍 저장본 재사용</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">브러시 보정 실험실</div>
               </div>
             </div>
           </aside>
@@ -126,6 +127,12 @@ export default function ModeSelectPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   키링 작업 시작
+                </Link>
+                <Link href="/workbench/keyring/brush-assist-lab" className="rounded-full border border-black/10 bg-[#eef6ff] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  브러시 보정 실험실
+                </Link>
+                <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  단일 파일 데모
                 </Link>
                 <Link href="/pop-studio" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   POP 작업 시작
@@ -166,6 +173,9 @@ export default function ModeSelectPage() {
                 <div className="mt-4 space-y-2">
                   <Link href="/workbench/keyring" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
                     키링 작업 시작
+                  </Link>
+                  <Link href="/workbench/keyring/brush-assist-lab" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#eef6ff] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    브러시 보정 실험실
                   </Link>
                   <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     서랍 저장본 보기
