@@ -3181,9 +3181,64 @@ const buildAutoCutlineFromForegroundMask = async (
         );
 
         const queue: Array<{ x: number; y: number }> = [];
-        const pushBg = (x: number, y: number) => {
+        const pixelIndexAt = (x: number, y: number) => (y * ANALYSIS_WIDTH + x) * 4;
+        const pixelLocalGrad = (x: number, y: number) => {
+          const idx = pixelIndexAt(x, y);
+          const rightX = Math.min(ANALYSIS_WIDTH - 1, x + 1);
+          const downY = Math.min(ANALYSIS_HEIGHT - 1, y + 1);
+          const rightIdx = pixelIndexAt(rightX, y);
+          const downIdx = pixelIndexAt(x, downY);
+
+          return (
+            Math.abs(data[idx] - data[rightIdx]) +
+            Math.abs(data[idx + 1] - data[rightIdx + 1]) +
+            Math.abs(data[idx + 2] - data[rightIdx + 2]) +
+            Math.abs(data[idx] - data[downIdx]) +
+            Math.abs(data[idx + 1] - data[downIdx + 1]) +
+            Math.abs(data[idx + 2] - data[downIdx + 2])
+          );
+        };
+        const canGrowEdgeBackground = (fromX: number, fromY: number, toX: number, toY: number) => {
+          if (toX < 0 || toY < 0 || toX >= ANALYSIS_WIDTH || toY >= ANALYSIS_HEIGHT) return false;
+          if (bgCandidate[toY][toX]) return true;
+
+          const fromIdx = pixelIndexAt(fromX, fromY);
+          const toIdx = pixelIndexAt(toX, toY);
+
+          const fromR = data[fromIdx];
+          const fromG = data[fromIdx + 1];
+          const fromB = data[fromIdx + 2];
+          const toR = data[toIdx];
+          const toG = data[toIdx + 1];
+          const toB = data[toIdx + 2];
+          const toA = data[toIdx + 3];
+
+          if (toA < 56) return false;
+
+          const fromBrightness = (fromR + fromG + fromB) / 3;
+          const toBrightness = (toR + toG + toB) / 3;
+          const toChroma = Math.max(toR, toG, toB) - Math.min(toR, toG, toB);
+          const neighborDistance = Math.hypot(toR - fromR, toG - fromG, toB - fromB);
+          const distToBorder = colorDistanceFromBorder(toR, toG, toB);
+          const localGrad = pixelLocalGrad(toX, toY);
+
+          return (
+            !hasMeaningfulTransparency &&
+            neighborDistance <= 44 &&
+            Math.abs(toBrightness - fromBrightness) <= 34 &&
+            distToBorder <= 156 &&
+            localGrad <= 84 &&
+            toChroma <= 108
+          );
+        };
+        const pushBg = (x: number, y: number, fromX?: number, fromY?: number) => {
           if (x < 0 || y < 0 || x >= ANALYSIS_WIDTH || y >= ANALYSIS_HEIGHT) return;
-          if (edgeBackground[y][x] || !bgCandidate[y][x]) return;
+          if (edgeBackground[y][x]) return;
+
+          const isSeed = typeof fromX !== "number" || typeof fromY !== "number";
+          const allow = isSeed ? bgCandidate[y][x] : canGrowEdgeBackground(fromX!, fromY!, x, y);
+          if (!allow) return;
+
           edgeBackground[y][x] = true;
           queue.push({ x, y });
         };
@@ -3197,26 +3252,26 @@ const buildAutoCutlineFromForegroundMask = async (
           pushBg(ANALYSIS_WIDTH - 1, y);
         }
 
-          for (let x = sampleLeft; x <= sampleRight; x += 1) {
-            pushBg(x, sampleTop);
-            pushBg(x, sampleBottom);
-          }
-          for (let y = sampleTop; y <= sampleBottom; y += 1) {
-            pushBg(sampleLeft, y);
-            pushBg(sampleRight, y);
-          }
+        for (let x = sampleLeft; x <= sampleRight; x += 1) {
+          pushBg(x, sampleTop);
+          pushBg(x, sampleBottom);
+        }
+        for (let y = sampleTop; y <= sampleBottom; y += 1) {
+          pushBg(sampleLeft, y);
+          pushBg(sampleRight, y);
+        }
 
         while (queue.length > 0) {
           const current = queue.shift();
           if (!current) break;
-          pushBg(current.x - 1, current.y);
-          pushBg(current.x + 1, current.y);
-          pushBg(current.x, current.y - 1);
-          pushBg(current.x, current.y + 1);
-          pushBg(current.x - 1, current.y - 1);
-          pushBg(current.x + 1, current.y - 1);
-          pushBg(current.x - 1, current.y + 1);
-          pushBg(current.x + 1, current.y + 1);
+          pushBg(current.x - 1, current.y, current.x, current.y);
+          pushBg(current.x + 1, current.y, current.x, current.y);
+          pushBg(current.x, current.y - 1, current.x, current.y);
+          pushBg(current.x, current.y + 1, current.x, current.y);
+          pushBg(current.x - 1, current.y - 1, current.x, current.y);
+          pushBg(current.x + 1, current.y - 1, current.x, current.y);
+          pushBg(current.x - 1, current.y + 1, current.x, current.y);
+          pushBg(current.x + 1, current.y + 1, current.x, current.y);
         }
 
         const seedMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
