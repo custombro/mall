@@ -4202,14 +4202,22 @@ setAutoCutline({
 
     buildTransparentTraceSourceUrl(uploadState.previewUrl)
       .then(async (traceSourceUrl: string) => {
-        const primarySource = traceSourceUrl || uploadState.previewUrl!;
+        const originalSource = uploadState.previewUrl!;
+        const primarySource = traceSourceUrl || originalSource;
         const primaryResult = await buildAutoCutlineFromForegroundMask(primarySource);
 
-        if (primaryResult || primarySource === uploadState.previewUrl) {
+        if (primaryResult) {
           return primaryResult;
         }
 
-        return buildAutoCutlineFromForegroundMask(uploadState.previewUrl!);
+        if (primarySource !== originalSource) {
+          const retryOriginalResult = await buildAutoCutlineFromForegroundMask(originalSource);
+          if (retryOriginalResult) {
+            return retryOriginalResult;
+          }
+        }
+
+        return buildAutoCutlineFromImage(originalSource);
       })
       .then((result) => {
       if (cancelled) return;
