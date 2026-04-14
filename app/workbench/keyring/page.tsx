@@ -4593,17 +4593,22 @@ setAutoCutline({
       }
 
       const traceSourceUrl = await buildTransparentTraceSourceUrl(originalSource);
-      const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
-
-      if (originalResult) {
-        return originalResult;
-      }
 
       if (traceSourceUrl && traceSourceUrl !== originalSource) {
         const traceResult = await buildAutoCutlineFromForegroundMask(traceSourceUrl);
         if (traceResult) {
           return traceResult;
         }
+
+        const tracedImageResult = await buildAutoCutlineFromImage(traceSourceUrl);
+        if (tracedImageResult) {
+          return tracedImageResult;
+        }
+      }
+
+      const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
+      if (originalResult) {
+        return originalResult;
       }
 
       return buildAutoCutlineFromImage(originalSource);
