@@ -3188,6 +3188,7 @@ const [quantity, setQuantity] = useState(10);
   const [focusAssistBox, setFocusAssistBox] = useState<SubjectAssistBox | null>(null);
   const [focusAssistDraftBox, setFocusAssistDraftBox] = useState<SubjectAssistBox | null>(null);
   const focusAssistDragStartRef = useRef<Point | null>(null);
+  const canvasSurfaceRef = useRef<HTMLDivElement | null>(null);
   const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
     status: "idle",
     path: null,
@@ -4815,7 +4816,10 @@ const rawBounds = cbGetClosedBounds(result.points);
   }, [autoCutline.status, holeSize, shapeMode, uploadState?.previewUrl]);
 
   const getPointerInView = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    const rect =
+      canvasSurfaceRef.current?.getBoundingClientRect() ??
+      event.currentTarget.getBoundingClientRect();
+
     return {
       x: clamp(((event.clientX - rect.left) / rect.width) * VIEW_WIDTH, 0, VIEW_WIDTH),
       y: clamp(((event.clientY - rect.top) / rect.height) * VIEW_HEIGHT, 0, VIEW_HEIGHT),
@@ -4830,6 +4834,18 @@ const rawBounds = cbGetClosedBounds(result.points);
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const canvasRect =
+      canvasSurfaceRef.current?.getBoundingClientRect() ??
+      event.currentTarget.getBoundingClientRect();
+
+    const insideCanvas =
+      event.clientX >= canvasRect.left &&
+      event.clientX <= canvasRect.right &&
+      event.clientY >= canvasRect.top &&
+      event.clientY <= canvasRect.bottom;
+
+    if (!insideCanvas) return;
+
     const canStartFocusAssist =
       shapeMode === "자동칼선" &&
       focusAssistMode &&
@@ -5465,7 +5481,7 @@ if (typeof window !== "undefined") {
                 <div className="text-sm text-white/62">{productionStatus.detail}</div>
               </div>
 
-              <div className="mx-auto aspect-[7/8] w-full max-w-[760px] overflow-hidden">
+              <div ref={canvasSurfaceRef} className="mx-auto aspect-[7/8] w-full max-w-[760px] overflow-hidden">
                 <KeyringCanvas
                   hole={hole}
                   shapeMode={shapeMode}
