@@ -151,6 +151,294 @@ function cbBuildSmoothClosedPath(points: Array<{ x: number; y: number }>) {
 
   return `${d} Z`;
 }
+function cbTriangleArea(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+) {
+  return Math.abs(
+    (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2,
+  );
+}
+
+function cbPruneTinyBoundaryNoise(
+  points: Array<{ x: number; y: number }>,
+  minEdge = 2,
+  minTriangleArea = 2.4,
+  passes = 3,
+) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 24) return next;
+
+    const filtered = next.filter((point, index, arr) => {
+      const prev = arr[(index - 1 + arr.length) % arr.length];
+      const following = arr[(index + 1) % arr.length];
+      const prevLen = cbDistance(prev, point);
+      const nextLen = cbDistance(point, following);
+      const span = cbDistance(prev, following);
+      const triangleArea = cbTriangleArea(prev, point, following);
+
+      const tinyCorner =
+        prevLen <= minEdge &&
+        nextLen <= minEdge * 1.18 &&
+        triangleArea <= minTriangleArea;
+
+      const shortNeedle =
+        span <= minEdge * 1.12 &&
+        triangleArea <= minTriangleArea * 1.35;
+
+      return !(tinyCorner || shortNeedle);
+    });
+
+    if (filtered.length === next.length || filtered.length < 24) {
+      return next;
+    }
+
+    next = filtered;
+  }
+
+  return next;
+}
+
+function cbAngleAwareContourSmoothing(
+  points: Array<{ x: number; y: number }>,
+  strength = 0.16,
+  passes = 2,
+  preserveCornerDeg = 44,
+) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 16) return next;
+
+    next = next.map((point, index, arr) => {
+      const prev = arr[(index - 1 + arr.length) % arr.length];
+      const following = arr[(index + 1) % arr.length];
+
+      const prevLen = Math.max(0.0001, cbDistance(prev, point));
+      const nextLen = Math.max(0.0001, cbDistance(point, following));
+
+      if (prevLen <= 1 || nextLen <= 1) {
+        return point;
+      }
+
+      const inVecX = point.x - prev.x;
+      const inVecY = point.y - prev.y;
+      const outVecX = following.x - point.x;
+      const outVecY = following.y - point.y;
+      const cosTheta = clamp(
+        (inVecX * outVecX + inVecY * outVecY) / (prevLen * nextLen),
+        -1,
+        1,
+      );
+      const angleDeg = (Math.acos(cosTheta) * 180) / Math.PI;
+
+      if (angleDeg <= preserveCornerDeg) {
+        return point;
+      }
+
+      const neighborMidX = (prev.x + following.x) / 2;
+      const neighborMidY = (prev.y + following.y) / 2;
+
+      return {
+        x: point.x + (neighborMidX - point.x) * strength,
+        y: point.y + (neighborMidY - point.y) * strength,
+      };
+    });
+  }
+
+  return next;
+}
+
+function cbCollapseNarrowPeninsulas(
+  points: Array<{ x: number; y: number }>,
+  minBridge = 2.8,
+  maxTriangleArea = 4.8,
+  passes = 2,
+) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 24) return next;
+
+    const filtered = next.filter((point, index, arr) => {
+      const prev2 = arr[(index - 2 + arr.length) % arr.length];
+      const prev = arr[(index - 1 + arr.length) % arr.length];
+      const following = arr[(index + 1) % arr.length];
+      const next2 = arr[(index + 2) % arr.length];
+
+      const bridge = cbDistance(prev, following);
+      const armIn = cbDistance(prev, point);
+      const armOut = cbDistance(point, following);
+      const triangleArea = cbTriangleArea(prev, point, following);
+      const widerContextSpan = cbDistance(prev2, next2);
+
+      const narrowPeninsula =
+        bridge <= minBridge &&
+        triangleArea <= maxTriangleArea &&
+        armIn + armOut >= bridge * 1.75 &&
+        widerContextSpan <= minBridge * 2.85;
+
+      return !narrowPeninsula;
+    });
+
+    if (filtered.length === next.length || filtered.length < 24) {
+      return next;
+    }
+
+    next = filtered;
+  }
+
+  return next;
+}
+function cbStabilizeShortSegments(
+  points: Array<{ x: number; y: number }>,
+  minSegment = 1.9,
+  maxJoinSpan = 3.6,
+  passes = 2,
+) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 24) return next;
+
+    const filtered = next.filter((point, index, arr) => {
+      const prev = arr[(index - 1 + arr.length) % arr.length];
+      const following = arr[(index + 1) % arr.length];
+
+      const prevLen = cbDistance(prev, point);
+      const nextLen = cbDistance(point, following);
+      const joinSpan = cbDistance(prev, following);
+      const triangleArea = cbTriangleArea(prev, point, following);
+
+      const tinyJog =
+        prevLen <= minSegment &&
+        nextLen <= minSegment * 1.28 &&
+        joinSpan <= maxJoinSpan;
+
+      const shallowZigzag =
+        triangleArea <= minSegment * maxJoinSpan * 0.32 &&
+        prevLen + nextLen <= maxJoinSpan * 1.8 &&
+        joinSpan <= maxJoinSpan * 1.12;
+
+      return !(tinyJog || shallowZigzag);
+    });
+
+    if (filtered.length === next.length || filtered.length < 24) {
+      return next;
+    }
+
+    next = filtered;
+  }
+
+  return next;
+}
+function cbCullThinNecks(
+  points: Array<{ x: number; y: number }>,
+  minWidth = 2.6,
+  maxPocketArea = 5.8,
+  passes = 2,
+) {
+  let next = points.map((point) => ({ x: point.x, y: point.y }));
+
+  for (let pass = 0; pass < passes; pass += 1) {
+    if (next.length < 28) return next;
+
+    const filtered = next.filter((point, index, arr) => {
+      const prev2 = arr[(index - 2 + arr.length) % arr.length];
+      const prev = arr[(index - 1 + arr.length) % arr.length];
+      const following = arr[(index + 1) % arr.length];
+      const next2 = arr[(index + 2) % arr.length];
+
+      const bridge = cbDistance(prev, following);
+      const outerBridge = cbDistance(prev2, next2);
+      const armIn = cbDistance(prev, point);
+      const armOut = cbDistance(point, following);
+      const localArea = cbTriangleArea(prev, point, following);
+      const outerArea =
+        cbTriangleArea(prev2, prev, following) +
+        cbTriangleArea(prev, following, next2);
+
+      const thinNeck =
+        bridge <= minWidth &&
+        localArea <= maxPocketArea &&
+        armIn + armOut >= bridge * 1.7 &&
+        outerBridge <= minWidth * 2.55 &&
+        outerArea <= maxPocketArea * 3.8;
+
+      return !thinNeck;
+    });
+
+    if (filtered.length === next.length || filtered.length < 28) {
+      return next;
+    }
+
+    next = filtered;
+  }
+
+  return next;
+}
+function cbSignedArea(points: Array<{ x: number; y: number }>) {
+  let area = 0;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const current = points[i];
+    const next = points[(i + 1) % points.length];
+    area += current.x * next.y - next.x * current.y;
+  }
+
+  return area / 2;
+}
+
+function cbOffsetClosedContour(
+  points: Array<{ x: number; y: number }>,
+  amount = 2,
+) {
+  if (points.length < 3 || amount === 0) {
+    return points.map((point) => ({ x: point.x, y: point.y }));
+  }
+
+  const signedArea = cbSignedArea(points);
+  const winding = signedArea >= 0 ? 1 : -1;
+
+  return points.map((point, index, arr) => {
+    const prev = arr[(index - 1 + arr.length) % arr.length];
+    const following = arr[(index + 1) % arr.length];
+
+    const inDx = point.x - prev.x;
+    const inDy = point.y - prev.y;
+    const outDx = following.x - point.x;
+    const outDy = following.y - point.y;
+
+    const inLen = Math.max(0.0001, Math.sqrt(inDx * inDx + inDy * inDy));
+    const outLen = Math.max(0.0001, Math.sqrt(outDx * outDx + outDy * outDy));
+
+    const inNormalX = winding >= 0 ? inDy / inLen : -inDy / inLen;
+    const inNormalY = winding >= 0 ? -inDx / inLen : inDx / inLen;
+    const outNormalX = winding >= 0 ? outDy / outLen : -outDy / outLen;
+    const outNormalY = winding >= 0 ? -outDx / outLen : outDx / outLen;
+
+    let normalX = inNormalX + outNormalX;
+    let normalY = inNormalY + outNormalY;
+    const normalLen = Math.sqrt(normalX * normalX + normalY * normalY);
+
+    if (normalLen <= 0.0001) {
+      normalX = outNormalX;
+      normalY = outNormalY;
+    } else {
+      normalX /= normalLen;
+      normalY /= normalLen;
+    }
+
+    return {
+      x: point.x + normalX * amount,
+      y: point.y + normalY * amount,
+    };
+  });
+}
+
 type Point = {
   x: number;
   y: number;
@@ -3786,11 +4074,66 @@ const buildAutoCutlineFromForegroundMask = async (
         };
 
         const lightlySmoothedLoop = smoothClosedPoints(outerLoop, 1);
-        const simplifiedPoints = cbSimplifyClosedPoints(lightlySmoothedLoop, 1.15);
-        const resampledPoints = cbResampleClosedPoints(simplifiedPoints, 112);
-        const finalPoints = smoothClosedPoints(cbSimplifyClosedPoints(resampledPoints, 1.25), 1);
-
-        if (finalPoints.length < 24) {
+const outerLoopBounds = cbGetClosedBounds(lightlySmoothedLoop);
+const minNoiseEdge = clamp(
+  Math.min(outerLoopBounds.width, outerLoopBounds.height) * 0.012,
+  1.6,
+  4.6,
+);
+const minNoiseTriangleArea = clamp(
+  (outerLoopBounds.width * outerLoopBounds.height) * 0.00022,
+  1.2,
+  8.4,
+);
+const noiseReducedLoop = cbPruneTinyBoundaryNoise(
+  lightlySmoothedLoop,
+  minNoiseEdge,
+  minNoiseTriangleArea,
+  3,
+);
+const simplifiedPoints = cbSimplifyClosedPoints(
+  noiseReducedLoop,
+  Math.max(1.15, minNoiseEdge * 0.55),
+);
+const resampledPoints = cbResampleClosedPoints(simplifiedPoints, 112);
+const postResampleNoiseReduced = cbPruneTinyBoundaryNoise(
+  resampledPoints,
+  Math.max(1.4, minNoiseEdge * 0.82),
+  Math.max(1, minNoiseTriangleArea * 0.82),
+  2,
+);
+const curveSmoothedPoints = cbAngleAwareContourSmoothing(
+  postResampleNoiseReduced,
+  clamp(minNoiseEdge * 0.06, 0.12, 0.22),
+  2,
+  clamp(38 + minNoiseEdge * 3.2, 38, 54),
+);
+const peninsulaReducedPoints = cbCollapseNarrowPeninsulas(
+  curveSmoothedPoints,
+  clamp(Math.min(outerLoopBounds.width, outerLoopBounds.height) * 0.0175, 2.2, 6.4),
+  clamp((outerLoopBounds.width * outerLoopBounds.height) * 0.00034, 1.8, 12.6),
+  2,
+);
+const segmentStablePoints = cbStabilizeShortSegments(
+  peninsulaReducedPoints,
+  clamp(minNoiseEdge * 0.92, 1.6, 3.4),
+  clamp(minNoiseEdge * 1.75, 2.8, 6.2),
+  2,
+);
+const minWidthCulledPoints = cbCullThinNecks(
+  segmentStablePoints,
+  clamp(Math.min(outerLoopBounds.width, outerLoopBounds.height) * 0.016, 2.2, 5.6),
+  clamp((outerLoopBounds.width * outerLoopBounds.height) * 0.00028, 1.6, 10.4),
+  2,
+);
+const outwardOffsetPoints = cbOffsetClosedContour(
+  minWidthCulledPoints,
+  clamp(Math.min(outerLoopBounds.width, outerLoopBounds.height) * 0.0065, 1.6, 2.5),
+);
+const finalPoints = cbSimplifyClosedPoints(
+  smoothClosedPoints(outwardOffsetPoints, 1),
+  Math.max(1.18, minNoiseEdge * 0.56),
+);if (finalPoints.length < 24) {
           resolve(null);
           return;
         }
