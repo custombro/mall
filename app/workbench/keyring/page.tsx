@@ -2720,7 +2720,7 @@ const previewImageClipPath =
             fontSize="11"
             fontWeight="700"
           >
-            주제 선택 보정
+            범위 잡기
           </text>
         </g>
       ) : null}      {shapeMode !== "자동칼선" || !(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) || !autoCutline.path ? null : (
@@ -4985,7 +4985,7 @@ const rawBounds = cbGetClosedBounds(result.points);
             centroid: null,
           });
           setFocusAssistMode(true);
-          setUploadGuide("JPG 배경 인식 불안정 · 주제 선택 보정으로 캐릭터 주변을 드래그");
+          setUploadGuide("JPG 배경 인식 불안정 · 범위 잡기로 캐릭터 주변을 드래그");
           return;
         }
 
@@ -5162,10 +5162,10 @@ const rawBounds = cbGetClosedBounds(result.points);
         setFocusAssistBox(nextBox);
         setFocusAssistMode(false);
         setUploadGuide(
-          `주제 선택 보정 박스 적용 · ${Math.round(nextBox.width)}×${Math.round(nextBox.height)} · 칼선 다시 계산`,
+          `범위 지정 적용 · ${Math.round(nextBox.width)}×${Math.round(nextBox.height)} · 칼선 다시 계산`,
         );
       } else {
-        setUploadGuide("주제 선택 보정 박스가 너무 작음 · 캐릭터 주변을 다시 드래그");
+        setUploadGuide("범위가 너무 작음 · 캐릭터 주변을 다시 드래그");
       }
     }
 
@@ -5544,7 +5544,7 @@ if (typeof window !== "undefined") {
 
             <CollapseSection title="도움말" defaultOpen={false}>
               <div className="text-sm leading-6 text-white/68">
-                <div>자동칼선 실패 시 오른쪽 ‘주제 선택 보정’ 사용</div>
+                <div>자동칼선 실패 시 오른쪽 ‘범위 잡기’ 사용</div>
                 <div>작업대에서 크기 / 구멍 위치를 바로 확인</div>
               </div>
             </CollapseSection>
@@ -5789,8 +5789,8 @@ if (typeof window !== "undefined") {
                         focusAssistDragStartRef.current = null;
                         setUploadGuide(
                           next
-                            ? "주제 선택 보정 시작 · 작업대에서 캐릭터보다 조금 크게 드래그"
-                            : "주제 선택 보정 대기",
+                            ? "범위 지정 시작 · 작업대에서 캐릭터보다 조금 크게 드래그"
+                            : "범위 지정 대기",
                         );
                       }}
                       className={`rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
@@ -5799,7 +5799,7 @@ if (typeof window !== "undefined") {
                           : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
                       }`}
                     >
-                      {focusAssistMode ? "드래그 대기중" : "주제 선택 보정"}
+                      {focusAssistMode ? "범위 지정 중" : "범위 잡기"}
                     </button>
 
                     <button
@@ -5815,15 +5815,15 @@ if (typeof window !== "undefined") {
                           points: [],
                           centroid: null,
                         });
-                        setUploadGuide("주제 선택 보정 해제 · 자동 감지 기준으로 다시 계산");
+                        setUploadGuide("범위 지정 해제 · 자동 감지 기준으로 다시 계산");
                       }}
                       className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/[0.08]"
                     >
-                      보정 해제
+                      범위 초기화
                     </button>
 
                     <div className="text-xs leading-6 text-white/60">
-                      현재 박스: {hasCommittedFocusAssist && normalizedFocusAssistBox ? `${Math.round(normalizedFocusAssistBox.width)}×${Math.round(normalizedFocusAssistBox.height)}` : "없음"}
+                      선택 범위: {hasCommittedFocusAssist && normalizedFocusAssistBox ? `${Math.round(normalizedFocusAssistBox.width)}×${Math.round(normalizedFocusAssistBox.height)}` : "없음"}
                     </div>
                   </div>
                 ) : null}
@@ -5925,7 +5925,7 @@ if (typeof window !== "undefined") {
 
                   {shapeMode === "자동칼선" && uploadState.previewUrl ? (
                     <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-3 text-[12px] leading-6 text-cyan-100">
-                      자동 결과가 배경째 잡히면 위의 ‘주제 선택 보정’으로 캐릭터보다 조금 크게 드래그
+                      자동 결과가 어긋나면 위의 ‘범위 잡기’로 캐릭터보다 조금 크게 드래그
                     </div>
                   ) : null}
                 </div>
