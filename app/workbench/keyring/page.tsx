@@ -447,7 +447,10 @@ type Point = {
 type HolePosition = Point;
 
 type UploadState = {
+  id: string;
   name: string;
+  fileName: string;
+  mimeType: string;
   typeLabel: string;
   sizeLabel: string;
   previewUrl: string | null;
@@ -1714,6 +1717,82 @@ async function buildAutoCutlineFromImage(
     img.src = url;
   });
 }
+function JpgAutoPreviewLayer({
+  visible,
+  imageUrl,
+  imageX,
+  imageY,
+  imageWidth,
+  imageHeight,
+}: {
+  visible: boolean;
+  imageUrl: string | null;
+  imageX: number;
+  imageY: number;
+  imageWidth: number;
+  imageHeight: number;
+}) {
+  if (!visible || !imageUrl) return null;
+
+  return (
+    <div
+      className="pointer-events-none absolute"
+      style={{
+        left: ((imageX / VIEW_WIDTH) * 100).toFixed(4) + "%",
+        top: ((imageY / VIEW_HEIGHT) * 100).toFixed(4) + "%",
+        width: ((imageWidth / VIEW_WIDTH) * 100).toFixed(4) + "%",
+        height: ((imageHeight / VIEW_HEIGHT) * 100).toFixed(4) + "%",
+        zIndex: 1,
+        overflow: "hidden",
+      }}
+    >
+      <img
+        src={imageUrl}
+        alt=""
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          display: "block",
+          userSelect: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function SvgAutoPreviewLayer({
+  visible,
+  imageUrl,
+  imageX,
+  imageY,
+  imageWidth,
+  imageHeight,
+  clipPathId,
+}: {
+  visible: boolean;
+  imageUrl: string | null;
+  imageX: number;
+  imageY: number;
+  imageWidth: number;
+  imageHeight: number;
+  clipPathId?: string;
+}) {
+  if (!visible || !imageUrl) return null;
+
+  return (
+    <image
+      href={imageUrl}
+      x={imageX}
+      y={imageY}
+      width={imageWidth}
+      height={imageHeight}
+      preserveAspectRatio="xMidYMid meet"
+      clipPath={clipPathId ? `url(#${clipPathId})` : undefined}
+    />
+  );
+}
 function KeyringCanvas({
   hole,
   shapeMode,
@@ -1914,7 +1993,7 @@ function KeyringCanvas({
   const shapeRenderImageUrl = transparentPreviewUrl ?? imageUrl ?? previewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
   const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
-  const useHtmlImageForAutoPreview = preferOriginalPreview && shapeMode === "자동칼선";
+  const useHtmlImageForAutoPreview = Boolean(preferOriginalPreview) && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const showShapeImage = hasUpload && shapeMode !== "자동칼선";
   const showAutoImage = hasUpload && shapeMode === "자동칼선";
@@ -1999,32 +2078,14 @@ const previewImageClipPath =
 
   return (
     <div className="relative h-full w-full">
-      {showAutoImage && useHtmlImageForAutoPreview ? (
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: ((autoPreviewImageX / VIEW_WIDTH) * 100).toFixed(4) + "%",
-            top: ((autoPreviewImageY / VIEW_HEIGHT) * 100).toFixed(4) + "%",
-            width: ((autoPreviewImageWidth / VIEW_WIDTH) * 100).toFixed(4) + "%",
-            height: ((autoPreviewImageHeight / VIEW_HEIGHT) * 100).toFixed(4) + "%",
-            zIndex: 1,
-            overflow: "hidden",
-          }}
-        >
-          <img
-            src={autoRenderImageUrl!}
-            alt=""
-            draggable={false}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              display: "block",
-              userSelect: "none",
-            }}
-          />
-        </div>
-      ) : null}
+      <JpgAutoPreviewLayer
+        visible={showAutoImage && useHtmlImageForAutoPreview}
+        imageUrl={autoRenderImageUrl}
+        imageX={autoPreviewImageX}
+        imageY={autoPreviewImageY}
+        imageWidth={autoPreviewImageWidth}
+        imageHeight={autoPreviewImageHeight}
+      />
       <svg
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
       className="absolute inset-0 h-full w-full"
@@ -2136,19 +2197,15 @@ const previewImageClipPath =
             />
           ) : null}
 
-          {showAutoImage ? (
-            useHtmlImageForAutoPreview ? null : (
-              <image
-                href={autoRenderImageUrl!}
-                x={autoPreviewImageX}
-                y={autoPreviewImageY}
-                width={autoPreviewImageWidth}
-                height={autoPreviewImageHeight}
-                preserveAspectRatio="xMidYMid meet"
-                clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
-              />
-            )
-          ) : null}
+          <SvgAutoPreviewLayer
+            visible={showAutoImage && !useHtmlImageForAutoPreview}
+            imageUrl={autoRenderImageUrl}
+            imageX={autoPreviewImageX}
+            imageY={autoPreviewImageY}
+            imageWidth={autoPreviewImageWidth}
+            imageHeight={autoPreviewImageHeight}
+            clipPathId={previewImageClipPath ? "cb-preview-image-clip" : undefined}
+          />
 
           {(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
             <path
@@ -2889,8 +2946,13 @@ useEffect(() => {
 const [quantity, setQuantity] = useState(10);
   const [dragging, setDragging] = useState(false);
   const [hole, setHole] = useState<HolePosition>({ x: 280, y: 108 });
-  const [uploadState, setUploadState] = useState<UploadState | null>(null);
-  const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+  const [uploadItems, setUploadItems] = useState<UploadState[]>([]);
+  const [activeUploadId, setActiveUploadId] = useState<string | null>(null);
+  const uploadState = useMemo(
+    () => uploadItems.find((item) => item.id === activeUploadId) ?? uploadItems[0] ?? null,
+    [activeUploadId, uploadItems],
+  );
+  const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
   const [artScale, setArtScale] = useState(1);
   const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
     status: "idle",
@@ -4215,6 +4277,21 @@ const finalPoints = cbSimplifyClosedPoints(
 };
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadItemsRef = useRef<UploadState[]>([]);
+
+  useEffect(() => {
+    uploadItemsRef.current = uploadItems;
+  }, [uploadItems]);
+
+  useEffect(() => {
+    return () => {
+      uploadItemsRef.current.forEach((item) => {
+        if (item.previewUrl) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -4322,13 +4399,7 @@ const rawBounds = cbGetClosedBounds(result.points);
     setHole((prev) => projectHoleForCurrentUpload(prev));
   }, [holeSize, shapeMode, autoCutline.status, autoCutline.path]);
 
-  useEffect(() => {
-    return () => {
-      if (uploadState?.previewUrl) {
-        URL.revokeObjectURL(uploadState.previewUrl);
-      }
-    };
-  }, [uploadState]);
+
 
   const unitPrice = useMemo(() => {
     let next = PRICE_BASE[shapeMode];
@@ -4405,13 +4476,16 @@ const rawBounds = cbGetClosedBounds(result.points);
   };
 
   const clearUpload = () => {
-    setUploadState((prev) => {
-      if (prev?.previewUrl) {
-        URL.revokeObjectURL(prev.previewUrl);
-      }
-      return null;
+    setUploadItems((prev) => {
+      prev.forEach((item) => {
+        if (item.previewUrl) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      });
+      return [];
     });
-    setUploadGuide("실시간 미리보기 가능 형식: PNG / JPG / WEBP");
+    setActiveUploadId(null);
+    setUploadGuide("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
     setAutoCutline({
       status: "idle",
       path: null,
@@ -4423,30 +4497,54 @@ const rawBounds = cbGetClosedBounds(result.points);
     }
   };
 
+  const selectUploadItem = (id: string) => {
+    setActiveUploadId(id);
+    setUploadGuide("업로드 목록에서 작업 파일을 선택함");
+  };
+
   const handleUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
 
-    const previewable = PREVIEWABLE_TYPES.includes(file.type as (typeof PREVIEWABLE_TYPES)[number]);
-    const nextPreviewUrl = previewable ? URL.createObjectURL(file) : null;
+    const nextItems = files.map((file, index) => {
+      const previewable = PREVIEWABLE_TYPES.includes(file.type as (typeof PREVIEWABLE_TYPES)[number]);
+      const previewUrl = previewable ? URL.createObjectURL(file) : null;
+      const fallbackId = `${file.name}-${file.size}-${file.lastModified}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : fallbackId;
 
-    setUploadState((prev) => {
-      if (prev?.previewUrl) {
-        URL.revokeObjectURL(prev.previewUrl);
-      }
       return {
+        id,
         name: file.name,
+        fileName: file.name,
+        mimeType: file.type || "알 수 없는 형식",
         typeLabel: file.type || "알 수 없는 형식",
         sizeLabel: formatFileSize(file.size),
-        previewUrl: nextPreviewUrl,
+        previewUrl,
       };
     });
 
+    const previewableCount = nextItems.filter((item) => Boolean(item.previewUrl)).length;
+
+    setUploadItems((prev) => [...prev, ...nextItems]);
+    setActiveUploadId(nextItems[0]?.id ?? null);
     setUploadGuide(
-      previewable
-        ? "업로드 상태: 정책 판정 기준 반영됨"
-        : "PDF / AI / PSD는 업로드 기록만 유지하고 실시간 미리보기는 생략"
+      previewableCount > 0
+        ? `업로드 ${files.length}개 완료 · 미리보기 ${previewableCount}개 · 목록에서 작업 파일 선택 가능`
+        : `업로드 ${files.length}개 완료 · PDF / AI / PSD는 기록만 유지`
     );
+    setAutoCutline({
+      status: "idle",
+      path: null,
+      points: [],
+      centroid: null,
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
 /* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_START */
@@ -4726,7 +4824,7 @@ if (typeof window !== "undefined") {
               </div>
 
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/72">
-                {uploadState ? `업로드 파일: ${uploadState.name}` : "업로드 파일 대기"}
+                {uploadState ? `업로드 ${uploadItems.length}개 · 작업 파일: ${uploadState.name}` : "업로드 파일 대기"}
               </div>
             </div>
 
@@ -4939,6 +5037,7 @@ if (typeof window !== "undefined") {
                 ref={fileInputRef}
                 type="file"
                 accept=".png,.jpg,.jpeg,.webp,.pdf,.ai,.psd"
+                multiple
                 className="hidden"
                 onChange={handleUploadChange}
               />
@@ -4964,15 +5063,66 @@ if (typeof window !== "undefined") {
               <div className="mt-4 rounded-2xl border border-white/10 bg-[#000923] p-4 text-sm leading-7 text-white/72">
                 <div>실시간 미리보기 가능 형식: PNG / JPG / WEBP</div>
                 <div>PDF / AI / PSD는 업로드 기록만 유지</div>
+                <div>여러 파일 / 여러 확장자 동시 업로드 가능</div>
+                <div>목록에서 1개를 선택해 작업대에 반영</div>
                 <div>가능하면 투명 배경, 300dpi 기준</div>
               </div>
+
+              {uploadItems.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-semibold text-white/88">업로드 목록</div>
+                    <div className="text-xs text-white/55">{uploadItems.length}개</div>
+                  </div>
+                  <div className="grid max-h-[320px] gap-2 overflow-y-auto pr-1">
+                    {uploadItems.map((item, index) => {
+                      const active = uploadState?.id === item.id;
+                      const ext = item.fileName.split(".").pop()?.toUpperCase() ?? "FILE";
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => selectUploadItem(item.id)}
+                          className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                            active
+                              ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
+                              : "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000923]">
+                            {item.previewUrl ? (
+                              <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold tracking-[0.14em] text-white/48">{ext}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold">{item.name}</div>
+                            <div className="mt-1 text-xs text-white/55">{item.typeLabel} · {item.sizeLabel}</div>
+                            <div className="mt-1 text-[11px] text-white/48">
+                              {item.previewUrl ? "작업대 반영 가능" : "기록 전용"}
+                            </div>
+                          </div>
+                          <div className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
+                            active ? "bg-[#a9d7ff] text-[#0a1730]" : "bg-white/10 text-white/55"
+                          }`}>
+                            {active ? "작업중" : `#${index + 1}`}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
 
               {uploadState ? (
                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-white/72">
                   <div>파일명: {uploadState.name}</div>
                   <div>형식: {uploadState.typeLabel}</div>
                   <div>크기: {uploadState.sizeLabel}</div>
+                  <div>업로드 개수: {uploadItems.length}</div>
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
+                  <div>선택 상태: 현재 작업 파일</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
                       자동칼선 상태: {autoCutline.status === "ready" ? (isJpegUploadForAutoCutline ? "JPG 1차 생성" : "1차 생성") : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패" : "대기"}
