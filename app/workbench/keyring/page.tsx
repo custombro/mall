@@ -2952,6 +2952,12 @@ const [quantity, setQuantity] = useState(10);
     () => uploadItems.find((item) => item.id === activeUploadId) ?? uploadItems[0] ?? null,
     [activeUploadId, uploadItems],
   );
+  const activeUploadIndex = useMemo(
+    () => (uploadState ? uploadItems.findIndex((item) => item.id === uploadState.id) : -1),
+    [uploadItems, uploadState],
+  );
+  const activeUploadOrderLabel =
+    activeUploadIndex >= 0 ? `${activeUploadIndex + 1}/${uploadItems.length}` : "-";
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
   const [artScale, setArtScale] = useState(1);
   const [autoCutline, setAutoCutline] = useState<AutoCutlineState>({
@@ -4498,8 +4504,22 @@ const rawBounds = cbGetClosedBounds(result.points);
   };
 
   const selectUploadItem = (id: string) => {
+    const nextSelectedIndex = uploadItemsRef.current.findIndex((item) => item.id === id);
+    const nextSelected =
+      nextSelectedIndex >= 0 ? uploadItemsRef.current[nextSelectedIndex] : null;
+
     setActiveUploadId(id);
-    setUploadGuide("업로드 목록에서 작업 파일을 선택함");
+    setAutoCutline({
+      status: "idle",
+      path: null,
+      points: [],
+      centroid: null,
+    });
+    setUploadGuide(
+      nextSelected
+        ? `선택 파일: ${nextSelected.name} · 목록 ${nextSelectedIndex + 1}/${uploadItemsRef.current.length}`
+        : "업로드 목록에서 작업 파일을 선택함"
+    );
   };
 
   const handleUploadChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -4824,7 +4844,7 @@ if (typeof window !== "undefined") {
               </div>
 
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/72">
-                {uploadState ? `업로드 ${uploadItems.length}개 · 작업 파일: ${uploadState.name}` : "업로드 파일 대기"}
+                {uploadState ? `업로드 ${uploadItems.length}개 · 선택 ${activeUploadOrderLabel} · 작업 파일: ${uploadState.name}` : "업로드 파일 대기"}
               </div>
             </div>
 
@@ -5116,11 +5136,12 @@ if (typeof window !== "undefined") {
               ) : null}
 
               {uploadState ? (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-white/72">
+                <div key={uploadState.id} className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-7 text-white/72">
                   <div>파일명: {uploadState.name}</div>
                   <div>형식: {uploadState.typeLabel}</div>
                   <div>크기: {uploadState.sizeLabel}</div>
                   <div>업로드 개수: {uploadItems.length}</div>
+                  <div>선택 순번: {activeUploadOrderLabel}</div>
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   <div>선택 상태: 현재 작업 파일</div>
                   {shapeMode === "자동칼선" ? (
