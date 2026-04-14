@@ -4661,6 +4661,37 @@ const rawBounds = cbGetClosedBounds(result.points);
           y: rawBounds.top + rawBounds.height / 2,
         };
 
+        const jpegSquareTouchCount = result.points.filter((point) =>
+          point.x <= 2 ||
+          point.y <= 2 ||
+          point.x >= ANALYSIS_WIDTH - 3 ||
+          point.y >= ANALYSIS_HEIGHT - 3
+        ).length;
+        const jpegSquareTouchRatio = jpegSquareTouchCount / Math.max(1, result.points.length);
+        const jpegWidthRatio = rawBounds.width / ANALYSIS_WIDTH;
+        const jpegHeightRatio = rawBounds.height / ANALYSIS_HEIGHT;
+        const suspiciousJpegFrame =
+          isJpegUploadForAutoCutline &&
+          !hasCommittedFocusAssist &&
+          (
+            jpegSquareTouchRatio >= 0.12 ||
+            (jpegWidthRatio >= 0.78 && jpegHeightRatio >= 0.42) ||
+            (rawBounds.left <= 2 && rawBounds.right >= ANALYSIS_WIDTH - 3) ||
+            (rawBounds.top <= 2 && rawBounds.bottom >= ANALYSIS_HEIGHT - 3)
+          );
+
+        if (suspiciousJpegFrame) {
+          setAutoCutline({
+            status: "failed",
+            path: null,
+            points: [],
+            centroid: null,
+          });
+          setFocusAssistMode(true);
+          setUploadGuide("JPG 배경 인식 불안정 · 주제 선택 보정으로 캐릭터 주변을 드래그");
+          return;
+        }
+
         setAutoCutline({
           status: "ready",
           path: result.path,
