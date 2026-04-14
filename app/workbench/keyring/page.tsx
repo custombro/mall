@@ -1757,6 +1757,8 @@ function KeyringCanvas({
       return;
     }
 
+    setTransparentPreviewUrl(null);
+
     const img = new window.Image();
     img.decoding = "async";
 
@@ -1776,6 +1778,16 @@ function KeyringCanvas({
       }
 
       ctx.drawImage(img, 0, 0, width, height);
+
+      if (preferOriginalPreview) {
+        try {
+          const rasterizedPngUrl = canvas.toDataURL("image/png");
+          if (!cancelled) setTransparentPreviewUrl(rasterizedPngUrl);
+        } catch {
+          if (!cancelled) setTransparentPreviewUrl(previewUrl);
+        }
+        return;
+      }
 
       const imageData = ctx.getImageData(0, 0, width, height);
       const data = imageData.data;
@@ -1893,11 +1905,11 @@ function KeyringCanvas({
     return () => {
       cancelled = true;
     };
-  }, [previewUrl]);
+  }, [previewUrl, preferOriginalPreview]);
 
   const autoRenderImageUrl =
-    preferOriginalPreview && previewUrl
-      ? previewUrl
+    preferOriginalPreview
+      ? (transparentPreviewUrl ?? previewUrl ?? imageUrl)
       : transparentPreviewUrl ?? previewUrl ?? imageUrl;
   const shapeRenderImageUrl = transparentPreviewUrl ?? imageUrl ?? previewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
