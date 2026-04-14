@@ -3354,11 +3354,9 @@ const buildAutoCutlineFromForegroundMask = async (
           cornerChroma = sumChroma / cornerSamples.length;
         }
 
-        const whiteCornerMode =
+        const cornerBackgroundAnchorMode =
           !hasMeaningfulTransparency &&
-          cornerSamples.length >= 24 &&
-          cornerBrightness >= 236 &&
-          cornerChroma <= 18;
+          cornerSamples.length >= 24;
 
         const whiteCornerBackground: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
           Array.from({ length: ANALYSIS_WIDTH }, () => false),
@@ -3387,7 +3385,7 @@ const buildAutoCutlineFromForegroundMask = async (
           );
         };
 
-        if (whiteCornerMode) {
+        if (cornerBackgroundAnchorMode) {
           const whiteQueue: Array<{ x: number; y: number }> = [];
           let whiteHead = 0;
 
@@ -3425,7 +3423,7 @@ const buildAutoCutlineFromForegroundMask = async (
           maxY: ANALYSIS_HEIGHT - 1,
         };
 
-        if (whiteCornerMode) {
+        if (cornerBackgroundAnchorMode) {
           const candidateMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
             Array.from({ length: ANALYSIS_WIDTH }, () => false),
           );
@@ -3684,7 +3682,7 @@ const buildAutoCutlineFromForegroundMask = async (
         );
         let useCenterAnchor = false;
 
-        if (whiteCornerMode) {
+        if (cornerBackgroundAnchorMode) {
           const anchorScoreMap: number[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
             Array.from({ length: ANALYSIS_WIDTH }, () => 0),
           );
@@ -3884,11 +3882,11 @@ const buildAutoCutlineFromForegroundMask = async (
               x <= subjectBounds.maxX &&
               y >= subjectBounds.minY &&
               y <= subjectBounds.maxY;
-            const anchorAllowed = !whiteCornerMode || !useCenterAnchor || centerAnchorMask[y][x];
+            const anchorAllowed = !cornerBackgroundAnchorMode || !useCenterAnchor || centerAnchorMask[y][x];
             subjectSeedMask[y][x] =
               seedMask[y][x] &&
-              !(whiteCornerMode && whiteCornerBackground[y][x]) &&
-              (!whiteCornerMode || insideSubjectBounds) &&
+              !(cornerBackgroundAnchorMode && whiteCornerBackground[y][x]) &&
+              (!cornerBackgroundAnchorMode || insideSubjectBounds) &&
               anchorAllowed;
           }
         }
