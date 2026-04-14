@@ -1720,6 +1720,7 @@ function KeyringCanvas({
   holeSize,
   imageUrl,
   previewUrl,
+  preferOriginalPreview,
   autoCutline,
   autoCutlinePreviewEnabled,
   autoCutlinePreviewMinGap,
@@ -1730,6 +1731,7 @@ function KeyringCanvas({
   holeSize: HoleSize;
   imageUrl: string | null;
   previewUrl: string | null;
+  preferOriginalPreview?: boolean;
   autoCutline: AutoCutlineState;
   autoCutlinePreviewEnabled: boolean;
   autoCutlinePreviewMinGap: number;
@@ -1893,7 +1895,10 @@ function KeyringCanvas({
     };
   }, [previewUrl]);
 
-  const autoRenderImageUrl = transparentPreviewUrl ?? previewUrl ?? imageUrl;
+  const autoRenderImageUrl =
+    preferOriginalPreview && previewUrl
+      ? previewUrl
+      : transparentPreviewUrl ?? previewUrl ?? imageUrl;
   const shapeRenderImageUrl = transparentPreviewUrl ?? imageUrl ?? previewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
   const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
@@ -4256,10 +4261,13 @@ const rawBounds = cbGetClosedBounds(result.points);
     ((uploadState as { fileName?: string; name?: string } | null)?.fileName ??
       (uploadState as { fileName?: string; name?: string } | null)?.name ??
       "");
+  const uploadStateMimeType =
+    ((uploadState as { mimeType?: string; typeLabel?: string } | null)?.mimeType ??
+      (uploadState as { mimeType?: string; typeLabel?: string } | null)?.typeLabel ??
+      "");
   const isJpegUploadForAutoCutline =
-    /^image\/jpe?g$/i.test(((uploadState as { mimeType?: string } | null)?.mimeType ?? "")) ||
-    /\.jpe?g$/i.test(uploadStateFileName);
-  const effectiveHoleShapeMode = shapeMode;
+    /^image\/jpe?g$/i.test(uploadStateMimeType) ||
+    /\.jpe?g$/i.test(uploadStateFileName);const effectiveHoleShapeMode = shapeMode;
   const projectHoleForCurrentUpload = (pointer: HolePosition) => projectHole(pointer, holeSize, shapeMode, autoCutline);
 
   useEffect(() => {
@@ -4863,6 +4871,7 @@ if (typeof window !== "undefined") {
                   imageUrl={uploadState?.previewUrl ?? null}
               previewUrl={uploadState?.previewUrl ?? null}
                   autoCutline={effectiveAutoCutline}
+                preferOriginalPreview={isJpegUploadForAutoCutline}
                 artScale={artScale}
           autoCutlinePreviewEnabled={true}
           autoCutlinePreviewMinGap={isJpegUploadForAutoCutline ? 11.5 : 2.4}
