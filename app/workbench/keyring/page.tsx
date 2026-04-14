@@ -1914,6 +1914,7 @@ function KeyringCanvas({
   const shapeRenderImageUrl = transparentPreviewUrl ?? imageUrl ?? previewUrl;
   const renderImageUrl = shapeMode === "자동칼선" ? autoRenderImageUrl : shapeRenderImageUrl;
   const autoPreviewInsetEnabled = Boolean(autoRenderImageUrl) && shapeMode === "자동칼선";
+  const useHtmlImageForAutoPreview = preferOriginalPreview && shapeMode === "자동칼선";
   const hasUpload = Boolean(renderImageUrl);
   const showShapeImage = hasUpload && shapeMode !== "자동칼선";
   const showAutoImage = hasUpload && shapeMode === "자동칼선";
@@ -1973,6 +1974,11 @@ function KeyringCanvas({
 
   return { x, y, minX, minY, maxX, maxY, width, height };
 })();
+
+  const autoPreviewImageX = previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0);
+  const autoPreviewImageY = previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0);
+  const autoPreviewImageWidth = Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0));
+  const autoPreviewImageHeight = Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0));
 
   const autoCutlinePreviewPath =
     (shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0)
@@ -2104,15 +2110,48 @@ const previewImageClipPath =
           ) : null}
 
           {showAutoImage ? (
-            <image
-              href={autoRenderImageUrl!}
-                x={previewContourBounds.x + (autoPreviewInsetEnabled ? 4 : 0)}
-                y={previewContourBounds.y + (autoPreviewInsetEnabled ? 4 : 0)}
-                width={Math.max(1, previewContourBounds.width - (autoPreviewInsetEnabled ? 8 : 0))}
-                height={Math.max(1, previewContourBounds.height - (autoPreviewInsetEnabled ? 8 : 0))}
-              preserveAspectRatio="xMidYMid meet"
-              clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
-            />
+            useHtmlImageForAutoPreview ? (
+              <foreignObject
+                x={autoPreviewImageX}
+                y={autoPreviewImageY}
+                width={autoPreviewImageWidth}
+                height={autoPreviewImageHeight}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={autoRenderImageUrl!}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      display: "block",
+                      userSelect: "none",
+                    }}
+                  />
+                </div>
+              </foreignObject>
+            ) : (
+              <image
+                href={autoRenderImageUrl!}
+                x={autoPreviewImageX}
+                y={autoPreviewImageY}
+                width={autoPreviewImageWidth}
+                height={autoPreviewImageHeight}
+                preserveAspectRatio="xMidYMid meet"
+                clipPath={previewImageClipPath ? "url(#cb-preview-image-clip)" : undefined}
+              />
+            )
           ) : null}
 
           {(shapeMode === "자동칼선" && autoCutlinePreviewEnabled && autoCutline.status === "ready" && autoCutline.points.length > 0) && autoCutline.path ? (
