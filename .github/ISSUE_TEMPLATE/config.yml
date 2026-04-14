@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 승인형 배포 가이드
+    url: https://github.com/custombro/mall/blob/main/docs/APPROVAL_FIRST_DEPLOY_FLOW.md
+    about: 승인형 온라인 배포 절차 확인
+  - name: 운영 배포 요청
+    url: https://github.com/custombro/mall/issues/new?template=deploy-request.md
+    about: 운영 반영 승인 요청 작성
