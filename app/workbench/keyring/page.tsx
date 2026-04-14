@@ -2010,12 +2010,30 @@ function KeyringCanvas({
       ctx.drawImage(img, 0, 0, width, height);
 
       if (preferOriginalPreview) {
-        try {
-          const rasterizedPngUrl = canvas.toDataURL("image/png");
-          if (!cancelled) setTransparentPreviewUrl(rasterizedPngUrl);
-        } catch {
-          if (!cancelled) setTransparentPreviewUrl(previewUrl);
-        }
+        retainLargestOpaqueIslandFromDataUrl(previewUrl)
+          .then((cleanedUrl) => {
+            if (cancelled) return;
+            if (typeof cleanedUrl === "string" && cleanedUrl.length > 0) {
+              setTransparentPreviewUrl(cleanedUrl);
+              return;
+            }
+
+            try {
+              const rasterizedPngUrl = canvas.toDataURL("image/png");
+              if (!cancelled) setTransparentPreviewUrl(rasterizedPngUrl);
+            } catch {
+              if (!cancelled) setTransparentPreviewUrl(previewUrl);
+            }
+          })
+          .catch(() => {
+            if (cancelled) return;
+            try {
+              const rasterizedPngUrl = canvas.toDataURL("image/png");
+              if (!cancelled) setTransparentPreviewUrl(rasterizedPngUrl);
+            } catch {
+              if (!cancelled) setTransparentPreviewUrl(previewUrl);
+            }
+          });
         return;
       }
 
@@ -4589,6 +4607,19 @@ setAutoCutline({
         const assistedImageResult = await buildAutoCutlineFromImage(assistedSource);
         if (assistedImageResult) {
           return assistedImageResult;
+        }
+      }
+
+      const matteRemovedSource = await retainLargestOpaqueIslandFromDataUrl(originalSource);
+      if (matteRemovedSource && matteRemovedSource !== originalSource) {
+        const matteRemovedMaskResult = await buildAutoCutlineFromForegroundMask(matteRemovedSource);
+        if (matteRemovedMaskResult) {
+          return matteRemovedMaskResult;
+        }
+
+        const matteRemovedImageResult = await buildAutoCutlineFromImage(matteRemovedSource);
+        if (matteRemovedImageResult) {
+          return matteRemovedImageResult;
         }
       }
 
