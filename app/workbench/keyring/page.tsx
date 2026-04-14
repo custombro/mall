@@ -4156,7 +4156,7 @@ if (typeof window !== "undefined") {
 /* CB_WHITE_JPG_AUTO_CUTLINE_SELFTEST_BINDING_END */
   return (
     <main className="min-h-screen bg-[#041129] text-white">
-      <div className="mx-auto w-full max-w-[1680px] px-4 py-5">
+      <div className="mx-auto w-full max-w-[1820px] px-4 py-5">
 
         <section className="rounded-2xl border border-slate-800 bg-[#09142b] px-5 py-4">
   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4171,7 +4171,7 @@ if (typeof window !== "undefined") {
   </div>
 </section>
 
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[260px_minmax(820px,1fr)_300px]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
             <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">LEFT / 제작 세팅</div>
 
@@ -4435,8 +4435,8 @@ if (typeof window !== "undefined") {
             >              <div
                 className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2 rounded-[24px] border border-cyan-300/12 opacity-80"
                 style={{
-                  width: "min(76vw, 612px)",
-                  height: "min(calc(76vw * 8 / 7), 699px)",
+                  width: "min(92vw, 760px)",
+                  height: "min(calc(92vw * 8 / 7), 868px)",
                   backgroundImage: `
                     linear-gradient(to right, rgba(143,192,255,0.08) 1px, transparent 1px),
                     linear-gradient(to bottom, rgba(143,192,255,0.08) 1px, transparent 1px),
@@ -4449,7 +4449,7 @@ if (typeof window !== "undefined") {
               />
               <div
                 className="pointer-events-none absolute left-1/2 top-4 z-0 -translate-x-1/2"
-                style={{ width: "min(76vw, 612px)", height: "min(calc(76vw * 8 / 7), 699px)" }}
+                style={{ width: "min(92vw, 760px)", height: "min(calc(92vw * 8 / 7), 868px)" }}
               >
                 <div className="absolute inset-x-3 top-1 flex items-center justify-between text-[10px] font-medium text-cyan-100/58">
                   <span>0</span>
@@ -4487,7 +4487,7 @@ if (typeof window !== "undefined") {
                 <div className="text-sm text-white/62">{productionStatus.detail}</div>
               </div>
 
-              <div className="mx-auto aspect-[7/8] w-full max-w-[612px] overflow-hidden">
+              <div className="mx-auto aspect-[7/8] w-full max-w-[760px] overflow-hidden">
                 <KeyringCanvas
                   hole={hole}
                   shapeMode={shapeMode}
