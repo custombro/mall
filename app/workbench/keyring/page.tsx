@@ -3877,17 +3877,9 @@ const buildAutoCutlineFromForegroundMask = async (
 
         for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
           for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
-            const insideSubjectBounds =
-              x >= subjectBounds.minX &&
-              x <= subjectBounds.maxX &&
-              y >= subjectBounds.minY &&
-              y <= subjectBounds.maxY;
-            const anchorAllowed = !cornerBackgroundAnchorMode || !useCenterAnchor || centerAnchorMask[y][x];
             subjectSeedMask[y][x] =
               seedMask[y][x] &&
-              !(cornerBackgroundAnchorMode && whiteCornerBackground[y][x]) &&
-              (!cornerBackgroundAnchorMode || insideSubjectBounds) &&
-              anchorAllowed;
+              !(cornerBackgroundAnchorMode && whiteCornerBackground[y][x]);
           }
         }
 
@@ -4337,17 +4329,16 @@ setAutoCutline({
     buildTransparentTraceSourceUrl(uploadState.previewUrl)
       .then(async (traceSourceUrl: string) => {
         const originalSource = uploadState.previewUrl!;
-        const primarySource = traceSourceUrl || originalSource;
-        const primaryResult = await buildAutoCutlineFromForegroundMask(primarySource);
+        const originalResult = await buildAutoCutlineFromForegroundMask(originalSource);
 
-        if (primaryResult) {
-          return primaryResult;
+        if (originalResult) {
+          return originalResult;
         }
 
-        if (primarySource !== originalSource) {
-          const retryOriginalResult = await buildAutoCutlineFromForegroundMask(originalSource);
-          if (retryOriginalResult) {
-            return retryOriginalResult;
+        if (traceSourceUrl && traceSourceUrl !== originalSource) {
+          const traceResult = await buildAutoCutlineFromForegroundMask(traceSourceUrl);
+          if (traceResult) {
+            return traceResult;
           }
         }
 
