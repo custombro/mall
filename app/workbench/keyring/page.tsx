@@ -1434,7 +1434,7 @@ async function buildSubjectAssistSourceUrl(
     img.decoding = "async";
     img.crossOrigin = "anonymous";
 
-    img.onload = () => {
+    img.onload = async () => {
       try {
         const previewFrame = getAutoCutlinePreviewFrameForScale(artScale);
         const previewScale = Math.min(previewFrame.width / img.width, previewFrame.height / img.height);
@@ -1453,8 +1453,8 @@ async function buildSubjectAssistSourceUrl(
           return;
         }
 
-        const padX = Math.max(10, (boxRight - boxLeft) * 0.16);
-        const padY = Math.max(10, (boxBottom - boxTop) * 0.16);
+        const padX = Math.max(8, (boxRight - boxLeft) * 0.12);
+        const padY = Math.max(8, (boxBottom - boxTop) * 0.12);
 
         const safeLeft = Math.max(previewDrawX, boxLeft - padX);
         const safeTop = Math.max(previewDrawY, boxTop - padY);
@@ -1497,23 +1497,289 @@ async function buildSubjectAssistSourceUrl(
 
         const imageData = ctx.getImageData(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
         const data = imageData.data;
-        let keptPixels = 0;
 
+        const insideBox = (x: number, y: number) =>
+          x >= maskLeft &&
+          x < maskRight &&
+          y >= maskTop &&
+          y < maskBottom;
+
+        let hasMeaningfulTransparency = false;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0 && data[i] < 245) {
+            hasMeaningfulTransparency = true;
+            break;
+          }
+        }
+
+        const borderSamples: Array<{ r: number; g: number; b: number }> = [];
+        const sampleBorder = (x: number, y: number) => {
+          if (!insideBox(x, y)) return;
+          const idx = (y * ANALYSIS_WIDTH + x) * 4;
+          const a = data[idx + 3];
+          if (a < 16) return;
+          borderSamples.push({
+            r: data[idx],
+            g: data[idx + 1],
+            b: data[idx + 2],
+          });
+        };
+
+        for (let x = maskLeft; x < maskRight; x += 1) {
+          sampleBorder(x, maskTop);
+          sampleBorder(x, Math.max(maskTop, maskTop + 1));
+          sampleBorder(x, Math.max(maskTop, maskBottom - 1));
+          sampleBorder(x, Math.max(maskTop, maskBottom - 2));
+        }
+        for (let y = maskTop; y < maskBottom; y += 1) {
+          sampleBorder(maskLeft, y);
+          sampleBorder(Math.max(maskLeft, maskLeft + 1), y);
+          sampleBorder(Math.max(maskLeft, maskRight - 1), y);
+          sampleBorder(Math.max(maskLeft, maskRight - 2), y);
+        }
+
+        let bgMeanR = 245;
+        let bgMeanG = 245;
+        let bgMeanB = 245;
+        let bgBrightness = 245;
+        let bgChroma = 0;
+
+        if (borderSamples.length > 0) {
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          let sumChroma = 0;
+          for (const sample of borderSamples) {
+            sumR += sample.r;
+            sumG += sample.g;
+            sumB += sample.b;
+            sumChroma += Math.max(sample.r, sample.g, sample.b) - Math.min(sample.r, sample.g, sample.b);
+          }
+          bgMeanR = sumR / borderSamples.length;
+          bgMeanG = sumG / borderSamples.length;
+          bgMeanB = sumB / borderSamples.length;
+          bgBrightness = (bgMeanR + bgMeanG + bgMeanB) / 3;
+          bgChroma = sumChroma / borderSamples.length;
+        }
+
+        const colorDistanceToBg = (r: number, g: number, b: number) =>
+          Math.hypot(r - bgMeanR, g - bgMeanG, b - bgMeanB);
+
+        const candidateMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+        const scoreMap: number[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => 0),
+        );
+
+        const centerX = (maskLeft + maskRight) / 2;
+        const centerY = (maskTop + maskBottom) / 2;
+        let bestPixelScore = 0;
+
+        for (let y = maskTop; y < maskBottom; y += 1) {
+          for (let x = maskLeft; x < maskRight; x += 1) {
+            const idx = (y * ANALYSIS_WIDTH + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            if (a < 16) continue;
+
+            if (hasMeaningfulTransparency) {
+              scoreMap[y][x] = 100;
+              candidateMask[y][x] = true;
+              bestPixelScore = 100;
+              continue;
+            }
+
+            const brightness = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            const dist = colorDistanceToBg(r, g, b);
+
+            const rightX = Math.min(ANALYSIS_WIDTH - 1, x + 1);
+            const downY = Math.min(ANALYSIS_HEIGHT - 1, y + 1);
+            const rightIdx = (y * ANALYSIS_WIDTH + rightX) * 4;
+            const downIdx = (downY * ANALYSIS_WIDTH + x) * 4;
+            const localGrad =
+              Math.abs(r - data[rightIdx]) +
+              Math.abs(g - data[rightIdx + 1]) +
+              Math.abs(b - data[rightIdx + 2]) +
+              Math.abs(r - data[downIdx]) +
+              Math.abs(g - data[downIdx + 1]) +
+              Math.abs(b - data[downIdx + 2]);
+
+            const centerBiasX = 1 - Math.min(1, Math.abs(x - centerX) / Math.max(1, (maskRight - maskLeft) * 0.5));
+            const centerBiasY = 1 - Math.min(1, Math.abs(y - centerY) / Math.max(1, (maskBottom - maskTop) * 0.5));
+            const centerBias = Math.max(0, (centerBiasX + centerBiasY) / 2);
+
+            let score = 0;
+            score += Math.max(0, dist - 12) * 1.0;
+            score += Math.max(0, bgBrightness - brightness - 4) * 1.2;
+            score += Math.max(0, chroma - Math.max(8, bgChroma + 4)) * 1.1;
+            score += Math.max(0, localGrad - 10) * 0.55;
+            score += centerBias * 18;
+
+            if (brightness >= bgBrightness - 2 && chroma <= Math.max(8, bgChroma + 2) && localGrad < 18) {
+              score *= 0.22;
+            }
+
+            scoreMap[y][x] = score;
+            if (score > bestPixelScore) bestPixelScore = score;
+          }
+        }
+
+        const candidateThreshold = Math.max(10, bestPixelScore * 0.36);
+        const centerThreshold = Math.max(8, bestPixelScore * 0.22);
+        for (let y = maskTop; y < maskBottom; y += 1) {
+          for (let x = maskLeft; x < maskRight; x += 1) {
+            const inStrictCenter =
+              x >= maskLeft + (maskRight - maskLeft) * 0.18 &&
+              x <= maskRight - (maskRight - maskLeft) * 0.18 &&
+              y >= maskTop + (maskBottom - maskTop) * 0.12 &&
+              y <= maskBottom - (maskBottom - maskTop) * 0.12;
+
+            candidateMask[y][x] =
+              hasMeaningfulTransparency ||
+              scoreMap[y][x] >= candidateThreshold ||
+              (inStrictCenter && scoreMap[y][x] >= centerThreshold);
+          }
+        }
+
+        const visited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+
+        const neighbors = [
+          { x: -1, y: 0 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: 0, y: 1 },
+          { x: -1, y: -1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: 1, y: 1 },
+        ] as const;
+
+        let bestPoints: Point[] = [];
+        let bestComponentScore = -Infinity;
+
+        for (let y = maskTop; y < maskBottom; y += 1) {
+          for (let x = maskLeft; x < maskRight; x += 1) {
+            if (!candidateMask[y][x] || visited[y][x]) continue;
+
+            const queue: Array<{ x: number; y: number }> = [{ x, y }];
+            const component: Point[] = [];
+            let head = 0;
+            let scoreSum = 0;
+            let minX = x;
+            let minY = y;
+            let maxX = x;
+            let maxY = y;
+            visited[y][x] = true;
+
+            while (head < queue.length) {
+              const current = queue[head];
+              head += 1;
+              component.push({ x: current.x, y: current.y });
+              scoreSum += scoreMap[current.y][current.x];
+
+              if (current.x < minX) minX = current.x;
+              if (current.y < minY) minY = current.y;
+              if (current.x > maxX) maxX = current.x;
+              if (current.y > maxY) maxY = current.y;
+
+              for (const next of neighbors) {
+                const nx = current.x + next.x;
+                const ny = current.y + next.y;
+                if (!insideBox(nx, ny)) continue;
+                if (visited[ny][nx] || !candidateMask[ny][nx]) continue;
+                visited[ny][nx] = true;
+                queue.push({ x: nx, y: ny });
+              }
+            }
+
+            const compCenterX = (minX + maxX) / 2;
+            const compCenterY = (minY + maxY) / 2;
+            const centerPenalty =
+              Math.abs(compCenterX - centerX) / Math.max(1, (maskRight - maskLeft)) +
+              Math.abs(compCenterY - centerY) / Math.max(1, (maskBottom - maskTop));
+
+            let componentScore = component.length * 4 + scoreSum;
+            componentScore += Math.max(0, 80 - centerPenalty * 120);
+
+            if (componentScore > bestComponentScore) {
+              bestComponentScore = componentScore;
+              bestPoints = component;
+            }
+          }
+        }
+
+        if (bestPoints.length < 16) {
+          resolve(sourceUrl);
+          return;
+        }
+
+        const keepMask: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+        const growVisited: boolean[][] = Array.from({ length: ANALYSIS_HEIGHT }, () =>
+          Array.from({ length: ANALYSIS_WIDTH }, () => false),
+        );
+        const growQueue: Array<{ x: number; y: number }> = [];
+        let growHead = 0;
+
+        for (const point of bestPoints) {
+          keepMask[point.y][point.x] = true;
+          growVisited[point.y][point.x] = true;
+          growQueue.push({ x: point.x, y: point.y });
+        }
+
+        const growThreshold = Math.max(6, bestPixelScore * 0.14);
+
+        while (growHead < growQueue.length) {
+          const current = growQueue[growHead];
+          growHead += 1;
+
+          for (const next of neighbors) {
+            const nx = current.x + next.x;
+            const ny = current.y + next.y;
+            if (!insideBox(nx, ny)) continue;
+            if (growVisited[ny][nx]) continue;
+            growVisited[ny][nx] = true;
+
+            const idx = (ny * ANALYSIS_WIDTH + nx) * 4;
+            const a = data[idx + 3];
+            if (a < 16) continue;
+
+            if (hasMeaningfulTransparency) {
+              keepMask[ny][nx] = true;
+              growQueue.push({ x: nx, y: ny });
+              continue;
+            }
+
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const brightness = (r + g + b) / 3;
+            const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+            const dist = colorDistanceToBg(r, g, b);
+
+            const growScore =
+              scoreMap[ny][nx] +
+              (dist >= 18 ? 10 : 0) +
+              (brightness <= bgBrightness - 6 ? 10 : 0) +
+              (chroma >= Math.max(12, bgChroma + 4) ? 10 : 0);
+
+            if (growScore < growThreshold) continue;
+
+            keepMask[ny][nx] = true;
+            growQueue.push({ x: nx, y: ny });
+          }
+        }
+
+        let keptPixels = 0;
         for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
           for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
-            const inside =
-              x >= maskLeft &&
-              x < maskRight &&
-              y >= maskTop &&
-              y < maskBottom;
             const idx = (y * ANALYSIS_WIDTH + x) * 4;
-            if (!inside) {
+            if (!keepMask[y][x]) {
               data[idx + 3] = 0;
               continue;
             }
-            if (data[idx + 3] > 16) {
-              keptPixels += 1;
-            }
+            keptPixels += 1;
           }
         }
 
@@ -1523,7 +1789,9 @@ async function buildSubjectAssistSourceUrl(
         }
 
         ctx.putImageData(imageData, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
+        const nextUrl = canvas.toDataURL("image/png");
+        const cleanedUrl = await retainLargestOpaqueIslandFromDataUrl(nextUrl);
+        resolve(cleanedUrl || nextUrl);
       } catch {
         resolve(sourceUrl);
       }
@@ -5509,6 +5777,56 @@ if (typeof window !== "undefined") {
                 <div className="text-sm font-semibold text-white/86">선택 파일 요약</div>
                 <div className="mt-1 text-sm leading-6 text-white/72">{selectedUploadSummary}</div>
                 <div className="mt-1 text-xs leading-5 text-white/55">{uploadGuide}</div>
+
+                {shapeMode === "자동칼선" && uploadState?.previewUrl ? (
+                  <div className="mt-3 grid gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !focusAssistMode;
+                        setFocusAssistMode(next);
+                        setFocusAssistDraftBox(null);
+                        focusAssistDragStartRef.current = null;
+                        setUploadGuide(
+                          next
+                            ? "주제 선택 보정 시작 · 작업대에서 캐릭터보다 조금 크게 드래그"
+                            : "주제 선택 보정 대기",
+                        );
+                      }}
+                      className={`rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
+                        focusAssistMode
+                          ? "bg-[#a9d7ff] text-[#0a1730]"
+                          : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      {focusAssistMode ? "드래그 대기중" : "주제 선택 보정"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusAssistMode(false);
+                        setFocusAssistBox(null);
+                        setFocusAssistDraftBox(null);
+                        focusAssistDragStartRef.current = null;
+                        setAutoCutline({
+                          status: "idle",
+                          path: null,
+                          points: [],
+                          centroid: null,
+                        });
+                        setUploadGuide("주제 선택 보정 해제 · 자동 감지 기준으로 다시 계산");
+                      }}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/[0.08]"
+                    >
+                      보정 해제
+                    </button>
+
+                    <div className="text-xs leading-6 text-white/60">
+                      현재 박스: {hasCommittedFocusAssist && normalizedFocusAssistBox ? `${Math.round(normalizedFocusAssistBox.width)}×${Math.round(normalizedFocusAssistBox.height)}` : "없음"}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <input
@@ -5606,59 +5924,9 @@ if (typeof window !== "undefined") {
                   ) : null}
 
                   {shapeMode === "자동칼선" && uploadState.previewUrl ? (
-                    <>
-                      <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-3 text-[12px] leading-6 text-cyan-100">
-                        자동 결과가 배경째 잡히면 캐릭터보다 조금 크게 박스를 드래그
-                      </div>
-
-                      <div className="mt-3 grid gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = !focusAssistMode;
-                            setFocusAssistMode(next);
-                            setFocusAssistDraftBox(null);
-                            focusAssistDragStartRef.current = null;
-                            setUploadGuide(
-                              next
-                                ? "주제 선택 보정 시작 · 작업대에서 캐릭터 주변을 드래그"
-                                : "주제 선택 보정 대기",
-                            );
-                          }}
-                          className={`rounded-2xl px-4 py-3 text-sm font-extrabold transition ${
-                            focusAssistMode
-                              ? "bg-[#a9d7ff] text-[#0a1730]"
-                              : "border border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.08]"
-                          }`}
-                        >
-                          {focusAssistMode ? "드래그 대기중" : "주제 선택 보정"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFocusAssistMode(false);
-                            setFocusAssistBox(null);
-                            setFocusAssistDraftBox(null);
-                            focusAssistDragStartRef.current = null;
-                            setAutoCutline({
-                              status: "idle",
-                              path: null,
-                              points: [],
-                              centroid: null,
-                            });
-                            setUploadGuide("주제 선택 보정 해제 · 자동 감지 기준으로 다시 계산");
-                          }}
-                          className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-white/[0.08]"
-                        >
-                          보정 해제
-                        </button>
-                      </div>
-
-                      <div className="mt-3 text-xs leading-6 text-white/60">
-                        현재 박스: {hasCommittedFocusAssist && normalizedFocusAssistBox ? `${Math.round(normalizedFocusAssistBox.width)}×${Math.round(normalizedFocusAssistBox.height)}` : "없음"}
-                      </div>
-                    </>
+                    <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-3 text-[12px] leading-6 text-cyan-100">
+                      자동 결과가 배경째 잡히면 위의 ‘주제 선택 보정’으로 캐릭터보다 조금 크게 드래그
+                    </div>
                   ) : null}
                 </div>
               ) : null}
