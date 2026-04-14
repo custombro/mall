@@ -2513,6 +2513,34 @@ function OptionButton({
   );
 }
 
+function CollapseSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="mt-3 rounded-[20px] border border-white/10 bg-white/[0.03] p-3">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="text-sm font-semibold text-white/86">{title}</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-white/58">
+          {open ? "접기" : "펼치기"}
+        </span>
+      </button>
+      {open ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+}
+
 async function buildTransparentTraceSourceUrlCore(sourceUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -5108,50 +5136,20 @@ if (typeof window !== "undefined") {
   </div>
 </section>
 
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[260px_minmax(820px,1fr)_300px]">
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[220px_minmax(920px,1fr)_380px]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
             <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">LEFT / 제작 세팅</div>
 
-            <div className="mb-6">
-              <div className="mb-3 text-sm font-semibold text-white/86">형태 모드</div>
-              <div className="grid gap-2">
+            <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-3">
+              <div className="mb-2 text-sm font-semibold text-white/86">형태 모드</div>
+              <div className="grid grid-cols-3 gap-2">
                 {SHAPE_MODES.map((item) => (
-                  <OptionButton
-                    key={item}
-                    active={shapeMode === item}
-                    label={item}
-                    description={getShapeDescription(item)}
-                    onClick={() => setShapeMode(item)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="mb-3 text-sm font-semibold text-white/86">자재</div>
-              <div className="grid gap-2">
-                {MATERIALS.map((item) => (
-                  <OptionButton
-                    key={item}
-                    active={material === item}
-                    label={item}
-                    onClick={() => setMaterial(item)}
-                    compact
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="mb-3 text-sm font-semibold text-white/86">두께</div>
-              <div className="flex gap-2">
-                {THICKNESSES.map((item) => (
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setThickness(item)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                      thickness === item
+                    onClick={() => setShapeMode(item)}
+                    className={`rounded-xl border px-3 py-3 text-center text-sm font-semibold transition ${
+                      shapeMode === item
                         ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
                         : "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.08]"
                     }`}
@@ -5160,73 +5158,112 @@ if (typeof window !== "undefined") {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="mb-3 text-sm font-semibold text-white/86">링 / 체결</div>
-              <div className="grid gap-2">
-                {RINGS.map((item) => (
-                  <OptionButton
-                    key={item}
-                    active={ring === item}
-                    label={item}
-                    onClick={() => setRing(item)}
-                    compact
-                  />
-                ))}
+              <div className="mt-2 text-xs leading-5 text-white/58">
+                {shapeMode === "자동칼선" ? "업로드 이미지를 기준으로 자동칼선 생성" : "선택 형태 기준으로 바로 작업"}
               </div>
             </div>
 
-            <div className="mb-6">
+            <CollapseSection title="재료 / 두께 / 링" defaultOpen={true}>
+              <div className="grid gap-3">
+                <label className="grid gap-2">
+                  <span className="text-xs font-semibold text-white/58">자재</span>
+                  <select
+                    value={material}
+                    onChange={(event) => setMaterial(event.target.value as Material)}
+                    className="rounded-2xl border border-white/10 bg-[#000923] px-4 py-3 text-sm text-white outline-none"
+                  >
+                    {MATERIALS.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
 
-          <div data-testid="left-cutline-margin-panel-v3" className="mt-8">
-            <div className="text-sm font-semibold text-white/82">칼선 여백</div>
-            <div className="mt-2 text-xs leading-5 text-white/58">
-              자동칼선 전용 · 이미지 외곽선 기준 바깥 2 ~ 2.5mm
-            </div>
-            <div className="mt-3 grid gap-3">
-              {AUTO_CUTLINE_MARGIN_OPTIONS.map((marginMm) => (
-                <OptionButton
-                  key={`cutline-margin-v3-${marginMm}`}
-                  active={shapeMode === "자동칼선" && autoCutlineMarginMm === marginMm}
-                  label={`${formatAutoCutlineMarginMm(marginMm)}mm`}
-                  description={
-                    shapeMode === "자동칼선"
-                      ? `이미지 외곽선 기준 바깥 ${formatAutoCutlineMarginMm(marginMm)}mm`
-                      : "자동칼선 모드에서 적용"
-                  }
-                  compact
-                  onClick={() => {
-                    if (shapeMode === "자동칼선") {
-                      setAutoCutlineMarginMm(marginMm);
-                    }
-                  }}
-                />
-              ))}
-            </div>
-            <div className="mt-2 text-xs leading-5 text-white/58">
-              레이저 커팅 보호 여백 · 외곽/키링 빨강 · 구멍 검정 · 0.01mm
-            </div>
-          </div>
-              <div className="mb-3 text-sm font-semibold text-white/86">구멍 규격</div>
-              <div className="grid gap-2">
-                {HOLE_SIZES.map((item) => (
-                  <OptionButton
-                    key={String(item)}
-                    active={holeSize === item}
-                    label={getHoleLabel(item)}
-                    description={getHoleLimitLabel(item)}
-                    onClick={() => setHoleSize(item)}
-                  />
-                ))}
+                <label className="grid gap-2">
+                  <span className="text-xs font-semibold text-white/58">두께</span>
+                  <select
+                    value={thickness}
+                    onChange={(event) => setThickness(event.target.value as Thickness)}
+                    className="rounded-2xl border border-white/10 bg-[#000923] px-4 py-3 text-sm text-white outline-none"
+                  >
+                    {THICKNESSES.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-xs font-semibold text-white/58">링 / 체결</span>
+                  <select
+                    value={ring}
+                    onChange={(event) => setRing(event.target.value as Ring)}
+                    className="rounded-2xl border border-white/10 bg-[#000923] px-4 py-3 text-sm text-white outline-none"
+                  >
+                    {RINGS.map((item) => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            </div>
+            </CollapseSection>
 
-            <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/68">
-              <div>업로드 후 작업판 내부 글씨 제거</div>
-              <div>원형/사각형은 구멍이 외곽선에 붙어 이동</div>
-              <div>PNG/JPG 1차 생성, JPG는 자동칼선 검수 권장</div>
-            </div>
+            <CollapseSection title="칼선 / 구멍" defaultOpen={false}>
+              <div className="grid gap-4">
+                <div data-testid="left-cutline-margin-panel-v3">
+                  <div className="mb-2 text-xs font-semibold text-white/58">칼선 여백</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {AUTO_CUTLINE_MARGIN_OPTIONS.map((marginMm) => (
+                      <button
+                        key={`cutline-margin-v3-${marginMm}`}
+                        type="button"
+                        onClick={() => {
+                          if (shapeMode === "자동칼선") {
+                            setAutoCutlineMarginMm(marginMm);
+                          }
+                        }}
+                        className={`rounded-xl border px-3 py-3 text-[12px] font-semibold transition ${
+                          shapeMode === "자동칼선" && autoCutlineMarginMm === marginMm
+                            ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
+                            : "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.08]"
+                        } ${shapeMode !== "자동칼선" ? "opacity-50" : ""}`}
+                      >
+                        {formatAutoCutlineMarginMm(marginMm)}mm
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-[11px] leading-5 text-white/55">
+                    자동칼선 전용 · 이미지 외곽선 기준 2 ~ 2.5mm
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-xs font-semibold text-white/58">구멍 규격</div>
+                  <div className="grid gap-2">
+                    {HOLE_SIZES.map((item) => (
+                      <button
+                        key={String(item)}
+                        type="button"
+                        onClick={() => setHoleSize(item)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
+                          holeSize === item
+                            ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
+                            : "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.08]"
+                        }`}
+                      >
+                        <div>{getHoleLabel(item)}</div>
+                        <div className="mt-1 text-[11px] text-white/58">{getHoleLimitLabel(item)}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CollapseSection>
+
+            <CollapseSection title="도움말" defaultOpen={false}>
+              <div className="text-sm leading-6 text-white/68">
+                <div>자동칼선 실패 시 오른쪽 ‘주제 선택 보정’ 사용</div>
+                <div>작업대에서 크기 / 구멍 위치를 바로 확인</div>
+              </div>
+            </CollapseSection>
           </aside>
 
           <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
@@ -5486,11 +5523,8 @@ if (typeof window !== "undefined") {
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-[#000923] p-4 text-sm leading-7 text-white/72">
-                <div>실시간 미리보기 가능 형식: PNG / JPG / WEBP</div>
-                <div>PDF / AI / PSD는 업로드 기록만 유지</div>
-                <div>여러 파일 / 여러 확장자 동시 업로드 가능</div>
-                <div>목록에서 1개를 선택해 작업대에 반영</div>
-                <div>가능하면 투명 배경, 300dpi 기준</div>
+                <div>미리보기: PNG / JPG / WEBP</div>
+                <div>보관 전용: PDF / AI / PSD</div>
               </div>
 
               {uploadItems.length > 0 ? (
@@ -5499,7 +5533,7 @@ if (typeof window !== "undefined") {
                     <div className="text-sm font-semibold text-white/88">업로드 목록</div>
                     <div className="text-xs text-white/55">{uploadItems.length}개</div>
                   </div>
-                  <div className="grid max-h-[320px] gap-2 overflow-y-auto pr-1">
+                  <div className="grid max-h-[420px] gap-3 overflow-y-auto pr-1">
                     {uploadItems.map((item, index) => {
                       const active = uploadState?.id === item.id;
                       const ext = item.fileName.split(".").pop()?.toUpperCase() ?? "FILE";
@@ -5508,13 +5542,13 @@ if (typeof window !== "undefined") {
                           key={item.id}
                           type="button"
                           onClick={() => selectUploadItem(item.id)}
-                          className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                          className={`flex items-center gap-4 rounded-2xl border px-4 py-4 text-left transition ${
                             active
                               ? "border-[#7fbaff] bg-[#95c9ff]/18 text-white"
                               : "border-white/10 bg-white/[0.03] text-white/78 hover:bg-white/[0.08]"
                           }`}
                         >
-                          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000923]">
+                          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#000923]">
                             {item.previewUrl ? (
                               <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
                             ) : (
