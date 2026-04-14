@@ -1,6 +1,5 @@
-﻿"use client";
+"use client";
 
-import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -1825,7 +1824,7 @@ const previewImageClipPath =
                 fontWeight="800"
                 letterSpacing="1.1"
               >
-                자동칼선 작업판
+                키링 작업대
               </text>
               <text
                 x="280"
@@ -4158,21 +4157,13 @@ if (typeof window !== "undefined") {
   return (
     <main className="min-h-screen bg-[#041129] text-white">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-white/90 transition hover:bg-white/10"
-          >
-            CUSTOMBRO HOME
-          </Link>
-        </div>
 
         <section className="rounded-2xl border border-slate-800 bg-[#09142b] px-5 py-4">
   <div className="flex flex-wrap items-center justify-between gap-3">
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / AUTO CUTLINE</p>
-      <h1 className="mt-1 text-[22px] font-semibold text-white">자동칼선 작업판</h1>
-      <p className="mt-1 text-sm text-slate-300">업로드한 이미지를 기준으로 구멍 위치와 자동칼선을 바로 잡는 간소화 작업대</p>
+      <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / WORKBENCH</p>
+      <h1 className="mt-1 text-[22px] font-semibold text-white">키링 작업대</h1>
+      <p className="mt-1 text-sm text-slate-300">업로드한 이미지로 칼선 · 구멍 · 배율을 바로 조정하는 작업 화면</p>
     </div>
     <div className="rounded-full border border-slate-700 bg-[#0b1730] px-3 py-1 text-xs text-slate-300">
       기본 포장 포함 · 수량/규격 자동 반영
