@@ -3132,6 +3132,9 @@ const [quantity, setQuantity] = useState(10);
   );
   const activeUploadOrderLabel =
     activeUploadIndex >= 0 ? `${activeUploadIndex + 1}/${uploadItems.length}` : "-";
+  const selectedUploadSummary = uploadState
+    ? `선택 파일: ${uploadState.name} · ${uploadState.typeLabel} · ${uploadState.sizeLabel} · ${uploadState.previewUrl ? "작업판 반영 가능" : "기록 전용"} · 목록 ${activeUploadOrderLabel}`
+    : "선택 파일 없음";
   const [uploadGuide, setUploadGuide] = useState("실시간 미리보기 가능 형식: PNG / JPG / WEBP · 여러 파일 한번에 업로드 가능");
   const [artScale, setArtScale] = useState(1);
   const [focusAssistMode, setFocusAssistMode] = useState(false);
@@ -5377,7 +5380,11 @@ if (typeof window !== "undefined") {
 
             <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
               <div className="mb-2 text-sm font-semibold text-white/88">업로드 상태</div>
-              <div className="mb-3 text-sm leading-6 text-white/70">{uploadGuide}</div>
+              <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="text-sm font-semibold text-white/86">선택 파일 요약</div>
+                <div className="mt-1 text-sm leading-6 text-white/72">{selectedUploadSummary}</div>
+                <div className="mt-1 text-xs leading-5 text-white/55">{uploadGuide}</div>
+              </div>
 
               <input
                 ref={fileInputRef}
