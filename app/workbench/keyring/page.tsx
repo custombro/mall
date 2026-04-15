@@ -4249,21 +4249,32 @@ if (typeof window !== "undefined") {
         </div>
 
         <section className="rounded-2xl border border-slate-800 bg-[#09142b] px-5 py-4">
-  <div className="flex flex-wrap items-center justify-between gap-3">
-    <div className="min-w-0">
-      <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / AUTO CUTLINE</p>
-      <h1 className="mt-1 text-[22px] font-semibold text-white">자동칼선 작업판</h1>
-      <p className="mt-1 text-sm text-slate-300">업로드한 이미지를 기준으로 구멍 위치와 자동칼선을 바로 잡는 간소화 작업대</p>
-    </div>
-    <div className="rounded-full border border-slate-700 bg-[#0b1730] px-3 py-1 text-xs text-slate-300">
-      기본 포장 포함 · 수량/규격 자동 반영
-    </div>
-  </div>
-</section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / ORDER WORKBENCH</p>
+              <h1 className="mt-1 text-[22px] font-semibold text-white">키링 칼선 작업대</h1>
+              <p className="mt-1 text-sm text-slate-300">파일 올리고 캐릭터만 표시한 뒤, 칼선을 확인하는 주문용 메인 화면</p>
+            </div>
+            <div className="rounded-full border border-slate-700 bg-[#0b1730] px-3 py-1 text-xs text-slate-300">
+              기본 포장 포함 · 수량/규격 자동 반영
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full bg-cyan-300 px-3 py-1 font-semibold text-[#071226]">1 파일 올리기</span>
+            <span className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">2 캐릭터만 표시</span>
+            <span className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">3 칼선 확인</span>
+            <Link href="/workbench/keyring/brush-assist-lab" className="ml-auto rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 font-semibold text-cyan-100">
+              붓칠 실험실
+            </Link>
+            <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">
+              간단 데모
+            </Link>
+          </div>
+        </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">LEFT / 제작 세팅</div>
+            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">LEFT / 업로드 · 기본 설정</div>
 
             <div className="mb-6">
               <div className="mb-3 text-sm font-semibold text-white/86">형태 모드</div>
@@ -4385,7 +4396,7 @@ if (typeof window !== "undefined") {
           <section className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.2)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">CENTER / 작업 상태</div>
+                <div className="text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">CENTER / 작업면</div>
                 <p className="mt-1 text-sm text-white/68">
                   구멍 위치·규격·형태는 아래 작업대에서 바로 조정
                 </p>
@@ -4562,7 +4573,7 @@ if (typeof window !== "undefined") {
               </div>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold text-white/82">메인 작업대</div>
+                  <div className="text-sm font-semibold text-white/82">칼선 확인 작업면</div>
                   <div
                     className={[
                       "rounded-full border px-3 py-1 text-[11px] font-semibold",
@@ -4594,10 +4605,10 @@ if (typeof window !== "undefined") {
           </section>
 
           <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 업로드 · 제작 정보 · 주문</div>
+            <div className="mb-4 text-[12px] font-bold tracking-[0.18em] text-[#8fc0ff]">RIGHT / 결과 · 제작 정보 · 주문</div>
 
             <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
-              <div className="mb-2 text-sm font-semibold text-white/88">업로드 상태</div>
+              <div className="mb-2 text-sm font-semibold text-white/88">파일 상태</div>
               <div className="mb-3 text-sm leading-6 text-white/70">{uploadGuide}</div>
 
               <input
@@ -4614,7 +4625,7 @@ if (typeof window !== "undefined") {
                   onClick={openFilePicker}
                   className="rounded-2xl bg-[#a9d7ff] px-4 py-4 text-base font-extrabold text-[#0a1730] transition hover:brightness-105"
                 >
-                  파일 선택
+                  파일 올리기
                 </button>
 
                 <button
@@ -4622,7 +4633,7 @@ if (typeof window !== "undefined") {
                   onClick={clearUpload}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-base font-extrabold text-white transition hover:bg-white/[0.08]"
                 >
-                  업로드 비우기
+                  파일 비우기
                 </button>
               </div>
 
@@ -4640,7 +4651,7 @@ if (typeof window !== "undefined") {
                   <div>작업판 반영: {uploadState.previewUrl ? "즉시 반영" : "기록만 유지"}</div>
                   {shapeMode === "자동칼선" ? (
                     <div>
-                      자동칼선 상태: {autoCutline.status === "ready" ? "1차 생성" : autoCutline.status === "processing" ? "계산중" : autoCutline.status === "failed" ? "생성 실패 · PNG/투명본 권장" : uploadState.previewUrl ? "분석 대기" : "대기"}
+                      칼선 상태: {autoCutline.status === "ready" ? "분리 완료" : autoCutline.status === "processing" ? "분리 중" : autoCutline.status === "failed" ? "분리 실패 · PNG/투명본 권장" : uploadState.previewUrl ? "분리 대기" : "대기"}
                     </div>
                   ) : null}
                 </div>
@@ -4733,13 +4744,13 @@ if (typeof window !== "undefined") {
                 }`}
               >
                 {!uploadState?.previewUrl && shapeMode === "자동칼선"
-                  ? "업로드 후 주문"
+                  ? "파일 올린 뒤 주문"
                   : autoCutline.status === "processing" && shapeMode === "자동칼선"
-                    ? "자동칼선 계산중"
+                    ? "칼선 계산 중"
                     : autoCutline.status === "failed" && shapeMode === "자동칼선"
-                      ? "자동칼선 재확인 필요"
+                      ? "칼선 다시 확인"
                       : autoCutlineLocked
-                        ? "자동칼선 생성 후 주문"
+                        ? "칼선 생성 후 주문"
                         : "주문으로"}
               </button>
             </div>
@@ -5216,4 +5227,3 @@ async function buildTransparentTraceSourceUrl(...args: Parameters<typeof buildTr
   const filteredUrl = await retainLargestOpaqueIslandFromDataUrl(intermediateUrl);
   return filteredUrl as Awaited<ReturnType<typeof buildTransparentTraceSourceUrlCore>>;
 }
-

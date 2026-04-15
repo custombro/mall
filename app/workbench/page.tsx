@@ -127,6 +127,12 @@ export default function WorkbenchPage() {
                 <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   키링 작업 시작
                 </Link>
+                <Link href="/workbench/keyring/brush-assist-lab" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  키링 작업 실험실
+                </Link>
+                <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  붓칠 데모
+                </Link>
                 <Link href="/pop-studio" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   POP 작업 시작
                 </Link>
