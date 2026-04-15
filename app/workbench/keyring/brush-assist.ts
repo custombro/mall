@@ -19,12 +19,16 @@ export function formatFileSize(bytes: number) {
 
 export function buildBrushPath(stroke: BrushStroke) {
   if (!stroke.points.length) return "";
+  if (stroke.points.length === 1) {
+    const point = stroke.points[0];
+    return `M ${point.x} ${point.y} L ${point.x + 0.01} ${point.y + 0.01}`;
+  }
   return stroke.points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 }
 
 export function buildCutlineFromStrokeCloud(strokes: BrushStroke[]) {
   const points = strokes.flatMap((stroke) => stroke.points);
-  if (points.length < 2) return null;
+  if (!points.length) return null;
 
   let minX = 100;
   let minY = 100;
@@ -38,14 +42,15 @@ export function buildCutlineFromStrokeCloud(strokes: BrushStroke[]) {
     maxY = Math.max(maxY, point.y);
   }
 
-  const padding = 4;
+  const singlePoint = points.length === 1;
+  const padding = singlePoint ? 8 : 4;
   const left = Math.max(0, minX - padding);
   const top = Math.max(0, minY - padding);
   const right = Math.min(100, maxX + padding);
   const bottom = Math.min(100, maxY + padding);
 
-  const width = Math.max(4, right - left);
-  const height = Math.max(4, bottom - top);
+  const width = Math.max(singlePoint ? 12 : 4, right - left);
+  const height = Math.max(singlePoint ? 12 : 4, bottom - top);
   const radius = Math.max(2, Math.min(width, height) * 0.12);
 
   const path = [
