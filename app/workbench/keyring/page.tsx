@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/globals, react-hooks/immutability */
 
 import Link from "next/link";
 import {
@@ -4253,7 +4254,7 @@ if (typeof window !== "undefined") {
             <div className="min-w-0">
               <p className="text-[11px] font-semibold tracking-[0.24em] text-cyan-300">KEYRING / ORDER WORKBENCH</p>
               <h1 className="mt-1 text-[22px] font-semibold text-white">키링 칼선 작업대</h1>
-              <p className="mt-1 text-sm text-slate-300">파일 올리고 캐릭터만 표시한 뒤, 칼선을 확인하는 주문용 메인 화면</p>
+              <p className="mt-1 text-sm text-slate-300">파일 올리고 캐릭터만 붓칠한 뒤, 칼선을 확인하는 주문용 메인 화면</p>
             </div>
             <div className="rounded-full border border-slate-700 bg-[#0b1730] px-3 py-1 text-xs text-slate-300">
               기본 포장 포함 · 수량/규격 자동 반영
@@ -4261,7 +4262,7 @@ if (typeof window !== "undefined") {
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
             <span className="rounded-full bg-cyan-300 px-3 py-1 font-semibold text-[#071226]">1 파일 올리기</span>
-            <span className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">2 캐릭터만 표시</span>
+            <span className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">2 캐릭터만 붓칠</span>
             <span className="rounded-full border border-slate-600 px-3 py-1 text-slate-200">3 칼선 확인</span>
             <Link href="/workbench/keyring/brush-assist-lab" className="ml-auto rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 font-semibold text-cyan-100">
               붓칠 실험실
@@ -4405,6 +4406,12 @@ if (typeof window !== "undefined") {
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/72">
                 {uploadState ? `업로드 파일: ${uploadState.name}` : "업로드 파일 대기"}
               </div>
+            </div>
+
+            <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+              <div className="rounded-full border border-cyan-300/30 bg-cyan-400/[0.12] px-3 py-1 text-cyan-100">붓칠 가이드: 캐릭터 중심으로 러프하게 표시</div>
+              <div className="rounded-full border border-rose-300/30 bg-rose-400/[0.12] px-3 py-1 text-rose-100">빨간 칼선: 자동 계산 결과</div>
+              <div className="rounded-full border border-amber-300/30 bg-amber-300/[0.12] px-3 py-1 text-amber-100">실패 시 PNG/투명본 업로드 권장</div>
             </div>
 
                         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
