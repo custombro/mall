@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_MODE_SELECT_20260415_BRUSH_LAB";
+const deployMarker = "DEPLOY_MODE_SELECT_20260416_01";
 
 const modeGroups = [
-  { name: "키링 시작", hint: "가장 많이 쓰는 제작 시작" },
+  { name: "키링 시작", hint: "멀티 파일 · 붓칠 · 칼선 확인" },
   { name: "POP 시작", hint: "전시형 제작 시작" },
   { name: "저장본 재사용", hint: "서랍에서 다시 열기" },
   { name: "주문 연결", hint: "주문 / 주문확인 바로 이동" }
@@ -11,29 +11,29 @@ const modeGroups = [
 
 const modeCards = [
   {
-    title: "가장 빠른 제작 시작",
+    title: "가장 빠른 키링 시작",
     badge: "기본",
-    summary: "복잡한 연출 대신 바로 시작 버튼이 먼저 보이게 핵심 카드만 남겼다.",
-    bullets: ["키링 작업 시작", "POP 작업 시작", "기본 흐름 바로 진입"]
+    summary: "여러 이미지를 한 번에 올리고 파일별 상태를 유지한 채 바로 칼선 확인 단계까지 들어간다.",
+    bullets: ["키링 작업 시작", "멀티 파일 업로드", "칼선 바로 확인"]
   },
   {
-    title: "저장본과 재사용",
-    badge: "서랍",
-    summary: "저장본 재사용과 수정 재주문 흐름을 중앙 카드로 압축했다.",
-    bullets: ["서랍 열기", "최근 저장본 재사용", "수정 후 재주문"]
+    title: "브러시 분리 실험실",
+    badge: "실험실",
+    summary: "러프한 붓칠로 캐릭터 영역만 잡고 스무딩된 윤곽선으로 칼선 느낌을 먼저 확인한다.",
+    bullets: ["브러시 실험실", "붓칠 데모", "스무딩 윤곽 확인"]
   },
   {
-    title: "브러시 보정 실험",
-    badge: "LAB",
-    summary: "여러 파일 업로드 후 한 장씩 선택하고 붓칠 기준으로 분리 성능을 바로 확인한다.",
-    bullets: ["다중 업로드", "선택 파일 작업", "붓칠 보정 테스트"]
+    title: "저장과 다음 행동",
+    badge: "이동",
+    summary: "저장본 재사용, 주문, 주문확인으로 자연스럽게 이어지는 핵심 흐름만 남겼다.",
+    bullets: ["서랍 열기", "주문으로 이동", "주문확인"]
   }
 ];
 
 const summaryRows = [
-  { label: "좌측", value: "시작 모드 선택" },
+  { label: "좌측", value: "시작 모드 / 파일 흐름" },
   { label: "중앙", value: "핵심 시작 카드" },
-  { label: "우측", value: "시작 / 저장 / 주문 CTA" }
+  { label: "우측", value: "실험실 / 저장 / 주문 CTA" }
 ];
 
 export default function ModeSelectPage() {
@@ -52,7 +52,7 @@ export default function ModeSelectPage() {
             </div>
             <div className="max-w-xl">
               <p className="text-sm leading-6 text-neutral-600">
-                상단 보조 설명과 중복 요소를 줄이고, 시작 · 재사용 · 주문 연결만 남긴 단순한 시작 화면이다.
+                시작 · 브러시 실험실 · 저장본 재사용 · 주문 연결만 남긴 단순한 시작 허브다.
               </p>
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
                 배포 확인 기준: {deployMarker}
@@ -88,9 +88,8 @@ export default function ModeSelectPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 선택</p>
               <div className="mt-3 space-y-2">
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">키링 우선 시작</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">POP 바로 이동</div>
+                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">브러시 실험실 진입</div>
                 <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">서랍 저장본 재사용</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">브러시 보정 실험실</div>
               </div>
             </div>
           </aside>
@@ -128,11 +127,11 @@ export default function ModeSelectPage() {
                 <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   키링 작업 시작
                 </Link>
-                <Link href="/workbench/keyring/brush-assist-lab" className="rounded-full border border-black/10 bg-[#eef6ff] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  브러시 보정 실험실
+                <Link href="/workbench/keyring/brush-assist-lab" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  브러시 실험실
                 </Link>
-                <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  단일 파일 데모
+                <Link href="/workbench/keyring/brush-assist-demo" className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  붓칠 데모
                 </Link>
                 <Link href="/pop-studio" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
                   POP 작업 시작
@@ -168,17 +167,14 @@ export default function ModeSelectPage() {
               <div className="rounded-2xl border border-black/10 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 행동</div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight">지금 바로 제작 시작</div>
-                <div className="mt-1 text-sm text-neutral-600">제작 시작, 저장본 재사용, 주문 흐름만 선명하게 남긴 단순한 허브 구조다.</div>
+                <div className="mt-1 text-sm text-neutral-600">키링 시작, 브러시 실험실, 저장본 재사용, 주문 흐름만 남긴 단순한 허브 구조다.</div>
 
                 <div className="mt-4 space-y-2">
                   <Link href="/workbench/keyring" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
                     키링 작업 시작
                   </Link>
-                  <Link href="/workbench/keyring/brush-assist-lab" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#eef6ff] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    브러시 보정 실험실
-                  </Link>
-                  <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    서랍 저장본 보기
+                  <Link href="/workbench/keyring/brush-assist-lab" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    브러시 실험실 열기
                   </Link>
                   <Link href="/order-check" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     주문확인으로 이동
