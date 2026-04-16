@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useKeyringProductionDraft } from "../../../../hooks/use-workshop-stage";
+import { processRemoveBackground } from "../../../../utils/imageProcessor";
 import {
   KEYRING_UPLOAD_SLOTS,
   KeyringProductionDraft,
@@ -49,7 +50,9 @@ export function KeyringProductionPipelinePanel() {
   const draft = keyringProductionDraft ?? draftSeed;
 
   const [selectedSlot, setSelectedSlot] = useState<KeyringUploadSlot>("original");
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
   const objectUrlsRef = useRef<string[]>([]);
+  const originalFilesRef = useRef<Record<string, File>>({});
 
   useEffect(() => {
     if (!keyringProductionDraft) {
@@ -60,7 +63,9 @@ export function KeyringProductionPipelinePanel() {
   useEffect(() => {
     return () => {
       for (const url of objectUrlsRef.current) {
-        try { URL.revokeObjectURL(url); } catch {}
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
       }
       objectUrlsRef.current = [];
     };
@@ -76,6 +81,10 @@ export function KeyringProductionPipelinePanel() {
   async function onFileChange(slot: KeyringUploadSlot, event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
     if (!file) return;
+
+    if (slot === "original") {
+      originalFilesRef.current[slot] = file;
+    }
 
     const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
     if (previewUrl) objectUrlsRef.current.push(previewUrl);
@@ -111,6 +120,55 @@ export function KeyringProductionPipelinePanel() {
 
     setSelectedSlot(slot);
     event.currentTarget.value = "";
+  }
+
+  async function handleAutoRemoveBackground() {
+    const originalFile = originalFilesRef.current["original"];
+    if (!originalFile || isRemovingBackground) return;
+
+    setIsRemovingBackground(true);
+
+    updateDraft((prev) =>
+      upsertUploadEntry(prev, {
+        ...prev.uploads.mask,
+        status: "processing",
+        label: "Mask (AI Processing...)",
+      }),
+    );
+
+    try {
+      const resultBlob = await processRemoveBackground(originalFile);
+      const resultUrl = URL.createObjectURL(resultBlob);
+      objectUrlsRef.current.push(resultUrl);
+
+      const size = await readImageSize(resultUrl);
+      const maskEntry: KeyringUploadEntry = {
+        slot: "mask",
+        label: SLOT_LABELS.mask,
+        status: "ready",
+        fileName: `mask_${originalFile.name}`,
+        mimeType: "image/png",
+        sizeBytes: resultBlob.size,
+        previewUrl: resultUrl,
+        width: size.width,
+        height: size.height,
+        notes: ["AI Auto-generated mask", "Background removed via browser-side WASM"],
+      };
+
+      updateDraft((prev) => upsertUploadEntry(prev, maskEntry));
+      setSelectedSlot("mask");
+    } catch (error) {
+      alert("배경 제거 중 오류가 발생했습니다. 이미지 해상도가 너무 높거나 브라우저 사양을 확인해주세요.");
+      updateDraft((prev) =>
+        upsertUploadEntry(prev, {
+          ...prev.uploads.mask,
+          status: "error",
+          label: "Mask (AI Failed)",
+        }),
+      );
+    } finally {
+      setIsRemovingBackground(false);
+    }
   }
 
   function onMetaChange(field: keyof KeyringProductionMeta, value: string) {
@@ -173,30 +231,53 @@ export function KeyringProductionPipelinePanel() {
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {KEYRING_UPLOAD_SLOTS.map((slot) => {
                 const entry = draft.uploads[slot];
+                const canProcessAI = slot === "mask" && !!originalFilesRef.current["original"];
+
                 return (
-                  <label key={slot} className="flex cursor-pointer flex-col rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300">
+                  <div key={slot} className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-sm font-semibold text-zinc-900">{SLOT_LABELS[slot]}</span>
-                      <button
-                        type="button"
-                        className="text-xs font-medium text-zinc-500"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          setSelectedSlot(slot);
-                        }}
-                      >
-                        view
-                      </button>
+                      <div className="flex gap-2">
+                        {canProcessAI && (
+                          <button
+                            type="button"
+                            disabled={isRemovingBackground}
+                            onClick={handleAutoRemoveBackground}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-md border transition-all ${
+                              isRemovingBackground
+                                ? "bg-zinc-100 text-zinc-400 border-zinc-200 cursor-wait"
+                                : "bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100"
+                            }`}
+                          >
+                            {isRemovingBackground ? "AI..." : "AI 누끼"}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-zinc-500"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setSelectedSlot(slot);
+                          }}
+                        >
+                          view
+                        </button>
+                      </div>
                     </div>
                     <div className="text-xs text-zinc-500">state: {entry.status}</div>
                     <div className="mt-1 truncate text-xs text-zinc-500">{entry.fileName || "empty"}</div>
-                    <input
-                      className="mt-3 block w-full text-xs text-zinc-600"
-                      type="file"
-                      accept={slot === "worksheet" ? ".pdf,.txt,.md,.json,.csv" : "image/*,.svg"}
-                      onChange={(event) => { void onFileChange(slot, event); }}
-                    />
-                  </label>
+                    <label className="mt-3 block cursor-pointer">
+                      <span className="block w-full text-center py-2 px-3 border border-zinc-200 rounded-xl text-xs text-zinc-600 hover:bg-zinc-50">파일 선택</span>
+                      <input
+                        className="hidden"
+                        type="file"
+                        accept={slot === "worksheet" ? ".pdf,.txt,.md,.json,.csv" : "image/*,.svg"}
+                        onChange={(event) => {
+                          void onFileChange(slot, event);
+                        }}
+                      />
+                    </label>
+                  </div>
                 );
               })}
             </div>

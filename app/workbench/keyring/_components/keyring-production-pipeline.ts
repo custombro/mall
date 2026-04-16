@@ -13,7 +13,7 @@ export type KeyringLayerKind =
   | "ring-cutline"
   | "dombo";
 
-export type KeyringUploadStatus = "empty" | "ready" | "todo";
+export type KeyringUploadStatus = "empty" | "ready" | "todo" | "processing" | "error";
 
 export interface KeyringUploadEntry {
   slot: KeyringUploadSlot;
