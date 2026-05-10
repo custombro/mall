@@ -1,208 +1,240 @@
-export type BrushPoint = {
-  x: number;
-  y: number;
+export type Point = { x: number; y: number };
+
+export type BrushStroke = {
+  points: Point[];
 };
 
-export type SubjectAssistBox = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+export type UploadItem = {
+  id: string;
+  name: string;
+  sizeLabel: string;
+  previewUrl: string | null;
 };
 
-export type AnalysisFrame = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-export function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-export function distance(a: BrushPoint, b: BrushPoint) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-export function distanceSq(a: BrushPoint, b: BrushPoint) {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return dx * dx + dy * dy;
-}
-
-export function normalizeSubjectAssistBox(box: SubjectAssistBox | null): SubjectAssistBox | null {
-  if (!box) return null;
-
-  const left = Math.min(box.x, box.x + box.width);
-  const top = Math.min(box.y, box.y + box.height);
-  const right = Math.max(box.x, box.x + box.width);
-  const bottom = Math.max(box.y, box.y + box.height);
-
-  return {
-    x: left,
-    y: top,
-    width: Math.max(0, right - left),
-    height: Math.max(0, bottom - top),
+export type CutlineResult = {
+  path: string;
+  shape: "smoothed-hull" | "rounded-rect";
+  pointCount: number;
+  bounds: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
   };
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
-export function simplifyBrushPoints(points: BrushPoint[], minGap = 4.5) {
-  if (points.length <= 1) {
-    return points.map((point) => ({ x: point.x, y: point.y }));
-  }
-
-  const next: BrushPoint[] = [points[0]];
-  let lastKept = points[0];
-
-  for (let i = 1; i < points.length; i += 1) {
-    const point = points[i];
-    if (distance(lastKept, point) >= minGap) {
-      next.push({ x: point.x, y: point.y });
-      lastKept = point;
-    }
-  }
-
-  const tail = points[points.length - 1];
-  if (!next.length || distance(next[next.length - 1], tail) >= 1.2) {
-    next.push({ x: tail.x, y: tail.y });
-  }
-
-  return next;
+function fixed(value: number) {
+  return Number(value.toFixed(2));
 }
 
-export function buildSubjectAssistStrokeBounds(points: BrushPoint[], pad = 16): SubjectAssistBox | null {
-  if (!points.length) return null;
-
-  let minX = points[0].x;
-  let minY = points[0].y;
-  let maxX = points[0].x;
-  let maxY = points[0].y;
+function getBounds(points: Point[]) {
+  let minX = 100;
+  let minY = 100;
+  let maxX = 0;
+  let maxY = 0;
 
   for (const point of points) {
-    if (point.x < minX) minX = point.x;
-    if (point.y < minY) minY = point.y;
-    if (point.x > maxX) maxX = point.x;
-    if (point.y > maxY) maxY = point.y;
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
   }
 
-  return normalizeSubjectAssistBox({
-    x: minX - pad,
-    y: minY - pad,
-    width: Math.max(1, maxX - minX + pad * 2),
-    height: Math.max(1, maxY - minY + pad * 2),
-  });
-}
-
-export function buildStrokeSvgPath(points: BrushPoint[]) {
-  if (points.length === 0) return "";
-  return `M ${points.map((point) => `${point.x} ${point.y}`).join(" L ")}`;
-}
-
-export function projectPointToSegment(point: BrushPoint, start: BrushPoint, end: BrushPoint): BrushPoint {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const lenSq = dx * dx + dy * dy || 1;
-  const t = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lenSq, 0, 1);
-
   return {
-    x: start.x + dx * t,
-    y: start.y + dy * t,
+    left: fixed(minX),
+    top: fixed(minY),
+    right: fixed(maxX),
+    bottom: fixed(maxY),
+    width: fixed(maxX - minX),
+    height: fixed(maxY - minY),
   };
 }
 
-export function mapStrokeToAnalysisSpace(
-  stroke: BrushPoint[],
-  previewFrame: AnalysisFrame,
-  analysisFrame: AnalysisFrame,
-) {
-  return stroke.map((point) => {
-    const normalizedX = clamp((point.x - previewFrame.x) / Math.max(1, previewFrame.width), 0, 1);
-    const normalizedY = clamp((point.y - previewFrame.y) / Math.max(1, previewFrame.height), 0, 1);
+function midpoint(a: Point, b: Point): Point {
+  return {
+    x: fixed((a.x + b.x) / 2),
+    y: fixed((a.y + b.y) / 2),
+  };
+}
 
+function cross(origin: Point, a: Point, b: Point) {
+  return (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
+}
+
+function dedupePoints(points: Point[]) {
+  const seen = new Set<string>();
+  const deduped: Point[] = [];
+
+  for (const point of points) {
+    const normalized = { x: fixed(point.x), y: fixed(point.y) };
+    const key = `${normalized.x}:${normalized.y}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(normalized);
+  }
+
+  return deduped;
+}
+
+function samplePointCloud(points: Point[], maxPoints = 180) {
+  if (points.length <= maxPoints) return points;
+  const step = Math.ceil(points.length / maxPoints);
+  return points.filter((_, index) => index % step === 0);
+}
+
+function buildConvexHull(points: Point[]) {
+  if (points.length <= 1) return points;
+
+  const sorted = [...points].sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+  const lower: Point[] = [];
+
+  for (const point of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) {
+      lower.pop();
+    }
+    lower.push(point);
+  }
+
+  const upper: Point[] = [];
+
+  for (let index = sorted.length - 1; index >= 0; index -= 1) {
+    const point = sorted[index];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) {
+      upper.pop();
+    }
+    upper.push(point);
+  }
+
+  lower.pop();
+  upper.pop();
+  return [...lower, ...upper];
+}
+
+function expandHull(points: Point[], padding: number) {
+  const center = points.reduce(
+    (acc, point) => ({ x: acc.x + point.x / points.length, y: acc.y + point.y / points.length }),
+    { x: 0, y: 0 },
+  );
+
+  return points.map((point) => {
+    const dx = point.x - center.x;
+    const dy = point.y - center.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    const scale = (distance + padding) / distance;
     return {
-      x: analysisFrame.x + normalizedX * analysisFrame.width,
-      y: analysisFrame.y + normalizedY * analysisFrame.height,
+      x: fixed(clamp(center.x + dx * scale, 0, 100)),
+      y: fixed(clamp(center.y + dy * scale, 0, 100)),
     };
   });
 }
 
-export function collectStrokeSeedPixels(
-  width: number,
-  height: number,
-  mappedStroke: BrushPoint[],
-  seedRadius: number,
-) {
-  const seedRadiusSq = seedRadius * seedRadius;
-  const mask: boolean[][] = Array.from({ length: height }, () => Array.from({ length: width }, () => false));
+function buildRoundedRectFromBounds(points: Point[], padding: number): CutlineResult {
+  const raw = getBounds(points);
+  const left = clamp(raw.left - padding, 0, 100);
+  const top = clamp(raw.top - padding, 0, 100);
+  const right = clamp(raw.right + padding, 0, 100);
+  const bottom = clamp(raw.bottom + padding, 0, 100);
+  const width = Math.max(8, right - left);
+  const height = Math.max(8, bottom - top);
+  const normalizedRight = fixed(left + width);
+  const normalizedBottom = fixed(top + height);
+  const radius = fixed(Math.max(2, Math.min(width, height) * 0.18));
 
-  const isNearStroke = (x: number, y: number) => {
-    const point = { x, y };
+  const path = [
+    `M ${fixed(left + radius)} ${fixed(top)}`,
+    `L ${fixed(normalizedRight - radius)} ${fixed(top)}`,
+    `Q ${fixed(normalizedRight)} ${fixed(top)} ${fixed(normalizedRight)} ${fixed(top + radius)}`,
+    `L ${fixed(normalizedRight)} ${fixed(normalizedBottom - radius)}`,
+    `Q ${fixed(normalizedRight)} ${fixed(normalizedBottom)} ${fixed(normalizedRight - radius)} ${fixed(normalizedBottom)}`,
+    `L ${fixed(left + radius)} ${fixed(normalizedBottom)}`,
+    `Q ${fixed(left)} ${fixed(normalizedBottom)} ${fixed(left)} ${fixed(normalizedBottom - radius)}`,
+    `L ${fixed(left)} ${fixed(top + radius)}`,
+    `Q ${fixed(left)} ${fixed(top)} ${fixed(left + radius)} ${fixed(top)}`,
+    "Z",
+  ].join(" ");
 
-    for (let i = 0; i < mappedStroke.length; i += 1) {
-      const current = mappedStroke[i];
-      if (distanceSq(point, current) <= seedRadiusSq) return true;
-      if (i === 0) continue;
-      const projected = projectPointToSegment(point, mappedStroke[i - 1], current);
-      if (distanceSq(point, projected) <= seedRadiusSq) return true;
-    }
-
-    return false;
+  return {
+    path,
+    shape: "rounded-rect",
+    pointCount: points.length,
+    bounds: {
+      left: fixed(left),
+      top: fixed(top),
+      right: normalizedRight,
+      bottom: normalizedBottom,
+      width: fixed(normalizedRight - left),
+      height: fixed(normalizedBottom - top),
+    },
   };
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (isNearStroke(x, y)) {
-        mask[y][x] = true;
-      }
-    }
-  }
-
-  return mask;
 }
 
-export function growMaskFromSeeds(
-  width: number,
-  height: number,
-  candidateMask: boolean[][],
-  seedMask: boolean[][],
-) {
-  const grownMask: boolean[][] = Array.from({ length: height }, () => Array.from({ length: width }, () => false));
-  const queue: Array<{ x: number; y: number }> = [];
-  let head = 0;
+function buildSmoothHullPath(points: Point[]) {
+  if (points.length < 3) return "";
+  const mids = points.map((point, index) => midpoint(point, points[(index + 1) % points.length]));
+  const commands = [`M ${mids[0].x} ${mids[0].y}`];
 
-  const neighbors = [
-    { x: -1, y: 0 },
-    { x: 1, y: 0 },
-    { x: 0, y: -1 },
-    { x: 0, y: 1 },
-    { x: -1, y: -1 },
-    { x: 1, y: -1 },
-    { x: -1, y: 1 },
-    { x: 1, y: 1 },
-  ] as const;
-
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (!seedMask[y][x] || !candidateMask[y][x]) continue;
-      grownMask[y][x] = true;
-      queue.push({ x, y });
-    }
+  for (let index = 0; index < points.length; index += 1) {
+    const control = points[(index + 1) % points.length];
+    const target = mids[(index + 1) % mids.length];
+    commands.push(`Q ${control.x} ${control.y} ${target.x} ${target.y}`);
   }
 
-  while (head < queue.length) {
-    const current = queue[head];
-    head += 1;
+  commands.push("Z");
+  return commands.join(" ");
+}
 
-    for (const next of neighbors) {
-      const nx = current.x + next.x;
-      const ny = current.y + next.y;
-      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-      if (grownMask[ny][nx] || !candidateMask[ny][nx]) continue;
-      grownMask[ny][nx] = true;
-      queue.push({ x: nx, y: ny });
-    }
+export function formatFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${bytes}B`;
+}
+
+export function buildBrushPath(stroke: BrushStroke) {
+  if (!stroke.points.length) return "";
+  if (stroke.points.length === 1) {
+    const point = stroke.points[0];
+    return `M ${point.x} ${point.y} L ${point.x + 0.01} ${point.y + 0.01}`;
+  }
+  return stroke.points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+}
+
+export function buildCutlineFromStrokeCloud(strokes: BrushStroke[]): CutlineResult | null {
+  const flatPoints = strokes.flatMap((stroke) => stroke.points);
+  if (!flatPoints.length) return null;
+
+  if (flatPoints.length <= 2) {
+    return buildRoundedRectFromBounds(flatPoints, 8);
   }
 
-  return grownMask;
+  const sampled = samplePointCloud(dedupePoints(flatPoints));
+  if (sampled.length < 3) {
+    return buildRoundedRectFromBounds(sampled, 7);
+  }
+
+  const hull = buildConvexHull(sampled);
+  if (hull.length < 3) {
+    return buildRoundedRectFromBounds(sampled, 6);
+  }
+
+  const rawBounds = getBounds(hull);
+  const padding = Math.max(3.2, Math.min(8, Math.max(rawBounds.width, rawBounds.height) * 0.08));
+  const expandedHull = expandHull(hull, padding);
+  const path = buildSmoothHullPath(expandedHull);
+
+  if (!path) {
+    return buildRoundedRectFromBounds(sampled, 6);
+  }
+
+  return {
+    path,
+    shape: "smoothed-hull",
+    pointCount: expandedHull.length,
+    bounds: getBounds(expandedHull),
+  };
 }
