@@ -1,30 +1,34 @@
 import Link from "next/link";
+import { STUDIO_LINKS } from "../lib/studio-links";
 
 const homeGroups = [
-  { name: "진열대 제작 상담", hint: "제품 크기와 필요한 수량으로 시작" },
-  { name: "키링 디자인", hint: "작업 도구에서 직접 디자인" },
-  { name: "추가 제작 상담", hint: "기존 디자인과 변경 사항 전달" },
-  { name: "소재와 인쇄", hint: "브랜드에 어울리는 마감 선택" }
+  { name: "진열대 디자인", hint: "제품 크기와 필요한 수량으로 시작", href: STUDIO_LINKS.display },
+  { name: "키링 디자인", hint: "모양·구멍·앞뒤 디자인 직접 설정", href: STUDIO_LINKS.keyring },
+  { name: "공개 상품 보기", hint: "현재 제작 상담을 받는 상품", href: STUDIO_LINKS.products },
+  { name: "추가 제작 상담", hint: "기존 디자인과 변경 사항 전달", href: STUDIO_LINKS.support }
 ];
 
 const startCards = [
   {
-    title: "진열대 제작 상담",
+    title: "진열대 직접 디자인",
     badge: "추천",
     summary: "앰플 한 병부터 제품 라인업까지, 원하는 구성과 제품 정보를 알려주세요.",
-    bullets: ["제품 몸체의 크기와 높이", "동일 디자인별 필요한 수량", "소재·인쇄·희망 사용일"]
+    bullets: ["제품 몸체의 크기와 높이", "구조·소재·인쇄 위치", "수량별 예상 공급가"],
+    href: STUDIO_LINKS.display, action: "진열대 만들기"
   },
   {
-    title: "직접 디자인하기",
+    title: "나만의 아크릴 키링",
     badge: "작업",
-    summary: "키링 작업 도구에서 이미지와 글자를 배치하며 원하는 디자인을 만들어보세요.",
-    bullets: ["이미지와 글자 배치", "제품에 맞는 디자인 구상", "제작 상담을 위한 시안 준비"]
+    summary: "모양과 구멍 위치를 정하고, 이미지와 글자를 앞뒤에 배치해보세요.",
+    bullets: ["원형·사각·자유도형", "기본형·투명 라미아크릴", "앞뒤 디자인과 3D 미리보기"],
+    href: STUDIO_LINKS.keyring, action: "키링 만들기"
   },
   {
     title: "추가 제작과 변경",
     badge: "상담",
     summary: "기존 진열대를 다시 만들거나 그래픽을 바꾸고 싶다면 상담에서 변경 내용을 알려주세요.",
-    bullets: ["기존 주문번호 또는 디자인명", "바꾸고 싶은 이미지와 문구", "추가로 필요한 제작 수량"]
+    bullets: ["기존 주문번호 또는 디자인명", "바꾸고 싶은 이미지와 문구", "추가로 필요한 제작 수량"],
+    href: STUDIO_LINKS.support, action: "제작 문의하기"
   }
 ];
 
@@ -38,9 +42,9 @@ export default function HomePage() {
   return (
     <main className="cb-shell-page">
       <div className="cb-shell-content">
-        <Link href="/display" className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#bfcdb4] bg-[#e8efdf] px-6 py-5 text-[#304c36]">
-          <span><strong className="block text-lg">화장품 미니 진열대 맞춤 제작</strong><span className="mt-1 block text-sm">한 병부터 박람회·팝업까지. 제품 크기와 수량으로 제작 상담을 시작하세요.</span></span>
-          <span className="rounded-full bg-[#42634b] px-5 py-3 text-sm font-semibold text-white">제작 상담하기 →</span>
+        <Link href={STUDIO_LINKS.products} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#bfcdb4] bg-[#e8efdf] px-6 py-5 text-[#304c36]">
+          <span><strong className="block text-lg">키링부터 미니 진열대까지, 우리 브랜드의 아크릴</strong><span className="mt-1 block text-sm">공개 상품을 고르고 디자인과 예상 제작비를 함께 확인하세요.</span></span>
+          <span className="rounded-full bg-[#42634b] px-5 py-3 text-sm font-semibold text-white">상품 보기 →</span>
         </Link>
         <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -70,10 +74,11 @@ export default function HomePage() {
               {homeGroups.map((item, index) => {
                 const active = index === 0;
                 return (
-                  <div
+                  <a
                     key={item.name}
+                    href={item.href}
                     className={[
-                      "rounded-2xl border px-4 py-3",
+                      "block rounded-2xl border px-4 py-3",
                       active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f8f4ec] text-neutral-900"
                     ].join(" ")}
                   >
@@ -81,7 +86,7 @@ export default function HomePage() {
                     <div className={active ? "mt-1 text-xs text-white/70" : "mt-1 text-xs text-neutral-500"}>
                       {item.hint}
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -118,6 +123,7 @@ export default function HomePage() {
                         </li>
                       ))}
                     </ul>
+                    <a href={card.href} className="mt-4 flex items-center justify-between rounded-xl bg-[#42634b] px-4 py-3 text-sm font-semibold text-white">{card.action}<span aria-hidden="true">→</span></a>
                   </article>
                 ))}
               </div>
@@ -126,14 +132,14 @@ export default function HomePage() {
             <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
               <p className="text-sm font-semibold text-neutral-900">작업 도구와 이용 안내</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Link href="/workbench/keyring" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  키링 작업 시작
+                <Link href={STUDIO_LINKS.keyring} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  키링 만들기
                 </Link>
-                <Link href="/storage" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  저장 안내
+                <Link href={STUDIO_LINKS.display} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  진열대 만들기
                 </Link>
-                <Link href="/orders" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  주문 안내 · 준비 중
+                <Link href={STUDIO_LINKS.requests} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
+                  내 제작 요청
                 </Link>
               </div>
             </div>
@@ -166,17 +172,17 @@ export default function HomePage() {
                 <div className="mt-1 text-sm text-neutral-600">상담 접수는 결제나 제작 확정이 아닙니다. 사양을 확인한 뒤 견적을 안내합니다.</div>
 
                 <div className="mt-4 space-y-2">
-                  <Link href="/display" className="flex w-full items-center justify-center rounded-2xl bg-[#42634b] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    진열대 제작 상담하기
+                  <Link href={STUDIO_LINKS.display} className="flex w-full items-center justify-center rounded-2xl bg-[#42634b] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
+                    진열대 만들기
                   </Link>
-                  <Link href="/workbench/keyring" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    키링 작업 시작
+                  <Link href={STUDIO_LINKS.keyring} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    키링 만들기
                   </Link>
-                  <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    저장 안내 보기
+                  <Link href={STUDIO_LINKS.products} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    공개 상품 모두 보기
                   </Link>
-                  <Link href="/order-check" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    주문 조회 안내 · 준비 중
+                  <Link href={STUDIO_LINKS.support} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
+                    문의·A/S
                   </Link>
                 </div>
               </div>

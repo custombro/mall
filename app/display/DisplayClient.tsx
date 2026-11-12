@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { STUDIO_LINKS } from "../../lib/studio-links";
 import s from "./display.module.css";
 
 const purposes = [
@@ -142,9 +143,9 @@ export default function DisplayClient() {
   }
   return <main className={s.page}>
     <div className={s.wrap}>
-      <nav className={s.localNav} aria-label="진열대 페이지 이동"><a href="#display-offers">제작 구성</a><a href="#display-process">진행 방식</a><a href="#display-faq">자주 묻는 질문</a><a href="#display-inquiry" className={s.navCta}>제작 상담 →</a></nav>
+      <nav className={s.localNav} aria-label="진열대 페이지 이동"><a href="#display-offers">제작 구성</a><a href="#display-process">진행 방식</a><a href="#display-faq">자주 묻는 질문</a><a href={STUDIO_LINKS.display} className={s.navCta}>직접 디자인 →</a></nav>
       <section className={s.hero}>
-        <div className={s.heroCopy}><p className={s.eyebrow}>CUSTOMBRO · BRAND DISPLAY</p><h1>좋은 제품이<br />더 잘 보이는 자리.</h1><p className={s.lead}>화장품 한 병부터 브랜드의 전체 라인업까지.<br className={s.desktopBreak} /> 제품에 맞는 크기와 인쇄로 작은 진열대를 만듭니다.</p><div className={s.heroActions}><a className={s.primary} href="#display-inquiry">우리 제품으로 상담하기 <span aria-hidden="true">↗</span></a><a className={s.textLink} href="#display-offers">제작 구성 살펴보기 ↓</a></div><p className={s.heroNote}>도면 없이 시작하세요. 제품 정보와 필요한 수량이면 됩니다.</p></div>
+        <div className={s.heroCopy}><p className={s.eyebrow}>CUSTOMBRO · BRAND DISPLAY</p><h1>좋은 제품이<br />더 잘 보이는 자리.</h1><p className={s.lead}>화장품 한 병부터 브랜드의 전체 라인업까지.<br className={s.desktopBreak} /> 제품에 맞는 크기와 인쇄로 작은 진열대를 만듭니다.</p><div className={s.heroActions}><a className={s.primary} href={STUDIO_LINKS.display}>우리 제품으로 직접 디자인 <span aria-hidden="true">↗</span></a><a className={s.textLink} href={STUDIO_LINKS.consultation}>제작 상담부터 시작하기 →</a></div><p className={s.heroNote}>제품 크기와 소재를 정하며 예상 제작비를 확인하세요. 구조와 납기는 제작 전에 검토합니다.</p></div>
         <div className={s.heroVisual}><span className={s.visualLabel}>SINGLE PRODUCT DISPLAY</span><DisplayConcept /><div className={s.visualCaption}><span>제품 홀 + 하부 받침 + 배면판</span><span>구성 예시 · 실제 제작 사진 아님</span></div></div>
       </section>
       <div className={s.promiseStrip}><span>제품 크기에 맞춘 구조 검토</span><span>소재·인쇄·수량별 개별 견적</span><span>같은 디자인 추가 제작 상담</span></div>

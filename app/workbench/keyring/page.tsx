@@ -8,6 +8,7 @@ import {
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { STUDIO_LINKS } from "../../../lib/studio-links";
 
 function cbDistance(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -2621,7 +2622,8 @@ const previewImageClipPath =
           )}
         </>
       ) : (
-        <>
+        <>
+
           {!hasUpload ? (
             <rect
               x={scaledArtFrame.x}
@@ -2680,7 +2682,8 @@ const previewImageClipPath =
                 업로드 후 자동칼선 생성
               </text>
             </>
-          ) : null}
+          ) : null}
+
           {!hasUpload || autoCutline.status !== "ready" ? (
             <text
               x="470"
@@ -3420,7 +3423,14 @@ function bindWhiteJpgTraceSourceSelftests(): void {
 
 bindWhiteJpgTraceSourceSelftests()
 /* CB_WHITE_JPG_TRACE_SELFTEST_BINDING_END */
-export default function KeyringWorkbenchPage() {
+/** Existing bookmarks now reach the customer studio with real draft and intake support. */
+export default function KeyringStudioEntry() {
+  useEffect(() => { window.location.replace(STUDIO_LINKS.keyring); }, []);
+  return <main className="cb-shell-page"><section className="cb-shell-content"><div className="rounded-3xl border border-[#c7d1bf] bg-white p-8 shadow-sm"><p className="text-xs font-semibold tracking-[.2em] text-[#526951]">CUSTOMBRO · ACRYLIC STUDIO</p><h1 className="mt-3 text-3xl font-semibold text-[#283b2c]">나만의 키링을 만들어보세요.</h1><p className="mt-4 max-w-xl text-base leading-7 text-neutral-600">원형·사각·자유도형, 구멍 위치, 앞뒤 디자인과 라미아크릴 구성을 정하는 키링 스튜디오로 이동합니다.</p><a href={STUDIO_LINKS.keyring} className="mt-6 inline-flex items-center gap-8 rounded-xl bg-[#42634b] px-6 py-4 font-semibold text-white">키링 만들기 <span aria-hidden="true">→</span></a><p className="mt-4 text-sm text-neutral-500">자동으로 이동하지 않으면 위 버튼을 눌러 주세요.</p><a href={STUDIO_LINKS.products} className="mt-4 inline-block text-sm text-[#42634b] underline">공개 상품 모두 보기</a></div></section></main>;
+}
+
+/** Previous local-only workbench is retained for source reference, never mounted. */
+function LegacyKeyringWorkbenchPage() {
   const [shapeMode, setShapeMode] = useState<ShapeMode>("원형");
   const [material, setMaterial] = useState<Material>("투명 아크릴");
   const [thickness, setThickness] = useState<Thickness>("3T");

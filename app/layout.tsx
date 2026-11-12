@@ -5,8 +5,8 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: "CB Mall",
-  description: "CustomBro workbench commerce hub",
+  title: "커스텀브로 | 아크릴 키링·미니 진열대",
+  description: "키링의 모양과 앞뒤 디자인, 화장품 미니 진열대의 구조를 직접 정하고 예상 제작비와 제작 상담을 이어가는 커스텀브로입니다.",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
                 <span className="cb-shell-brand__mark">CB</span>
                 <span>
                   <strong>CUSTOMBRO</strong>
-                  <small>Workbench Mall</small>
+                  <small>Acrylic Studio</small>
                 </span>
               </Link>
             </div>

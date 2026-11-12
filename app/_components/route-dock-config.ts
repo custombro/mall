@@ -1,3 +1,5 @@
+import { STUDIO_LINKS } from "../../lib/studio-links";
+
 export type RouteDockItem = {
   label: string;
   href: string;
@@ -6,11 +8,11 @@ export type RouteDockItem = {
 
 const routeDockItems: RouteDockItem[] = [
   { label: "홈", href: "/" },
-  { label: "진열대 제작", href: "/display", matchStartsWith: ["/display"] },
-  { label: "제작", href: "/workbench", matchStartsWith: ["/workbench"] },
-  { label: "주문", href: "/orders", matchStartsWith: ["/orders"] },
-  { label: "주문확인", href: "/order-check", matchStartsWith: ["/order-check"] },
-  { label: "내정보", href: "/my", matchStartsWith: ["/my"] },
+  { label: "상품 보기", href: STUDIO_LINKS.products },
+  { label: "키링 만들기", href: STUDIO_LINKS.keyring, matchStartsWith: ["/workbench/keyring"] },
+  { label: "진열대 만들기", href: STUDIO_LINKS.display, matchStartsWith: ["/display"] },
+  { label: "내 제작 요청", href: STUDIO_LINKS.requests },
+  { label: "문의·A/S", href: STUDIO_LINKS.support },
 ];
 
 export const ROUTE_DOCK_ITEMS = routeDockItems;
