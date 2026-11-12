@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { STUDIO_LINKS } from "../lib/studio-links";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "https://mall.custombro.org/" },
+};
 
 const featured = [
   {
