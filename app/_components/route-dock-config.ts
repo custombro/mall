@@ -6,6 +6,7 @@ export type RouteDockItem = {
 
 const routeDockItems: RouteDockItem[] = [
   { label: "홈", href: "/" },
+  { label: "진열대 제작", href: "/display", matchStartsWith: ["/display"] },
   { label: "제작", href: "/workbench", matchStartsWith: ["/workbench"] },
   { label: "주문", href: "/orders", matchStartsWith: ["/orders"] },
   { label: "주문확인", href: "/order-check", matchStartsWith: ["/order-check"] },
