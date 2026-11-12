@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import RouteDock from "./_components/RouteDock";
 import "./globals.css";
-
+import "./home-v2.css";
 
 export const metadata: Metadata = {
   title: "커스텀브로 | 아크릴 키링·미니 진열대",
@@ -30,7 +30,6 @@ export default function RootLayout({
             </div>
             <RouteDock />
           </header>
-
           {children}
         </div>
       </body>

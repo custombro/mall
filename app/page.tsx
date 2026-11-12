@@ -1,195 +1,151 @@
 import Link from "next/link";
 import { STUDIO_LINKS } from "../lib/studio-links";
 
-const homeGroups = [
-  { name: "진열대 디자인", hint: "제품 크기와 필요한 수량으로 시작", href: STUDIO_LINKS.display },
-  { name: "키링 디자인", hint: "모양·구멍·앞뒤 디자인 직접 설정", href: STUDIO_LINKS.keyring },
-  { name: "공개 상품 보기", hint: "현재 제작 상담을 받는 상품", href: STUDIO_LINKS.products },
-  { name: "추가 제작 상담", hint: "기존 디자인과 변경 사항 전달", href: STUDIO_LINKS.support }
-];
-
-const startCards = [
+const featured = [
   {
-    title: "진열대 직접 디자인",
-    badge: "추천",
-    summary: "앰플 한 병부터 제품 라인업까지, 원하는 구성과 제품 정보를 알려주세요.",
-    bullets: ["제품 몸체의 크기와 높이", "구조·소재·인쇄 위치", "수량별 예상 공급가"],
-    href: STUDIO_LINKS.display, action: "진열대 만들기"
+    eyebrow: "BRAND GOODS",
+    title: "커스텀 아크릴 키링",
+    description: "원형·사각·자유도형부터 구멍 위치, 앞뒤 인쇄, 라미아크릴까지 직접 설계하세요.",
+    href: STUDIO_LINKS.keyring,
+    action: "키링 만들기",
+    kind: "keyring",
+    tags: ["자유도형", "1.5T + 1.5T 라미", "3D 미리보기"],
   },
   {
-    title: "나만의 아크릴 키링",
-    badge: "작업",
-    summary: "모양과 구멍 위치를 정하고, 이미지와 글자를 앞뒤에 배치해보세요.",
-    bullets: ["원형·사각·자유도형", "기본형·투명 라미아크릴", "앞뒤 디자인과 3D 미리보기"],
-    href: STUDIO_LINKS.keyring, action: "키링 만들기"
+    eyebrow: "DISPLAY STUDIO",
+    title: "화장품 · 브랜드 진열대",
+    description: "제품 치수와 배치를 정하면 구조를 3D로 확인하고 예상 제작비까지 바로 볼 수 있습니다.",
+    href: STUDIO_LINKS.display,
+    action: "진열대 만들기",
+    kind: "display",
+    tags: ["구조 자동완성", "소재·인쇄 선택", "실시간 예상가"],
   },
-  {
-    title: "추가 제작과 변경",
-    badge: "상담",
-    summary: "기존 진열대를 다시 만들거나 그래픽을 바꾸고 싶다면 상담에서 변경 내용을 알려주세요.",
-    bullets: ["기존 주문번호 또는 디자인명", "바꾸고 싶은 이미지와 문구", "추가로 필요한 제작 수량"],
-    href: STUDIO_LINKS.support, action: "제작 문의하기"
-  }
-];
+] as const;
 
-const summaryRows = [
-  { label: "제품", value: "크기·모양·진열 개수" },
-  { label: "수량", value: "동일 디자인별 제작 수량" },
-  { label: "사용처", value: "매장·박람회·팝업" }
+const useCases = [
+  { title: "박람회 · 팝업", body: "행사에 맞춘 소형 진열대와 브랜드 POP", href: "/exhibition-display" },
+  { title: "화장품 매장", body: "앰플·세럼·튜브 등 제품 치수 기반 진열", href: "/cosmetic-display" },
+  { title: "브랜드 굿즈", body: "키링·스탠디·마그넷 등 아크릴 굿즈", href: STUDIO_LINKS.products },
 ];
 
 export default function HomePage() {
   return (
-    <main className="cb-shell-page">
-      <div className="cb-shell-content">
-        <Link href={STUDIO_LINKS.products} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#bfcdb4] bg-[#e8efdf] px-6 py-5 text-[#304c36]">
-          <span><strong className="block text-lg">키링부터 미니 진열대까지, 우리 브랜드의 아크릴</strong><span className="mt-1 block text-sm">공개 상품을 고르고 디자인과 예상 제작비를 함께 확인하세요.</span></span>
-          <span className="rounded-full bg-[#42634b] px-5 py-3 text-sm font-semibold text-white">상품 보기 →</span>
-        </Link>
-        <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
-                CUSTOMBRO MALL
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                제품에 맞추고, 브랜드를 담습니다.
-              </h1>
-            </div>
-            <div className="max-w-xl">
-              <p className="text-sm leading-6 text-neutral-600">
-                진열대와 판촉물을 위한 커스텀브로 제작 상담. 제품 크기와 필요한 수량을 알려주시면 소재와 구성을 검토합니다.
-              </p>
-              <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                상담 후 제작 사양·최종 견적·일정을 확인합니다.
-              </p>
+    <main className="cb-home">
+      <section className="cb-home-hero">
+        <div className="cb-home-hero__copy">
+          <p className="cb-kicker">CUSTOMBRO ACRYLIC STUDIO</p>
+          <h1>
+            만들고 싶은 아크릴을
+            <br />
+            화면에서 먼저 완성하세요.
+          </h1>
+          <p className="cb-home-hero__lead">
+            키링부터 화장품 진열대까지. 크기·모양·소재·인쇄를 직접 정하고
+            3D로 확인한 뒤 제작 상담까지 한 흐름으로 이어집니다.
+          </p>
+          <div className="cb-home-hero__actions">
+            <a href={STUDIO_LINKS.products} className="cb-btn cb-btn--primary">상품 보기</a>
+            <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">GPT에게 제작 상담 맡기기</a>
+          </div>
+          <div className="cb-home-hero__trust">
+            <span>부가세 별도 예상가 실시간 확인</span>
+            <span>제작 전 사양 검토</span>
+            <span>일반 고객 제작도면 비공개</span>
+          </div>
+        </div>
+
+        <div className="cb-home-hero__visual" aria-label="커스텀브로 아크릴 제품 예시">
+          <div className="cb-hero-stage">
+            <div className="cb-hero-backboard"><span>CUSTOMBRO</span></div>
+            <div className="cb-hero-base"></div>
+            <div className="cb-hero-product cb-hero-product--one"></div>
+            <div className="cb-hero-product cb-hero-product--two"></div>
+            <div className="cb-hero-keyring">
+              <div className="cb-hero-keyring__hole"></div>
+              <span>CB</span>
             </div>
           </div>
-        </header>
+        </div>
+      </section>
 
-        <section className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
-          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-neutral-900">어떤 작업이 필요한가요?</p>
-            <div className="mt-3 space-y-2">
-              {homeGroups.map((item, index) => {
-                const active = index === 0;
-                return (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className={[
-                      "block rounded-2xl border px-4 py-3",
-                      active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f8f4ec] text-neutral-900"
-                    ].join(" ")}
-                  >
-                    <div className="text-sm font-semibold">{item.name}</div>
-                    <div className={active ? "mt-1 text-xs text-white/70" : "mt-1 text-xs text-neutral-500"}>
-                      {item.hint}
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
+      <section className="cb-home-products">
+        <div className="cb-section-heading">
+          <div>
+            <p className="cb-kicker">OPEN NOW</p>
+            <h2>지금 바로 만들 수 있는 제품</h2>
+          </div>
+          <a href={STUDIO_LINKS.products}>전체 상품 보기 →</a>
+        </div>
 
-            <div className="mt-4 rounded-2xl bg-[#f8f4ec] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">상담 전에 준비해 주세요</p>
-              <div className="mt-3 space-y-2">
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">제품의 실제 크기</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">브랜드 이미지와 문구</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">수량과 희망 사용일</div>
+        <div className="cb-product-grid">
+          {featured.map((item) => (
+            <article key={item.title} className="cb-product-card">
+              <div className="cb-product-card__preview">
+                {item.kind === "keyring" ? (
+                  <div className="cb-card-keyring"><i></i><span>YOUR<br/>DESIGN</span></div>
+                ) : (
+                  <div className="cb-card-display">
+                    <div className="cb-card-display__back"></div>
+                    <div className="cb-card-display__base"></div>
+                    <div className="cb-card-display__bottle"></div>
+                  </div>
+                )}
               </div>
-            </div>
-          </aside>
-
-          <section className="flex flex-col gap-4">
-            <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
-              <div className="grid gap-4 xl:grid-cols-3">
-                {startCards.map((card) => (
-                  <article key={card.title} className="rounded-2xl border border-black/10 bg-[#fcfbf8] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-lg font-semibold tracking-tight">{card.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-neutral-600">{card.summary}</p>
-                      </div>
-                      <span className="rounded-full bg-neutral-900 px-2 py-1 text-[11px] font-semibold text-white">
-                        {card.badge}
-                      </span>
-                    </div>
-
-                    <ul className="mt-4 space-y-2 text-sm text-neutral-800">
-                      {card.bullets.map((item) => (
-                        <li key={item} className="rounded-xl bg-white px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <a href={card.href} className="mt-4 flex items-center justify-between rounded-xl bg-[#42634b] px-4 py-3 text-sm font-semibold text-white">{card.action}<span aria-hidden="true">→</span></a>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-neutral-900">작업 도구와 이용 안내</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={STUDIO_LINKS.keyring} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  키링 만들기
-                </Link>
-                <Link href={STUDIO_LINKS.display} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  진열대 만들기
-                </Link>
-                <Link href={STUDIO_LINKS.requests} className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  내 제작 요청
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-            <div className="sticky top-4 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-neutral-900">제작 상담부터 시작하세요</p>
-                <p className="mt-1 text-sm text-neutral-600">
-                  도면이 없어도 제품 정보와 원하는 모습을 알려주세요. 필요한 사양을 상담에서 함께 확인합니다.
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-[#f8f4ec] p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">알려주시면 좋은 정보</div>
-                <div className="mt-3 space-y-3">
-                  {summaryRows.map((row) => (
-                    <div key={row.label} className="flex items-start justify-between gap-3 text-sm">
-                      <span className="text-neutral-500">{row.label}</span>
-                      <span className="text-right font-medium text-neutral-900">{row.value}</span>
-                    </div>
-                  ))}
+              <div className="cb-product-card__body">
+                <p className="cb-kicker">{item.eyebrow}</p>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <div className="cb-tag-row">
+                  {item.tags.map((tag) => <span key={tag}>{tag}</span>)}
                 </div>
+                <a href={item.href} className="cb-product-card__cta">{item.action}<span>→</span></a>
               </div>
+            </article>
+          ))}
+        </div>
+      </section>
 
-              <div className="rounded-2xl border border-black/10 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">CUSTOM DISPLAY</div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight">우리 제품만의 진열대</div>
-                <div className="mt-1 text-sm text-neutral-600">상담 접수는 결제나 제작 확정이 아닙니다. 사양을 확인한 뒤 견적을 안내합니다.</div>
+      <section className="cb-home-flow">
+        <div className="cb-section-heading">
+          <div>
+            <p className="cb-kicker">HOW IT WORKS</p>
+            <h2>디자인부터 제작 요청까지</h2>
+          </div>
+        </div>
+        <ol className="cb-flow-grid">
+          <li><b>01</b><strong>제품 선택</strong><span>키링 또는 진열대에서 시작합니다.</span></li>
+          <li><b>02</b><strong>직접 설계</strong><span>치수·모양·소재·인쇄를 화면에서 조정합니다.</span></li>
+          <li><b>03</b><strong>3D · 예상가 확인</strong><span>완성 형태와 수량별 예상 공급가를 확인합니다.</span></li>
+          <li><b>04</b><strong>제작 검토 요청</strong><span>저장된 사양을 기준으로 실제 제작 가능 여부를 확인합니다.</span></li>
+        </ol>
+      </section>
 
-                <div className="mt-4 space-y-2">
-                  <Link href={STUDIO_LINKS.display} className="flex w-full items-center justify-center rounded-2xl bg-[#42634b] px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    진열대 만들기
-                  </Link>
-                  <Link href={STUDIO_LINKS.keyring} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    키링 만들기
-                  </Link>
-                  <Link href={STUDIO_LINKS.products} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    공개 상품 모두 보기
-                  </Link>
-                  <Link href={STUDIO_LINKS.support} className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    문의·A/S
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </section>
-      </div>
+      <section className="cb-home-usecases">
+        <div className="cb-section-heading">
+          <div>
+            <p className="cb-kicker">FOR YOUR BRAND</p>
+            <h2>어디에 사용할 예정인가요?</h2>
+          </div>
+        </div>
+        <div className="cb-usecase-grid">
+          {useCases.map((item) => (
+            <Link href={item.href} key={item.title} className="cb-usecase-card">
+              <strong>{item.title}</strong>
+              <span>{item.body}</span>
+              <em>자세히 보기 →</em>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="cb-home-assist">
+        <div>
+          <p className="cb-kicker">DESIGN ASSIST</p>
+          <h2>직접 설계하기 어렵다면 GPT가 정리합니다.</h2>
+          <p>제품 사진·실측·수량만 있어도 필요한 사양을 정리하고 다음 단계까지 안내합니다.</p>
+        </div>
+        <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--primary">간편 제작 상담 시작</a>
+      </section>
     </main>
   );
 }
