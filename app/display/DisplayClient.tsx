@@ -64,6 +64,16 @@ export default function DisplayClient() {
   const [previousReceipt, setPreviousReceipt] = useState<Receipt | null>(null);
   const attempt = useRef<{ signature: string; key: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [intakeReady, setIntakeReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+    fetch("/api/display-inquiries", { cache: "no-store", signal: controller.signal })
+      .then(async response => response.ok && (await response.json())?.acceptingInquiries === true)
+      .then(ready => { if (mounted) setIntakeReady(ready); })
+      .catch(() => { if (mounted) setIntakeReady(false); });
+    return () => { mounted = false; controller.abort(); };
+  }, []);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(receiptKey);
@@ -115,7 +125,7 @@ export default function DisplayClient() {
     } catch { setNotice("저장된 작성 내용을 불러오지 못했습니다."); }
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); if (busy || !formRef.current?.reportValidity()) return;
+    e.preventDefault(); if (busy || intakeReady !== true || !formRef.current?.reportValidity()) return;
     setError(""); setReceipt(null);
     const numeric = (value: string) => value.trim() === "" ? null : Number(value);
     const brief = { purpose: f.purpose, brand: f.brand.trim(), productName: f.productName.trim(), productShape: f.productShape, diameterMm: f.productShape === "round" ? numeric(f.diameterMm) : null, heightMm: numeric(f.heightMm), measurementsConfirmed: f.productShape === "round" && f.measurementsConfirmed && !!f.diameterMm && !!f.heightMm, productsPerStand: Number(f.productsPerStand), quantity: Number(f.quantity), materialId: f.materialId, printSide: f.materialId === "clear" ? f.printSide : "front", requestedDate: f.requestedDate, notes: f.notes.trim() };
@@ -157,7 +167,12 @@ export default function DisplayClient() {
         <aside className={s.inquiryAside}><p className={s.eyebrow}>LET’S MAKE YOUR DISPLAY</p><h2>우리 제품에 맞는<br />진열대를 문의하세요.</h2><p>아직 정하지 못한 항목은 비워 두세요.<br />확인한 정보부터 함께 정리하겠습니다.</p><div className={s.quoteNote}><span>견적 안내</span><strong>사양과 수량에 맞춘 개별 견적</strong><p>소재 종류·색상·가공·조립·인쇄 공정에 따라 금액이 달라집니다. 동일 디자인의 수량이 늘어나면 제작 효율을 반영해 검토합니다.</p><p>견적의 제작 금액은 <b>부가세 별도</b>이며, 최종 결제 단계에서 부가세와 총액을 확인합니다.</p></div><div className={s.directContact}><span>이메일로 상담하기</span><a href="mailto:custombro365@gmail.com">custombro365@gmail.com ↗</a></div></aside>
         <form ref={formRef} onSubmit={submit} className={s.form}>
           <div className={s.formHeading}><h3>제작 상담 요청</h3><span>이름·이메일·필수 동의가 필요합니다.</span></div>
-          <fieldset disabled={busy} className={s.formFields} aria-label="제작 상담 내용">
+          {intakeReady !== true && <div className={s.notice} role="status">
+            {intakeReady === null ? "온라인 접수 가능 여부를 확인하고 있습니다." : "현재 이 페이지의 온라인 접수 서버가 연결되지 않았습니다."}
+            {" "}<a href={STUDIO_LINKS.consultation}>통합 스튜디오에서 상담 시작하기 →</a>
+            {" "}<a href={mailHref}>작성 내용을 이메일로 문의하기 →</a>
+          </div>}
+          <fieldset disabled={busy || intakeReady !== true} className={s.formFields} aria-label="제작 상담 내용">
           <label className={s.field}>사용 목적<select value={f.purpose} onChange={e => update("purpose", e.target.value as Purpose)}>{purposes.map(p => <option key={p.id} value={p.id}>{p.subtitle}</option>)}</select></label>
           <div className={s.twoCol}><label className={s.field}>브랜드명<input id="display-brand" value={f.brand} onChange={e => update("brand", e.target.value)} maxLength={80} placeholder="예: 브랜드 이름" /></label><label className={s.field}>진열할 제품명<input value={f.productName} onChange={e => update("productName", e.target.value)} maxLength={120} placeholder="예: 앰플, 세럼, 크림" /></label></div>
           <fieldset className={s.fieldset}><legend>제품 크기</legend><div className={s.threeCol}><label className={s.field}>용기 형태<select value={f.productShape} onChange={e => update("productShape", e.target.value as "round" | "other")}><option value="round">원형</option><option value="other">비원형 / 기타</option></select></label><label className={s.field}>본체 지름 · mm<input type="number" inputMode="decimal" min="1" max="500" step="0.1" value={f.diameterMm} onChange={e => update("diameterMm", e.target.value)} placeholder="미정이면 비워두세요" disabled={f.productShape === "other"} /></label><label className={s.field}>전체 높이 · mm<input type="number" inputMode="decimal" min="10" max="1000" step="0.1" value={f.heightMm} onChange={e => update("heightMm", e.target.value)} placeholder="뚜껑 포함 높이" /></label></div><p className={s.help}>{f.productShape === "other" ? "비원형은 아래 요청사항에 가로 × 깊이 × 높이와 용기 형태를 알려주세요." : "사진만으로 실측값을 확정하지 않습니다. 제작 전 용기와 꽂이 홀의 여유를 확인합니다."}</p><label className={s.check}><input type="checkbox" checked={f.measurementsConfirmed} onChange={e => update("measurementsConfirmed", e.target.checked)} /> 입력한 치수는 제품을 직접 측정한 값입니다.</label></fieldset>
@@ -173,7 +188,7 @@ export default function DisplayClient() {
           {receipt && <div className={s.success} role="status"><strong>서버에 상담 요청이 접수되었습니다.</strong><p>접수번호 <b>{receipt.requestId}</b></p><p>접수시각: {new Date(receipt.receivedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (한국 시간)</p><small>상담 접수 단계입니다. 가격·납기·결제·제작은 아직 확정되지 않았습니다.</small></div>}
           {!receipt && previousReceipt && <p className={s.previous}>이 브라우저에 보관된 이전 서버 접수번호: <b>{previousReceipt.requestId}</b><br />현재 작성 중인 내용의 접수번호는 아닙니다.</p>}
           {notice && <p role="status" className={s.notice}>{notice}</p>}
-          <button className={s.submit} type="submit" disabled={busy}>{busy ? "접수 확인 중…" : "제작 상담 요청 보내기"}<span aria-hidden="true">→</span></button><p className={s.submitNote}>결제가 발생하지 않습니다. 서버 접수번호가 표시되어야 접수가 완료됩니다.</p>
+          <button className={s.submit} type="submit" disabled={busy || intakeReady !== true}>{busy ? "접수 확인 중…" : "제작 상담 요청 보내기"}<span aria-hidden="true">→</span></button><p className={s.submitNote}>결제가 발생하지 않습니다. 서버 접수번호가 표시되어야 접수가 완료됩니다.</p>
           <div className={s.draftActions}><button type="button" onClick={saveDraft}>이 탭에 임시 저장</button><button type="button" onClick={restoreDraft}>임시 저장 불러오기</button></div>
           </fieldset>
         </form>
