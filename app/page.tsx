@@ -30,7 +30,7 @@ const featured = [
 const useCases = [
   { title: "박람회 · 팝업", body: "행사에 맞춘 소형 진열대와 브랜드 POP", href: "/exhibition-display" },
   { title: "화장품 매장", body: "앰플·세럼·튜브 등 제품 치수 기반 진열", href: "/cosmetic-display" },
-  { title: "브랜드 굿즈", body: "키링·스탠디·마그넷 등 아크릴 굿즈", href: STUDIO_LINKS.products },
+  { title: "브랜드 굿즈", body: "아크릴 키링의 형태·인쇄·타공을 알아보고 직접 설계", href: "/acrylic-keyring" },
 ];
 
 export default function HomePage() {
