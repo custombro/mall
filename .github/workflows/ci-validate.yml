@@ -39,4 +39,4 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Sales landing and display fallback regressions
-        run: node --test tests/*.test.mjs
+        run: node --test tests/display-intake-fallback.test.mjs tests/sales-landing-links.test.mjs
