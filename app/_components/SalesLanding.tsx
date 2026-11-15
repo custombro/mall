@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 type Point = { title: string; body: string };
+type Faq = { question: string; answer: string };
+type RelatedLink = { label: string; href: string };
 type Props = {
   eyebrow: string;
   title: ReactNode;
@@ -11,6 +13,8 @@ type Props = {
   secondaryLabel: string;
   points: Point[];
   note?: string;
+  faqs?: Faq[];
+  relatedLinks?: RelatedLink[];
 };
 
 export default function SalesLanding({
@@ -23,6 +27,8 @@ export default function SalesLanding({
   secondaryLabel,
   points,
   note,
+  faqs,
+  relatedLinks,
 }: Props) {
   return (
     <main className="min-h-screen bg-[#f7f7f2] px-5 py-10 text-[#253c30]">
@@ -57,6 +63,31 @@ export default function SalesLanding({
           </p>
           {note ? <p className="mt-4 text-xs leading-6 text-[#6b7867]">{note}</p> : null}
         </section>
+
+        {faqs?.length ? (
+          <section aria-labelledby="sales-faq-heading" className="mt-12">
+            <h2 id="sales-faq-heading" className="text-2xl font-semibold">자주 묻는 질문</h2>
+            <div className="mt-5 space-y-3">
+              {faqs.map(({ question, answer }) => (
+                <details key={question} className="rounded-xl border border-black/10 bg-white p-5">
+                  <summary className="cursor-pointer font-semibold">{question}</summary>
+                  <p className="mt-3 text-sm leading-7 text-[#657462]">{answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {relatedLinks?.length ? (
+          <nav aria-label="관련 아크릴 상품" className="mt-10 border-t border-black/10 pt-7">
+            <h2 className="text-base font-semibold">함께 살펴보기</h2>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {relatedLinks.map(({ href, label }) => (
+                <a key={href} href={href} className="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold">{label} →</a>
+              ))}
+            </div>
+          </nav>
+        ) : null}
       </div>
     </main>
   );

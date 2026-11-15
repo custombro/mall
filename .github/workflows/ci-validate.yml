@@ -38,5 +38,5 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Display fallback regression
-        run: node --test tests/display-intake-fallback.test.mjs
+      - name: Sales landing and display fallback regressions
+        run: node --test tests/*.test.mjs
