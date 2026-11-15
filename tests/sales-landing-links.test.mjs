@@ -12,7 +12,7 @@ test("public product pages offer semantic FAQ and internal related-product navig
     const page = readFileSync(new URL(`../app/${slug}/page.tsx`, import.meta.url), "utf8");
     assert.match(page, /faqs=\{\[/);
     assert.match(page, /relatedLinks=\{\[/);
-    assert.match(page, /alternates: \{ canonical: `https:\/\/mall\.custombro\.org\/${slug}` \}/.replace("${slug}",slug));
+    assert.ok(page.includes(`alternates: { canonical: "https://mall.custombro.org/${slug}" }`));
     assert.match(page, /primaryHref=\{STUDIO_LINKS\.(keyring|display)\}/);
   }
 });
