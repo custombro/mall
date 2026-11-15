@@ -50,7 +50,6 @@ export default function HomePage() {
           <div className="cb-home-hero__trust">
             <span>부가세 별도 예상가 실시간 확인</span>
             <span>제작 전 사양 검토</span>
-            <span>일반 고객 제작도면 비공개</span>
           </div>
         </div>
 
