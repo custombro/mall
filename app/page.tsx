@@ -50,7 +50,7 @@ export default function HomePage() {
           </p>
           <div className="cb-home-hero__actions">
             <a href={STUDIO_LINKS.products} className="cb-btn cb-btn--primary">상품 보기</a>
-            <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">GPT에게 제작 상담 맡기기</a>
+            <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">제작 상담 시작</a>
           </div>
           <div className="cb-home-hero__trust">
             <span>부가세 별도 예상가 실시간 확인</span>
@@ -146,7 +146,7 @@ export default function HomePage() {
       <section className="cb-home-assist">
         <div>
           <p className="cb-kicker">DESIGN ASSIST</p>
-          <h2>직접 설계하기 어렵다면 GPT가 정리합니다.</h2>
+          <h2>직접 설계하기 어렵다면 상담으로 시작하세요.</h2>
           <p>제품 사진·실측·수량만 있어도 필요한 사양을 정리하고 다음 단계까지 안내합니다.</p>
         </div>
         <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--primary">간편 제작 상담 시작</a>
