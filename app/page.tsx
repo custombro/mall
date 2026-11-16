@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { STUDIO_LINKS } from "../lib/studio-links";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "https://mall.custombro.org/" },
+};
 
 const featured = [
   {
@@ -25,7 +30,7 @@ const featured = [
 const useCases = [
   { title: "박람회 · 팝업", body: "행사에 맞춘 소형 진열대와 브랜드 POP", href: "/exhibition-display" },
   { title: "화장품 매장", body: "앰플·세럼·튜브 등 제품 치수 기반 진열", href: "/cosmetic-display" },
-  { title: "브랜드 굿즈", body: "키링·스탠디·마그넷 등 아크릴 굿즈", href: STUDIO_LINKS.products },
+  { title: "브랜드 굿즈", body: "아크릴 키링의 형태·인쇄·타공을 알아보고 직접 설계", href: "/acrylic-keyring" },
 ];
 
 export default function HomePage() {
@@ -45,7 +50,7 @@ export default function HomePage() {
           </p>
           <div className="cb-home-hero__actions">
             <a href={STUDIO_LINKS.products} className="cb-btn cb-btn--primary">상품 보기</a>
-            <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">GPT에게 제작 상담 맡기기</a>
+            <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">제작 상담 시작</a>
           </div>
           <div className="cb-home-hero__trust">
             <span>부가세 별도 예상가 실시간 확인</span>
@@ -140,7 +145,7 @@ export default function HomePage() {
       <section className="cb-home-assist">
         <div>
           <p className="cb-kicker">DESIGN ASSIST</p>
-          <h2>직접 설계하기 어렵다면 GPT가 정리합니다.</h2>
+          <h2>직접 설계하기 어렵다면 상담으로 시작하세요.</h2>
           <p>제품 사진·실측·수량만 있어도 필요한 사양을 정리하고 다음 단계까지 안내합니다.</p>
         </div>
         <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--primary">간편 제작 상담 시작</a>
