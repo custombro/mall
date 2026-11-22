@@ -1,0 +1,42 @@
+.page {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  color: #172019;
+  color-scheme: light;
+}
+
+.heading { max-width: 780px; margin-bottom: 32px; }
+.eyebrow { margin: 0 0 12px; color: #46694e; font-size: .875rem; font-weight: 700; letter-spacing: .1em; }
+.heading h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.25; letter-spacing: -.04em; }
+.heading > p:last-child { margin: 16px 0 0; color: #505e54; font-size: 1.0625rem; line-height: 1.8; word-break: keep-all; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
+.card { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: 28px; border: 1px solid #dce4da; border-radius: 22px; background: #fff; }
+.card h2 { margin: 0; font-size: 1.5rem; line-height: 1.4; letter-spacing: -.025em; }
+.card p { margin: 14px 0 26px; color: #505e54; font-size: 1rem; line-height: 1.8; word-break: keep-all; }
+.button, .secondary { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 12px 20px; border: 1px solid #315b3b; border-radius: 12px; font-size: 1rem; font-weight: 700; line-height: 1.5; text-align: center; }
+.button { background: #315b3b; color: #fff; }
+.secondary { background: #fff; color: #315b3b; }
+.card .button { margin-top: auto; }
+.button:hover { background: #24472d; }
+.secondary:hover { background: #edf3eb; }
+.page a:focus-visible, .faq summary:focus-visible { outline: 3px solid #417aeb; outline-offset: 4px; }
+.help { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 22px; margin-top: 28px; padding: 28px; border: 1px solid #cbd9c8; border-radius: 22px; background: #eaf1e7; }
+.help h2 { margin: 0 0 8px; font-size: 1.25rem; line-height: 1.5; }
+.help p { margin: 0; color: #46564b; font-size: 1rem; line-height: 1.8; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.note { margin-top: 22px; color: #505e54; font-size: .9375rem; line-height: 1.8; }
+.note a { color: #315b3b; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.faq { overflow: hidden; border: 1px solid #dce4da; border-radius: 22px; background: #fff; }
+.faqHeading { margin: 40px 0 20px; font-size: 1.5rem; line-height: 1.5; }
+.faq details + details { border-top: 1px solid #e3e9e0; }
+.faq summary { padding: 23px 28px; font-size: 1.0625rem; font-weight: 700; line-height: 1.6; cursor: pointer; }
+.faq p { margin: 0; padding: 0 28px 24px; color: #505e54; font-size: 1rem; line-height: 1.85; }
+@media (max-width: 600px) {
+  .page { padding: 30px 18px 56px; }
+  .heading { margin-bottom: 24px; }
+  .card, .help { padding: 22px; }
+  .actions, .actions a { width: 100%; }
+  .faq summary { padding: 20px 22px; }
+  .faq p { padding: 0 22px 22px; }
+}

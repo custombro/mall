@@ -23,6 +23,7 @@ export default function RouteDock() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={active ? "cb-route-dock__item is-active" : "cb-route-dock__item"}
             >
               {item.label}

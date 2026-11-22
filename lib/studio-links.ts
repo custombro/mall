@@ -5,6 +5,7 @@ export const STUDIO_LINKS = {
   keyring: `${STUDIO_ORIGIN}/keyring`,
   display: `${STUDIO_ORIGIN}/studio`,
   consultation: `${STUDIO_ORIGIN}/start`,
-  requests: `${STUDIO_ORIGIN}/product-request?history=1`,
+  requests: `${STUDIO_ORIGIN}/account/orders`,
+  guestRequests: `${STUDIO_ORIGIN}/guest-orders`,
   support: `${STUDIO_ORIGIN}/studio?view=support`,
 } as const;

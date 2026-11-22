@@ -11,8 +11,8 @@ const routeDockItems: RouteDockItem[] = [
   { label: "상품 보기", href: STUDIO_LINKS.products },
   { label: "키링 만들기", href: STUDIO_LINKS.keyring, matchStartsWith: ["/workbench/keyring"] },
   { label: "진열대 만들기", href: STUDIO_LINKS.display, matchStartsWith: ["/display"] },
-  { label: "내 제작 요청", href: STUDIO_LINKS.requests },
-  { label: "문의·A/S", href: STUDIO_LINKS.support },
+  { label: "주문·제작 조회", href: "/order-check" },
+  { label: "문의·A/S", href: "/qa" },
 ];
 
 export const ROUTE_DOCK_ITEMS = routeDockItems;

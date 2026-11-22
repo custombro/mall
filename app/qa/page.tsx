@@ -1,184 +1,40 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { STUDIO_LINKS } from "../../lib/studio-links";
+import s from "../../components/customer-service.module.css";
 
-const deployMarker = "DEPLOY_QA_20260325_235855";
+export const metadata: Metadata = {
+  title: "제작 문의·A/S | 커스텀브로",
+  description: "제작 사양과 파일 준비, 주문 조회, 파손 문의를 확인하고 내 상담을 접수하세요.",
+};
 
-const qaGroups = [
-  { name: "주문 전", hint: "가격 / 제작 가능 여부" },
-  { name: "제작 중", hint: "일정 / 수정 / 상태 확인" },
-  { name: "출고 후", hint: "재주문 / 저장 / 추가 문의" },
-  { name: "빠른 이동", hint: "주문 / 주문확인 / 서랍" }
-];
-
-const qaCards = [
-  {
-    title: "가장 많이 묻는 시작 질문",
-    badge: "기본",
-    summary: "긴 안내 대신 주문 직전 판단에 필요한 질문만 먼저 보이게 정리했다.",
-    bullets: ["최소 수량은 어떻게 되나요?", "파일 없이도 제작 가능한가요?", "오늘 접수하면 언제 출고되나요?"]
-  },
-  {
-    title: "제작 중 확인 질문",
-    badge: "진행",
-    summary: "고객이 가장 자주 보는 일정·수정 여부만 중앙 카드에 모았다.",
-    bullets: ["지금 제작 단계는 어디인가요?", "수정 요청은 어디서 하나요?", "주문확인에서 무엇을 보면 되나요?"]
-  },
-  {
-    title: "재주문과 저장 질문",
-    badge: "재사용",
-    summary: "서랍 저장과 재주문 동선으로 바로 이어지게 핵심 질문만 남겼다.",
-    bullets: ["같은 옵션으로 다시 주문 가능한가요?", "이전에 만든 파일을 다시 쓸 수 있나요?", "보관함에서 수정 재주문 가능한가요?"]
-  }
-];
-
-const summaryRows = [
-  { label: "좌측", value: "질문 범주 선택" },
-  { label: "중앙", value: "핵심 질문 카드" },
-  { label: "우측", value: "주문 / 저장 / 이동 CTA" }
+const questions = [
+  { question: "어떤 크기를 알려드리면 되나요?", answer: "진열할 제품의 가장 넓은 지름 또는 가로·세로, 전체 높이와 무게를 알려 주세요. 화면의 기본 치수는 시작값이며, 실제 제품과 재료 두께·끼움 여유를 확인한 뒤 제작 사양을 정합니다." },
+  { question: "어떤 이미지 파일을 준비하나요?", answer: "편집기에는 JPG·PNG·WebP 이미지를 올릴 수 있습니다. 로고는 배경이 투명한 PNG를 사용하면 배치하기 편합니다. 최종 인쇄 데이터는 제작 전에 확인합니다." },
+  { question: "화면에 표시된 예상가로 바로 제작되나요?", answer: "예상 제작비는 사양을 정할 때 참고하는 금액입니다. 제작 가능 여부와 최종 사양을 확인하고 확정 견적을 안내합니다. 결제와 제작 확정 상태는 접수 내역에서 확인해 주세요." },
+  { question: "비회원도 접수하고 내역을 볼 수 있나요?", answer: "비회원으로 계속을 선택해 제작 검토를 요청할 수 있습니다. 접수할 때 받은 조회코드를 별도로 보관하고 비회원 조회 화면에서 입력하세요. 회원 계정에 연결된 과거 기록은 로그인 후 확인합니다." },
+  { question: "제작 중 수정이나 출고 일정이 궁금해요.", answer: "접수번호와 변경하고 싶은 내용을 문의에 남겨 주세요. 현재 제작 단계와 기록을 확인한 뒤 안내합니다. 변경 가능 여부나 출고일은 확인 전까지 확정되지 않습니다." },
+  { question: "제품이 파손된 상태로 도착했어요.", answer: "제품 전체, 파손 부위와 포장 상태가 보이는 사진을 첨부해 문의해 주세요. 다칠 위험이 있다면 사용을 멈추고 파손 부위를 직접 만지지 마세요. 처리 방법은 주문과 사진을 확인한 뒤 안내합니다." },
 ];
 
 export default function QAPage() {
-  return (
-    <main className="min-h-screen bg-[#f6f3ee] text-neutral-900">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 lg:px-6">
-        <header className="rounded-3xl border border-black/10 bg-white px-5 py-4 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">
-                Q&amp;A
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                질문도 더 짧고 답을 빨리 찾게
-              </h1>
-            </div>
-            <div className="max-w-xl">
-              <p className="text-sm leading-6 text-neutral-600">
-                상단 보조 설명과 중복 요소를 줄이고, 질문 범주 · 핵심 답 · 다음 행동만 남긴 단순한 Q&amp;A 화면이다.
-              </p>
-              <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                배포 확인 기준: {deployMarker}
-              </p>
-            </div>
-          </div>
-        </header>
-
-        <section className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
-          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-neutral-900">좌측 · 선택 / 질문 범주</p>
-            <div className="mt-3 space-y-2">
-              {qaGroups.map((item, index) => {
-                const active = index === 0;
-                return (
-                  <div
-                    key={item.name}
-                    className={[
-                      "rounded-2xl border px-4 py-3",
-                      active ? "border-neutral-900 bg-neutral-900 text-white" : "border-black/10 bg-[#f8f4ec] text-neutral-900"
-                    ].join(" ")}
-                  >
-                    <div className="text-sm font-semibold">{item.name}</div>
-                    <div className={active ? "mt-1 text-xs text-white/70" : "mt-1 text-xs text-neutral-500"}>
-                      {item.hint}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 rounded-2xl bg-[#f8f4ec] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 확인</p>
-              <div className="mt-3 space-y-2">
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">최소 수량</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">제작 일정</div>
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-neutral-700">재주문 방법</div>
-              </div>
-            </div>
-          </aside>
-
-          <section className="flex flex-col gap-4">
-            <div className="rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
-              <div className="grid gap-4 xl:grid-cols-3">
-                {qaCards.map((card) => (
-                  <article key={card.title} className="rounded-2xl border border-black/10 bg-[#fcfbf8] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-lg font-semibold tracking-tight">{card.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-neutral-600">{card.summary}</p>
-                      </div>
-                      <span className="rounded-full bg-neutral-900 px-2 py-1 text-[11px] font-semibold text-white">
-                        {card.badge}
-                      </span>
-                    </div>
-
-                    <ul className="mt-4 space-y-2 text-sm text-neutral-800">
-                      {card.bullets.map((item) => (
-                        <li key={item} className="rounded-xl bg-white px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-neutral-900">중앙 · 바로 이동</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href="/orders" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  주문으로 이동
-                </Link>
-                <Link href="/order-check" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  주문확인
-                </Link>
-                <Link href="/storage" className="rounded-full border border-black/10 bg-[#f8f4ec] px-4 py-2 text-sm font-medium text-neutral-900 hover:border-black/20">
-                  서랍 열기
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <aside className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-            <div className="sticky top-4 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-neutral-900">우측 · 상태 요약 / 저장 / 주문</p>
-                <p className="mt-1 text-sm text-neutral-600">
-                  질문을 본 뒤 바로 다음 행동으로 움직일 수 있게 핵심 CTA만 남겼다.
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-[#f8f4ec] p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">현재 구조</div>
-                <div className="mt-3 space-y-3">
-                  {summaryRows.map((row) => (
-                    <div key={row.label} className="flex items-start justify-between gap-3 text-sm">
-                      <span className="text-neutral-500">{row.label}</span>
-                      <span className="text-right font-medium text-neutral-900">{row.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-black/10 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">빠른 행동</div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight">지금 바로 다음 단계로 이동</div>
-                <div className="mt-1 text-sm text-neutral-600">주문, 주문확인, 서랍 이동만 선명하게 남긴 단순한 안내 구조다.</div>
-
-                <div className="mt-4 space-y-2">
-                  <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    주문으로 이동
-                  </Link>
-                  <Link href="/order-check" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    주문확인
-                  </Link>
-                  <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    서랍 열기
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </section>
-      </div>
-    </main>
-  );
+  return <main className={s.page}>
+    <header className={s.heading}>
+      <p className={s.eyebrow}>CUSTOMBRO · 고객 상담</p>
+      <h1>제작 문의·A/S</h1>
+      <p>처음 만드는 제품의 사양부터 접수한 주문과 파손 문의까지, 필요한 내용을 남겨 주세요.</p>
+    </header>
+    <div className={s.actions}>
+      <a className={s.button} href={STUDIO_LINKS.support}>문의·A/S 접수와 답변 확인</a>
+      <Link className={s.secondary} href="/order-check">주문·제작 내역 조회</Link>
+    </div>
+    <h2 className={s.faqHeading}>자주 묻는 질문</h2>
+    <section className={s.faq} aria-label="자주 묻는 질문과 답변">
+      {questions.map(item => <details key={item.question}><summary>{item.question}</summary><p>{item.answer}</p></details>)}
+    </section>
+    <section className={s.help}>
+      <div><h2>제품 제작을 처음 시작하나요?</h2><p>사용할 곳과 제품 크기, 필요한 수량을 알려 주시면 사양부터 정리합니다.</p></div>
+      <a className={s.secondary} href={STUDIO_LINKS.consultation}>간편 제작 상담</a>
+    </section>
+  </main>;
 }
