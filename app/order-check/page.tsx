@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { STUDIO_LINKS } from "../../lib/studio-links";
 import s from "../../components/customer-service.module.css";
 
@@ -28,8 +29,11 @@ export default function OrderCheckPage() {
       </article>
     </section>
     <section className={s.help}>
-      <div><h2>조회코드가 없거나 내역을 찾을 수 없나요?</h2><p>접수번호와 문의 내용을 남겨 주세요. 본인 확인 후 안내합니다.</p></div>
-      <a className={s.secondary} href={STUDIO_LINKS.support}>주문 내역 문의</a>
+      <div><h2>조회 화면이 열리지 않거나 내역을 찾을 수 없나요?</h2><p>접수번호가 있다면 문의 내용과 함께 알려 주세요. 온라인 상담을 이용하기 어렵다면 이메일로 문의할 수 있습니다.</p></div>
+      <div className={s.actions}>
+        <a className={s.secondary} href={STUDIO_LINKS.support}>온라인으로 주문 문의</a>
+        <Link className={s.secondary} href="/qa#email">이메일 문의 준비</Link>
+      </div>
     </section>
     <p className={s.note}>상담 접수와 예상 제작비는 결제 완료를 뜻하지 않습니다. 실제 결제·제작·출고 상태는 각 내역의 기록을 확인해 주세요.</p>
   </main>;
