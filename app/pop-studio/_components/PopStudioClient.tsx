@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { STUDIO_LINKS } from "@/lib/studio-links";
 
 type SlotKey = "p1" | "p2" | "p3" | "p4";
 type Tone = "clear" | "white" | "black" | "mirror" | "hologram" | "frosted";
@@ -37,7 +38,6 @@ type PresetRecord = {
 };
 
 const SESSION_MARKER = "POP_PRESET_IMPORT_EXPORT_20260326_210043";
-const PUBLIC_BASE_URL = "https://mall.custombro.org";
 const PRESET_STORAGE_KEY = "cb-pop-studio-presets-v1";
 
 const SLOT_ORDER: SlotKey[] = ["p1", "p2", "p3", "p4"];
@@ -182,7 +182,6 @@ export default function PopStudioClient() {
 
   const drawerReady = requiredMissing.length === 0;
   const orderReady = requiredMissing.length === 0 && quantity > 0;
-  const checkReady = selectedMaterials.length > 0;
 
   const slotStates = SLOT_ORDER.map((slot) => {
     const id = activeMaterials[slot];
@@ -191,49 +190,10 @@ export default function PopStudioClient() {
   });
 
   const flowLabel = useMemo(() => {
-    if(orderReady){ return "주문 진행 가능"; }
-    if(drawerReady){ return "서랍 저장 가능"; }
+    if(orderReady){ return "구성만 준비되었습니다"; }
+    if(drawerReady){ return "수량을 확인해 주세요"; }
     return "필수 슬롯 보완 필요";
   }, [drawerReady, orderReady]);
-
-  const payloadBase = useMemo(() => ({
-    source: "pop-studio",
-    marker: SESSION_MARKER,
-    qty: String(quantity),
-    unitPrice: String(unitPrice),
-    totalPrice: String(totalPrice),
-    p1: activeMaterials.p1 ?? "",
-    p2: activeMaterials.p2 ?? "",
-    p3: activeMaterials.p3 ?? "",
-    p4: activeMaterials.p4 ?? "",
-    accessories: activeAccessoryIds.join(","),
-    memo: memo.trim()
-  }), [quantity, unitPrice, totalPrice, activeMaterials, activeAccessoryIds, memo]);
-
-  const buildQuery = (mode: "drawer" | "order" | "check") => {
-    const params = new URLSearchParams();
-    params.set("source", payloadBase.source);
-    params.set("mode", mode);
-    params.set("qty", payloadBase.qty);
-    params.set("marker", payloadBase.marker);
-    params.set("unitPrice", payloadBase.unitPrice);
-    params.set("totalPrice", payloadBase.totalPrice);
-    params.set("p1", payloadBase.p1);
-    params.set("p2", payloadBase.p2);
-    params.set("p3", payloadBase.p3);
-    params.set("p4", payloadBase.p4);
-    params.set("accessories", payloadBase.accessories);
-    if(payloadBase.memo){
-      params.set("memo", payloadBase.memo);
-    }
-    return params.toString();
-  };
-
-  const handoffTargets = useMemo(() => ([
-    { mode: "drawer" as const, label: "/storage", ready: drawerReady, query: buildQuery("drawer") },
-    { mode: "order" as const, label: "/orders", ready: orderReady, query: buildQuery("order") },
-    { mode: "check" as const, label: "/order-check", ready: checkReady, query: buildQuery("check") }
-  ]), [drawerReady, orderReady, checkReady, payloadBase]);
 
   const copyText = async (key: string, value: string) => {
     try {
@@ -354,26 +314,18 @@ export default function PopStudioClient() {
   };
 
   const routeTo = (mode: "drawer" | "order" | "check") => {
-    if(mode === "drawer" && !drawerReady){
-      setLastAction("P1, P2, P3 필수 슬롯이 채워져야 서랍 저장이 가능합니다.");
-      return;
-    }
     if(mode === "order" && !orderReady){
-      setLastAction("P1, P2, P3 필수 슬롯과 수량이 준비되어야 주문 진행이 가능합니다.");
-      return;
-    }
-    if(mode === "check" && !checkReady){
-      setLastAction("현재 선택된 파츠가 없어 주문확인 흐름으로 넘길 정보가 없습니다.");
+      setLastAction("P1, P2, P3 필수 슬롯과 수량이 준비되어야 커스텀브로 제작 상담으로 이동할 수 있습니다.");
       return;
     }
 
-    let path = "/storage";
-    let actionText = "서랍 화면으로 이동합니다.";
-    if(mode === "order"){ path = "/orders"; actionText = "주문 화면으로 이동합니다."; }
-    if(mode === "check"){ path = "/order-check"; actionText = "주문확인 화면으로 이동합니다."; }
+    if(mode === "order") {
+      window.location.assign(STUDIO_LINKS.consultation);
+      return;
+    }
 
-    setLastAction(actionText);
-    router.push(`${path}?${buildQuery(mode)}`);
+    setLastAction(mode === "check" ? "이미 접수한 주문을 조회하는 화면으로 이동합니다." : "보관함 안내로 이동합니다. 현재 구성은 자동 저장되지 않습니다.");
+    router.push(mode === "check" ? "/order-check" : "/storage");
   };
 
   return (
@@ -459,7 +411,7 @@ export default function PopStudioClient() {
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-xl font-semibold">중앙 POP 작업대</h2>
-                <p className="mt-1 text-sm text-neutral-300">현재 조합 상태를 유지한 채 프리셋 저장과 route preview를 같이 사용할 수 있습니다.</p>
+                <p className="mt-1 text-sm text-neutral-300">현재 조합을 확인하고 이 브라우저에 프리셋으로 보관할 수 있습니다.</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-neutral-200">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">Flow Status</div>
@@ -512,8 +464,8 @@ export default function PopStudioClient() {
 
           <aside className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">우측 프리셋 + route preview</h2>
-              <p className="mt-1 text-sm text-neutral-400">현재 조합을 저장하고, JSON 내보내기/가져오기와 route preview를 같이 볼 수 있습니다.</p>
+              <h2 className="text-lg font-semibold">프리셋 보관 · 제작 상담</h2>
+              <p className="mt-1 text-sm text-neutral-400">현재 조합을 저장하거나 JSON으로 보관하고, 제작 상담에서 사양을 확인하세요.</p>
             </div>
 
             <div className="space-y-2">
@@ -551,7 +503,7 @@ export default function PopStudioClient() {
                 <button type="button" onClick={() => setSafeQuantity(quantity + 1)} className="h-11 w-11 rounded-2xl border border-white/10 bg-white/[0.04] text-lg">+</button>
               </div>
 
-              <textarea value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="작업 메모를 적으면 프리셋과 route preview에 함께 포함됩니다." className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
+              <textarea value={memo} onChange={(event) => setMemo(event.target.value)} placeholder="작업 메모는 프리셋을 저장할 때 함께 보관됩니다." className="mt-4 min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
 
               <div className="mt-4 flex gap-2">
                 <input value={presetName} onChange={(event) => setPresetName(event.target.value)} placeholder="프리셋 이름 입력" className="h-11 flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-3 text-sm text-neutral-200 outline-none placeholder:text-neutral-500" />
@@ -608,53 +560,18 @@ export default function PopStudioClient() {
               </div>
 
                             <div className="mt-4 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
-                <div className="flex items-center justify-between"><span className="text-neutral-400">가격 안내</span><span>상태 요약<br />구매 등급: 기본 등급<br />판매 가능 상태: 구매 전용<br />작업실 상태: 표준 작업실<br />이용 기준: 주문 단계에서 최종 금액 확인</span></div>
+                <div className="flex items-center justify-between"><span className="text-neutral-400">가격 안내</span><span>견적 및 주문이 확정되지 않았습니다. 제작 상담 후 최종 사양과 금액을 확인해야 합니다.</span></div>
                 <div className="flex items-center justify-between"><span className="text-neutral-400">포장</span><span>운영 원칙: 기본 포함 · 자동 반영</span></div>
                 <div className="flex items-center justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>작업 상태</span><span>{quantity}개 구성 준비</span></div>
               </div>
 
               <div className="mt-4 space-y-2">
-                <button type="button" onClick={() => routeTo("drawer")} disabled={!drawerReady} className={drawerReady ? "w-full rounded-2xl border border-cyan-300 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>서랍 저장으로 이동</button>
-                <button type="button" onClick={() => routeTo("order")} disabled={!orderReady} className={orderReady ? "w-full rounded-2xl border border-emerald-300 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>주문 진행으로 이동</button>
-                <button type="button" onClick={() => routeTo("check")} disabled={!checkReady} className={checkReady ? "w-full rounded-2xl border border-violet-300 bg-violet-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>주문확인으로 이동</button>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {handoffTargets.map((target) => {
-                  const fullUrl = `${PUBLIC_BASE_URL}${target.label}?${target.query}`;
-                  const payloadJson = JSON.stringify({ mode: target.mode, ...payloadBase }, null, 2);
-
-                  return (
-                    <div key={target.mode} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-semibold">{target.label}</div>
-                          <div className={target.ready ? "mt-1 text-xs text-emerald-300" : "mt-1 text-xs text-amber-300"}>{target.ready ? "ready" : "locked"}</div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button type="button" onClick={() => copyText(`${target.mode}-url`, fullUrl)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-neutral-200">{copiedKey === `${target.mode}-url` ? "URL 복사됨" : "URL 복사"}</button>
-                          <button type="button" onClick={() => copyText(`${target.mode}-query`, target.query)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-neutral-200">{copiedKey === `${target.mode}-query` ? "query 복사됨" : "query 복사"}</button>
-                          <button type="button" onClick={() => copyText(`${target.mode}-json`, payloadJson)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-neutral-200">{copiedKey === `${target.mode}-json` ? "JSON 복사됨" : "JSON 복사"}</button>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Full URL</div>
-                        <div className="mt-2 break-all text-[11px] text-neutral-300">{fullUrl}</div>
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Raw Query</div>
-                        <div className="mt-2 break-all text-[11px] text-neutral-300">{target.query}</div>
-                      </div>
-
-                      <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-neutral-500">Payload JSON</div>
-                        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px] text-neutral-300">{payloadJson}</pre>
-                      </div>
-                    </div>
-                  );
-                })}
+                <p id="pop-consultation-notice" className="text-sm leading-6 text-neutral-300">커스텀브로 POP 작업대의 현재 구성은 주문 접수가 되지 않았습니다. 상담 화면으로 이동할 때 구성·수량·메모가 자동 전달되지 않습니다. 현재 구성을 보관하려면 이름을 입력하고 ‘프리셋 저장’을 누른 뒤 ‘JSON 내보내기’를 이용해 주세요.</p>
+                <p id="pop-consultation-requirements" className="text-sm text-neutral-300">제작 상담 전 P1, P2, P3 필수 슬롯과 수량을 확인해 주세요.</p>
+                <button type="button" onClick={() => routeTo("order")} disabled={!orderReady} aria-describedby="pop-consultation-notice pop-consultation-requirements" className={orderReady ? "w-full rounded-2xl border border-emerald-300 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-white" : "w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-neutral-500"}>커스텀브로 제작 상담 열기</button>
+                <p className="text-xs leading-5 text-neutral-400">상담 화면에 ‘서비스 준비 중’이 표시되면 <a href="mailto:custombro365@gmail.com" className="text-cyan-200 underline">이메일로 문의해 주세요</a>. 메일 앱에서 직접 발송해야 접수됩니다.</p>
+                <button type="button" onClick={() => routeTo("drawer")} className="w-full rounded-2xl border border-cyan-300 bg-cyan-400/15 px-4 py-3 text-sm font-semibold text-white">보관함 안내 열기</button>
+                <button type="button" onClick={() => routeTo("check")} className="w-full rounded-2xl border border-violet-300 bg-violet-400/15 px-4 py-3 text-sm font-semibold text-white">이미 접수한 주문 조회</button>
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-neutral-300">{lastAction}</div>
