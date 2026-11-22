@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { STUDIO_LINKS } from "../../lib/studio-links";
+import { readDisplayIntakeReadiness, type DisplayIntakeReadiness } from "../../lib/display-intake-readiness";
 import s from "./display.module.css";
 
 const purposes = [
@@ -62,6 +63,8 @@ export default function DisplayClient() {
   const [notice, setNotice] = useState("");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [previousReceipt, setPreviousReceipt] = useState<Receipt | null>(null);
+  const [intakeReadiness, setIntakeReadiness] = useState<DisplayIntakeReadiness | "checking">("checking");
+  const [readinessCheck, setReadinessCheck] = useState(0);
   const attempt = useRef<{ signature: string; key: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -70,6 +73,20 @@ export default function DisplayClient() {
       if (raw) { const r = JSON.parse(raw); if (typeof r.requestId === "string" && typeof r.receivedAt === "string") setPreviousReceipt(r); }
     } catch { /* Browsing without storage remains supported. */ }
   }, []);
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 10000);
+    readDisplayIntakeReadiness(controller.signal).then(result => {
+      if (active) setIntakeReadiness(result);
+    }).finally(() => window.clearTimeout(timer));
+    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
+  }, [readinessCheck]);
+  function recheckReadiness() {
+    if (busy || intakeReadiness === "checking") return;
+    setIntakeReadiness("checking");
+    setReadinessCheck(value => value + 1);
+  }
   function retireReceipt() {
     if (receipt) setPreviousReceipt(receipt);
     setReceipt(null);
@@ -86,7 +103,7 @@ export default function DisplayClient() {
     if (purpose === "hero") update("productsPerStand", "1");
     if (purpose === "collection") update("productsPerStand", "3");
     document.getElementById("display-inquiry")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => document.getElementById("display-brand")?.focus({ preventScroll: true }), 350);
+    window.setTimeout(() => document.getElementById(intakeReadiness === "ready" ? "display-brand" : "display-intake-status")?.focus({ preventScroll: true }), 350);
   }
   const selectedPurpose = purposes.find(x => x.id === f.purpose) ?? purposes[0];
   const materialName = materials.find(x => x.id === f.materialId)?.label ?? "미정";
@@ -115,7 +132,7 @@ export default function DisplayClient() {
     } catch { setNotice("저장된 작성 내용을 불러오지 못했습니다."); }
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); if (busy || !formRef.current?.reportValidity()) return;
+    e.preventDefault(); if (busy || intakeReadiness !== "ready" || !formRef.current?.reportValidity()) return;
     setError(""); setReceipt(null);
     const numeric = (value: string) => value.trim() === "" ? null : Number(value);
     const brief = { purpose: f.purpose, brand: f.brand.trim(), productName: f.productName.trim(), productShape: f.productShape, diameterMm: f.productShape === "round" ? numeric(f.diameterMm) : null, heightMm: numeric(f.heightMm), measurementsConfirmed: f.productShape === "round" && f.measurementsConfirmed && !!f.diameterMm && !!f.heightMm, productsPerStand: Number(f.productsPerStand), quantity: Number(f.quantity), materialId: f.materialId, printSide: f.materialId === "clear" ? f.printSide : "front", requestedDate: f.requestedDate, notes: f.notes.trim() };
@@ -125,10 +142,10 @@ export default function DisplayClient() {
     setBusy(true);
     const controller = new AbortController(); const timer = window.setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch("/api/display-inquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, idempotencyKey: attempt.current.key }), signal: controller.signal });
+      const response = await fetch("/api/display-inquiries", { method: "POST", credentials: "same-origin", cache: "no-store", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ ...payload, idempotencyKey: attempt.current.key }), signal: controller.signal });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (response.status === 503 || response.status === 404) throw new Error("현재 온라인 접수가 연결되지 않아 전송되지 않았습니다. 작성 내용은 그대로 남아 있습니다. 아래 이메일 문의로 이어갈 수 있습니다.");
+        if (response.status === 503 || response.status === 404) { setIntakeReadiness("unavailable"); throw new Error("현재 온라인 접수가 확인되지 않았습니다. 작성 내용은 그대로 남아 있습니다. 접수 가능 여부를 다시 확인하거나 이메일로 문의해 주세요."); }
         if (response.status === 429) throw new Error("짧은 시간에 요청이 많습니다. 잠시 후 같은 내용으로 다시 접수해 주세요.");
         if (response.status === 400 || response.status === 422) throw new Error("입력 내용을 확인해 주세요. 이름·이메일, 제품 수와 제작 수량, 소재와 인쇄 방식이 올바른지 확인해 주세요.");
         throw new Error("접수 확인 응답을 받지 못했습니다. 잠시 후 같은 내용으로 다시 시도하거나 이메일로 문의해 주세요.");
@@ -157,7 +174,13 @@ export default function DisplayClient() {
         <aside className={s.inquiryAside}><p className={s.eyebrow}>LET’S MAKE YOUR DISPLAY</p><h2>우리 제품에 맞는<br />진열대를 문의하세요.</h2><p>아직 정하지 못한 항목은 비워 두세요.<br />확인한 정보부터 함께 정리하겠습니다.</p><div className={s.quoteNote}><span>견적 안내</span><strong>사양과 수량에 맞춘 개별 견적</strong><p>소재 종류·색상·가공·조립·인쇄 공정에 따라 금액이 달라집니다. 동일 디자인의 수량이 늘어나면 제작 효율을 반영해 검토합니다.</p><p>견적의 제작 금액은 <b>부가세 별도</b>이며, 최종 결제 단계에서 부가세와 총액을 확인합니다.</p></div><div className={s.directContact}><span>이메일로 상담하기</span><a href="mailto:custombro365@gmail.com">custombro365@gmail.com ↗</a></div></aside>
         <form ref={formRef} onSubmit={submit} className={s.form}>
           <div className={s.formHeading}><h3>제작 상담 요청</h3><span>이름·이메일·필수 동의가 필요합니다.</span></div>
-          <fieldset disabled={busy} className={s.formFields} aria-label="제작 상담 내용">
+          {intakeReadiness !== "ready" && <section id="display-intake-status" tabIndex={-1} className={s.intakeStatus} aria-label="온라인 접수 상태">
+            <div role="status" aria-live="polite"><strong>{intakeReadiness === "checking" ? "온라인 접수 가능 여부를 확인하고 있습니다." : intakeReadiness === "unavailable" ? "이 페이지의 온라인 접수를 준비 중입니다." : "온라인 접수 가능 여부를 확인하지 못했습니다."}</strong><p>{intakeReadiness === "checking" ? "확인이 끝나면 상담 양식을 작성할 수 있습니다." : intakeReadiness === "unavailable" ? "현재 아래 양식으로 전송할 수 없습니다. 제품의 크기·수량·용도를 이메일로 보내 주세요. 입력하거나 임시 저장한 내용은 유지됩니다." : "통신 오류로 현재 접수 상태를 알 수 없습니다. 다시 확인하거나 이메일로 문의해 주세요. 작성한 내용은 유지됩니다."}</p></div>
+            <div className={s.intakeActions}><a href={mailHref}>이메일로 상담 내용 보내기</a><button type="button" onClick={recheckReadiness} disabled={busy || intakeReadiness === "checking"}>{intakeReadiness === "checking" ? "확인 중" : "접수 가능 여부 다시 확인"}</button></div>
+            <p className={s.intakeAlternative}><a href={STUDIO_LINKS.consultation}>스튜디오 상담 페이지 열기</a><span>스튜디오에 ‘서비스 준비 중’이 표시되면 이메일로 문의해 주세요. 메일 앱에서는 내용을 확인한 뒤 직접 발송해야 합니다.</span></p>
+            <noscript><p>온라인 양식을 이용하려면 브라우저에서 자바스크립트를 허용해 주세요. 이메일 문의는 바로 이용할 수 있습니다.</p></noscript>
+          </section>}
+          <fieldset disabled={busy || intakeReadiness !== "ready"} className={s.formFields} aria-label="제작 상담 내용">
           <label className={s.field}>사용 목적<select value={f.purpose} onChange={e => update("purpose", e.target.value as Purpose)}>{purposes.map(p => <option key={p.id} value={p.id}>{p.subtitle}</option>)}</select></label>
           <div className={s.twoCol}><label className={s.field}>브랜드명<input id="display-brand" value={f.brand} onChange={e => update("brand", e.target.value)} maxLength={80} placeholder="예: 브랜드 이름" /></label><label className={s.field}>진열할 제품명<input value={f.productName} onChange={e => update("productName", e.target.value)} maxLength={120} placeholder="예: 앰플, 세럼, 크림" /></label></div>
           <fieldset className={s.fieldset}><legend>제품 크기</legend><div className={s.threeCol}><label className={s.field}>용기 형태<select value={f.productShape} onChange={e => update("productShape", e.target.value as "round" | "other")}><option value="round">원형</option><option value="other">비원형 / 기타</option></select></label><label className={s.field}>본체 지름 · mm<input type="number" inputMode="decimal" min="1" max="500" step="0.1" value={f.diameterMm} onChange={e => update("diameterMm", e.target.value)} placeholder="미정이면 비워두세요" disabled={f.productShape === "other"} /></label><label className={s.field}>전체 높이 · mm<input type="number" inputMode="decimal" min="10" max="1000" step="0.1" value={f.heightMm} onChange={e => update("heightMm", e.target.value)} placeholder="뚜껑 포함 높이" /></label></div><p className={s.help}>{f.productShape === "other" ? "비원형은 아래 요청사항에 가로 × 깊이 × 높이와 용기 형태를 알려주세요." : "사진만으로 실측값을 확정하지 않습니다. 제작 전 용기와 꽂이 홀의 여유를 확인합니다."}</p><label className={s.check}><input type="checkbox" checked={f.measurementsConfirmed} onChange={e => update("measurementsConfirmed", e.target.checked)} /> 입력한 치수는 제품을 직접 측정한 값입니다.</label></fieldset>
@@ -169,13 +192,13 @@ export default function DisplayClient() {
           <fieldset className={s.fieldset}><legend>회신받을 정보</legend><div className={s.twoCol}><label className={s.field}>담당자 이름 <span aria-hidden="true">*</span><input required autoComplete="name" maxLength={80} value={f.name} onChange={e => update("name", e.target.value)} /></label><label className={s.field}>회사 / 소속<input autoComplete="organization" maxLength={120} value={f.company} onChange={e => update("company", e.target.value)} /></label></div><label className={s.field}>이메일 <span aria-hidden="true">*</span><input type="email" required autoComplete="email" maxLength={254} value={f.email} onChange={e => update("email", e.target.value)} placeholder="reply@yourbrand.com" /></label></fieldset>
           <div className={s.honeypot} aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={f.website} onChange={e => update("website", e.target.value)} /></label></div>
           <div className={s.consent}><label className={s.check}><input type="checkbox" required checked={f.privacyConsent} onChange={e => update("privacyConsent", e.target.checked)} /><span>[필수] 작성한 이름·이메일·회사명과 제품 정보를 제작 상담 및 견적 회신에 사용하는 데 동의합니다.</span></label><p>동의를 거부할 수 있으며, 동의하지 않으면 온라인 상담을 접수할 수 없습니다. 개인정보 관련 문의: custombro365@gmail.com</p><label className={s.check}><input type="checkbox" checked={f.marketingConsent} onChange={e => update("marketingConsent", e.target.checked)} /><span>[선택] 신규 제작 구성과 재주문 안내를 이메일로 받습니다.</span></label></div>
-          {error && <div className={s.error} role="alert"><strong>접수 확인이 필요합니다</strong><p>{error}</p><a href={mailHref}>작성 내용으로 이메일 앱 열기 ↗</a><small>메일 앱을 연 것만으로는 접수되지 않습니다. 내용을 확인한 뒤 직접 발송해야 합니다.</small></div>}
+          </fieldset>
+          {error && <div className={s.error} role="alert"><strong>접수 확인이 필요합니다</strong><p>{error}</p><a href={mailHref}>작성 내용으로 이메일 앱 열기</a><small>메일 앱을 연 것만으로는 접수되지 않습니다. 내용을 확인한 뒤 직접 발송해야 합니다.</small></div>}
           {receipt && <div className={s.success} role="status"><strong>서버에 상담 요청이 접수되었습니다.</strong><p>접수번호 <b>{receipt.requestId}</b></p><p>접수시각: {new Date(receipt.receivedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} (한국 시간)</p><small>상담 접수 단계입니다. 가격·납기·결제·제작은 아직 확정되지 않았습니다.</small></div>}
           {!receipt && previousReceipt && <p className={s.previous}>이 브라우저에 보관된 이전 서버 접수번호: <b>{previousReceipt.requestId}</b><br />현재 작성 중인 내용의 접수번호는 아닙니다.</p>}
           {notice && <p role="status" className={s.notice}>{notice}</p>}
-          <button className={s.submit} type="submit" disabled={busy}>{busy ? "접수 확인 중…" : "제작 상담 요청 보내기"}<span aria-hidden="true">→</span></button><p className={s.submitNote}>결제가 발생하지 않습니다. 서버 접수번호가 표시되어야 접수가 완료됩니다.</p>
-          <div className={s.draftActions}><button type="button" onClick={saveDraft}>이 탭에 임시 저장</button><button type="button" onClick={restoreDraft}>임시 저장 불러오기</button></div>
-          </fieldset>
+          <button className={s.submit} type="submit" disabled={busy || intakeReadiness !== "ready"}>{busy ? "접수 확인 중…" : intakeReadiness === "checking" ? "접수 가능 여부 확인 중" : intakeReadiness !== "ready" ? "온라인 접수 확인 필요" : "제작 상담 요청 보내기"}</button><p className={s.submitNote}>결제가 발생하지 않습니다. 서버 접수번호가 표시되어야 접수가 완료됩니다.</p>
+          <div className={s.draftActions}><button type="button" onClick={saveDraft} disabled={busy}>이 탭에 임시 저장</button><button type="button" onClick={restoreDraft} disabled={busy}>임시 저장 불러오기</button></div>
         </form>
       </section>
       <section id="display-faq" className={`${s.section} ${s.faq}`}><div><p className={s.eyebrow}>GOOD TO KNOW</p><h2>제작 전에 궁금한 것들.</h2></div><div>{faqs.map(([q, a]) => <details key={q}><summary>{q}<span aria-hidden="true">+</span></summary><p>{a}</p></details>)}</div></section>

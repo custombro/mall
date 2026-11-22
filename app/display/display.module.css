@@ -5,3 +5,13 @@
 @media(prefers-reduced-motion:reduce){.offer{transition:none}.offer:hover{transform:none}}
 
 .formFields{display:contents;border:0;margin:0;padding:0}
+.intakeStatus{padding:20px;border:1px solid #d4b98a;border-radius:6px;background:#fff5e6;color:#614b2e;min-width:0}
+.intakeStatus strong{display:block;font-size:1rem;line-height:1.6}
+.intakeStatus p{margin:10px 0 0;font-size:.9375rem;line-height:1.8;word-break:keep-all}
+.intakeActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.intakeActions a,.intakeActions button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 13px;border:1px solid #916d3b;border-radius:5px;background:#fff;color:#614b2e;font-size:.875rem;font-weight:700}
+.intakeActions a{background:#614b2e;color:#fff}
+.intakeActions button:disabled,.submit:disabled{cursor:not-allowed}
+.intakeAlternative a{font-size:.9375rem;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.intakeAlternative span{display:block;margin-top:8px;font-size:.875rem}
+.formFields:disabled .field input,.formFields:disabled .field select,.formFields:disabled .field textarea{background:#f0f1eb;color:#68745f;cursor:not-allowed}
