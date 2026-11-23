@@ -40,6 +40,8 @@ export default function SalesLanding({
           </a>
         </div>
 
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5d6e5b]">온라인 설계·상담 화면이 준비 중이거나 열리지 않으면 <a href="/qa#email" className="font-semibold underline">이메일 문의 안내</a>를 이용해 주세요. 실제 제작 가능 여부와 일정은 검토 후 안내합니다.</p>
+
         <section className="mt-14 grid gap-4 md:grid-cols-2">
           {points.map((point) => (
             <article key={point.title} className="rounded-2xl border border-black/10 bg-white p-6">
