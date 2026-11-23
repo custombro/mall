@@ -25,7 +25,7 @@ const featured = [
 const useCases = [
   { title: "박람회 · 팝업", body: "행사에 맞춘 소형 진열대와 브랜드 POP", href: "/exhibition-display" },
   { title: "화장품 매장", body: "앰플·세럼·튜브 등 제품 치수 기반 진열", href: "/cosmetic-display" },
-  { title: "브랜드 굿즈", body: "키링·스탠디·마그넷 등 아크릴 굿즈", href: STUDIO_LINKS.products },
+  { title: "브랜드 굿즈", body: "키링·스탠디·마그넷 등 아크릴 굿즈", href: "/acrylic-keyring" },
 ];
 
 export default function HomePage() {
@@ -47,6 +47,7 @@ export default function HomePage() {
             <a href={STUDIO_LINKS.products} className="cb-btn cb-btn--primary">상품 보기</a>
             <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">간편 제작 상담</a>
           </div>
+          <p className="cb-home-hero__lead">온라인 설계·상담 화면이 준비 중이거나 열리지 않으면 <Link href="/qa#email">이메일 문의 안내</Link>를 이용해 주세요. 실제 제작 가능 여부와 일정은 검토 후 안내합니다.</p>
           <div className="cb-home-hero__trust">
             <span>부가세 별도 예상가 실시간 확인</span>
             <span>제작 전 사양 검토</span>
@@ -70,8 +71,8 @@ export default function HomePage() {
       <section className="cb-home-products">
         <div className="cb-section-heading">
           <div>
-            <p className="cb-kicker">OPEN NOW</p>
-            <h2>지금 바로 만들 수 있는 제품</h2>
+            <p className="cb-kicker">PRODUCT GUIDE</p>
+            <h2>맞춤 제작 상품 안내</h2>
           </div>
           <a href={STUDIO_LINKS.products}>전체 상품 보기 →</a>
         </div>
