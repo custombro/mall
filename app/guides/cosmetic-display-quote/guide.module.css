@@ -17,7 +17,7 @@
 .contents ol{list-style:none;margin:0;padding:0}
 .contents li+li{border-top:1px solid #e5ebdf}
 .contents a{display:flex;align-items:center;gap:15px;padding:12px 0;font-size:14px;font-weight:650}
-.contents a>span:first-child{font-size:11px;color:#62775a}
+.contents a>span:first-child{flex-shrink:0;white-space:nowrap;font-size:11px;color:#62775a}
 .contents a>span:last-child{margin-left:auto;color:#62775a}
 .readingLayout{display:grid;grid-template-columns:minmax(0,1fr) 262px;gap:58px}
 .article{min-width:0}
@@ -56,4 +56,5 @@
 @media(max-width:900px){.hero{grid-template-columns:minmax(0,1fr) 245px;gap:25px;padding:30px}.hero h1{font-size:34px}.readingLayout{grid-template-columns:minmax(0,1fr) 230px;gap:30px}.aside{padding:20px}.brief{grid-template-columns:1fr;gap:15px}.brief h2{margin-bottom:13px}.desktopBreak{display:none}}
 @media(max-width:650px){.page{padding:22px 16px 44px}.hero{grid-template-columns:1fr;margin-top:20px;padding:25px 22px;gap:25px;border-radius:20px}.hero h1{font-size:30px}.lead{font-size:14px;line-height:1.9}.contents{padding:18px 20px}.contents ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px}.contents li+li{border-top:0}.contents a{gap:9px;font-size:13px}.readingLayout{grid-template-columns:1fr;gap:24px}.step{gap:12px;grid-template-columns:30px minmax(0,1fr);scroll-margin-top:205px}.number{width:28px;height:28px;font-size:11px}.step h2{font-size:21px}.step p{font-size:14px}.aside h2 br{display:none}.aside h2{font-size:22px}.faq{margin-top:40px}.faq h2,.brief h2{font-size:25px}.faq summary{font-size:14px;line-height:1.75}.brief{margin-top:40px;padding:24px 20px;scroll-margin-top:205px}.actions{flex-direction:column}.actions>*{width:100%}.briefForm textarea{font-size:16px;line-height:1.8;min-height:360px}.footer{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.faq summary span{transition:none}}
+@media(max-width:360px){.contents ol{grid-template-columns:1fr}.hero h1{font-size:28px}}
 @media print{.page{max-width:none;padding:0}.hero{padding:20px;background:#fff}.contents,.aside,.actions,.footer{display:none}.readingLayout,.brief{display:block}.step{break-inside:avoid}.brief{background:#fff;border-color:#ccc}.briefForm textarea{min-height:380px}.faq details>p{display:block}.notice{display:none}}
