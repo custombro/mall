@@ -3,7 +3,7 @@ export type MaterialCategory = "투명" | "반투명" | "형광" | "컬러" | "�
 export type AcrylicSheet = {
   id: string;
   title: string;
-  thickness: "2.7T" | "3T" | "5T";
+  thickness: "2T" | "2.7T" | "5T";
   category: MaterialCategory;
   rackCode: string;
   size: string;
@@ -39,8 +39,8 @@ export const materialRacks: MaterialRack[] = [
     sheets: [
       {
         id: "sheet-a1",
-        title: "투명 3T 기본판",
-        thickness: "3T",
+        title: "투명 2.7T 기본판",
+        thickness: "2.7T",
         category: "투명",
         rackCode: "A-01",
         size: "1200 x 2400",
@@ -87,7 +87,7 @@ export const materialRacks: MaterialRack[] = [
       {
         id: "sheet-b1",
         title: "형광 아크릴 테스트판",
-        thickness: "3T",
+        thickness: "2.7T",
         category: "형광",
         rackCode: "B-01",
         size: "1200 x 2400",
@@ -100,7 +100,7 @@ export const materialRacks: MaterialRack[] = [
       {
         id: "sheet-b2",
         title: "서리 반투명판",
-        thickness: "3T",
+        thickness: "2.7T",
         category: "반투명",
         rackCode: "B-02",
         size: "1200 x 2400",
@@ -134,7 +134,7 @@ export const materialRacks: MaterialRack[] = [
       {
         id: "sheet-c1",
         title: "화이트 베이스용 컬러판",
-        thickness: "3T",
+        thickness: "2.7T",
         category: "컬러",
         rackCode: "C-01",
         size: "1200 x 2400",

@@ -74,7 +74,7 @@ export const sellerProducts: SellerProduct[] = [
     status: "모집중",
     sku: "SLR-KR-001",
     marginHint: "중간 마진 / 반복판매 적합",
-    stockNote: "기본 링과 3T 투명 아크릴 기준 안정적",
+    stockNote: "기본 링과 2.7T 투명 아크릴 기준 안정적",
     summary: "가장 먼저 시작하기 좋은 기본 판매 상품",
     recommendedRoute: "/workbench/keyring",
   },

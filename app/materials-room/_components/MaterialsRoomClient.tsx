@@ -10,7 +10,7 @@ import {
   type MaterialCategory,
 } from "./materials-config";
 
-type ThicknessFilter = "전체" | "2.7T" | "3T" | "5T";
+type ThicknessFilter = "전체" | "2T" | "2.7T" | "5T";
 
 function SummaryChip({ label, value }: { label: string; value: string }) {
   return (
@@ -166,8 +166,8 @@ export default function MaterialsRoomClient() {
                 className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-white outline-none"
               >
                 <option value="전체">전체</option>
+                <option value="2T">2T</option>
                 <option value="2.7T">2.7T</option>
-                <option value="3T">3T</option>
                 <option value="5T">5T</option>
               </select>
             </label>

@@ -116,7 +116,7 @@ export function createDefaultKeyringProductionDraft(): KeyringProductionDraft {
     meta: {
       quantity: 1,
       material: "acrylic",
-      thickness: "3T",
+      thickness: "2.7T",
       ringPosition: "top-center",
       sku: "",
       workOrder: "",

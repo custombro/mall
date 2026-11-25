@@ -507,7 +507,7 @@ const PRICE_BASE = {
 
 const SHAPE_MODES = ["원형", "사각형", "자동칼선"] as const;
 const MATERIALS = ["투명 아크릴", "반투명 아크릴"] as const;
-const THICKNESSES = ["3T", "5T"] as const;
+const THICKNESSES = ["2.7T", "5T"] as const;
 const RINGS = ["실버 링", "골드 링", "볼체인"] as const;
 const HOLE_SIZES = [2.5, 3] as const;
 const AUTO_CUTLINE_MARGIN_OPTIONS = [2, 2.25, 2.5] as const;
@@ -3433,7 +3433,7 @@ export default function KeyringStudioEntry() {
 function LegacyKeyringWorkbenchPage() {
   const [shapeMode, setShapeMode] = useState<ShapeMode>("원형");
   const [material, setMaterial] = useState<Material>("투명 아크릴");
-  const [thickness, setThickness] = useState<Thickness>("3T");
+  const [thickness, setThickness] = useState<Thickness>("2.7T");
   const [ring, setRing] = useState<Ring>("실버 링");
   const [holeSize, setHoleSize] = useState<HoleSize>(2.5);
 const [autoCutlineMarginMm, setAutoCutlineMarginMm] = useState<AutoCutlineMarginMm>(2.5);

@@ -3,20 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { STUDIO_LINKS } from "@/lib/studio-links";
-
-type SlotKey = "p1" | "p2" | "p3" | "p4";
-type Tone = "clear" | "white" | "black" | "mirror" | "hologram" | "frosted";
-
-type MaterialItem = {
-  id: string;
-  code: string;
-  name: string;
-  slot: SlotKey;
-  tone: Tone;
-  thickness: string;
-  memo: string;
-  price: number;
-};
+import { MATERIALS, getWorkingPopMaterials, hasCurrentPopMaterial, type MaterialItem, type SlotKey, type Tone } from "./pop-materials";
 
 type AccessoryItem = {
   id: string;
@@ -49,18 +36,6 @@ const SLOT_META: Record<SlotKey, { label: string; title: string; requirement: "r
   p3: { label: "P3", title: "받침", requirement: "required", desc: "POP 고정 베이스" },
   p4: { label: "P4", title: "포인트", requirement: "optional", desc: "선택 포인트 파츠" }
 };
-
-const MATERIALS: MaterialItem[] = [
-  { id: "front-clear-3t", code: "P1-A", name: "전면 투명 아크릴", slot: "p1", tone: "clear", thickness: "3T", memo: "기본 메인 인쇄면", price: 1200 },
-  { id: "front-white-3t", code: "P1-B", name: "전면 백색 아크릴", slot: "p1", tone: "white", thickness: "3T", memo: "밝은 배경 강조", price: 1250 },
-  { id: "back-clear-3t", code: "P2-A", name: "후면 투명 아크릴", slot: "p2", tone: "clear", thickness: "3T", memo: "뒷면 보호층", price: 1100 },
-  { id: "back-frosted-3t", code: "P2-B", name: "후면 프로스트 아크릴", slot: "p2", tone: "frosted", thickness: "3T", memo: "은은한 후면 질감", price: 1180 },
-  { id: "base-black-5t", code: "P3-A", name: "받침 블랙 아크릴", slot: "p3", tone: "black", thickness: "5T", memo: "기본 고정 베이스", price: 1700 },
-  { id: "base-clear-5t", code: "P3-B", name: "받침 투명 아크릴", slot: "p3", tone: "clear", thickness: "5T", memo: "시야 확보형 베이스", price: 1700 },
-  { id: "accent-holo-3t", code: "P4-A", name: "포인트 홀로그램", slot: "p4", tone: "hologram", thickness: "3T", memo: "반짝임 포인트", price: 1500 },
-  { id: "accent-mirror-3t", code: "P4-B", name: "포인트 미러", slot: "p4", tone: "mirror", thickness: "3T", memo: "금속광 포인트", price: 1550 },
-  { id: "accent-frosted-3t", code: "P4-C", name: "포인트 프로스트", slot: "p4", tone: "frosted", thickness: "3T", memo: "차분한 포인트", price: 1450 }
-];
 
 const ACCESSORIES: AccessoryItem[] = [
   { id: "stand-basic", code: "A1", name: "기본 스탠드", kind: "stand", memo: "책상 위 기본 거치", price: 700 },
@@ -117,8 +92,8 @@ export default function PopStudioClient() {
   const router = useRouter();
 
   const [activeMaterials, setActiveMaterials] = useState<Record<SlotKey, string | null>>({
-    p1: "front-clear-3t",
-    p2: "back-clear-3t",
+    p1: "front-clear-27t",
+    p2: "back-clear-27t",
     p3: "base-black-5t",
     p4: null
   });
@@ -172,7 +147,7 @@ export default function PopStudioClient() {
     .map((id) => accessoryMap.get(id) ?? null)
     .filter((item): item is AccessoryItem => item !== null);
 
-  const requiredMissing = REQUIRED_SLOTS.filter((slot) => !activeMaterials[slot]);
+  const requiredMissing = REQUIRED_SLOTS.filter((slot) => !hasCurrentPopMaterial(slot, activeMaterials[slot]));
   const completionRatio = Math.round((selectedMaterials.length / SLOT_ORDER.length) * 100);
 
   const materialTotal = selectedMaterials.reduce((sum, item) => sum + item.price, 0);
@@ -228,13 +203,13 @@ export default function PopStudioClient() {
   const applyPreset = (preset: "basic" | "clear" | "accent") => {
     setActivePresetId("");
     if(preset === "basic"){
-      setActiveMaterials({ p1: "front-clear-3t", p2: "back-clear-3t", p3: "base-black-5t", p4: null });
+      setActiveMaterials({ p1: "front-clear-27t", p2: "back-clear-27t", p3: "base-black-5t", p4: null });
       setActiveAccessoryIds(["stand-basic", "package-opp"]);
       setLastAction("기본 POP 구성으로 되돌렸습니다.");
       return;
     }
     if(preset === "accent"){
-      setActiveMaterials({ p1: "front-white-3t", p2: "back-frosted-3t", p3: "base-clear-5t", p4: "accent-holo-3t" });
+      setActiveMaterials({ p1: "front-white-27t", p2: "back-frosted-27t", p3: "base-clear-5t", p4: "accent-holo-27t" });
       setActiveAccessoryIds(["stand-wide", "package-box"]);
       setLastAction("포인트 강조 프리셋을 적용했습니다.");
       return;
@@ -269,12 +244,16 @@ export default function PopStudioClient() {
   };
 
   const loadPreset = (preset: PresetRecord) => {
-    setActiveMaterials(preset.activeMaterials);
+    const workingMaterials = getWorkingPopMaterials(preset.activeMaterials);
+    const stockUpdated = SLOT_ORDER.some((slot) => workingMaterials[slot] !== preset.activeMaterials[slot]);
+    setActiveMaterials(workingMaterials);
     setActiveAccessoryIds(preset.activeAccessoryIds);
     setQuantity(preset.quantity);
     setMemo(preset.memo);
-    setActivePresetId(preset.id);
-    setLastAction(`프리셋 불러오기 완료: ${preset.name}`);
+    setActivePresetId(stockUpdated ? "" : preset.id);
+    setLastAction(stockUpdated
+      ? `프리셋 불러오기 완료: ${preset.name}. 현재 작업의 기본판을 실제 두께 2.7mm로 바꿨습니다. 저장된 원본 프리셋은 유지합니다.`
+      : `프리셋 불러오기 완료: ${preset.name}`);
   };
 
   const deletePreset = (id: string) => {

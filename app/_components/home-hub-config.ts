@@ -54,7 +54,7 @@ export const homeQuickRoutes: HomeQuickRoute[] = [
     kind: "자재",
     eyebrow: "Metal Rack",
     summary: "금속 랙 기반으로 원장 두께·재질·재고 상태를 먼저 확인하는 공간",
-    note: "3T·5T·2.7T·특수판 판단",
+    note: "2T·2.7T·5T·특수판 판단",
   },
   {
     id: "quick-parts",

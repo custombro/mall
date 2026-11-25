@@ -16,10 +16,10 @@ export type CBMallState = {
 export const CB_STATE_KEY = "CB_MALL_DESIGN_STATE_V1";
 
 export const MATERIALS = [
-  { id: "acrylic-clear-3t", name: "투명 아크릴", thickness: "3T", note: "기본 키링용 메인 자재" },
-  { id: "acrylic-frost-3t", name: "반투명 아크릴", thickness: "3T", note: "부드러운 확산 표현 샘플용" },
-  { id: "acrylic-hologram-3t", name: "홀로그램 아크릴", thickness: "3T", note: "반짝임 강조 샘플용" },
-  { id: "acrylic-black-3t", name: "블랙 아크릴", thickness: "3T", note: "강한 대비 키링용" }
+  { id: "acrylic-clear-27t", name: "투명 아크릴", thickness: "2.7T", note: "기본 키링용 메인 자재" },
+  { id: "acrylic-frost-27t", name: "반투명 아크릴", thickness: "2.7T", note: "부드러운 확산 표현 샘플용" },
+  { id: "acrylic-hologram-27t", name: "홀로그램 아크릴", thickness: "2.7T", note: "반짝임 강조 샘플용" },
+  { id: "acrylic-black-27t", name: "블랙 아크릴", thickness: "2.7T", note: "강한 대비 키링용" }
 ] as const;
 
 export const OPTIONS = [

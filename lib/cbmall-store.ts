@@ -9,7 +9,8 @@ export type ZoneId =
 
 export type PresetId = "maker" | "materials" | "operate";
 export type AcrylicColor = "투명" | "진백" | "반투명" | "유백색";
-export type AcrylicThickness = 2 | 3 | 5 | 8 | 10;
+export const THIN_ACRYLIC_THICKNESS = 2.7 as const;
+export type AcrylicThickness = 2 | typeof THIN_ACRYLIC_THICKNESS | 5 | 8 | 10;
 export type WorkbenchSlotId =
   | "material_primary"
   | "parts_primary"
@@ -55,7 +56,7 @@ export type PopPanelConfig = {
   width?: number;
   height?: number;
   depth?: number;
-  thickness: 3 | 5 | 8 | 10;
+  thickness: typeof THIN_ACRYLIC_THICKNESS | 5 | 8 | 10;
   color: AcrylicColor;
   shape?: "square" | "top_round" | "custom";
 };
@@ -146,13 +147,13 @@ export const ACRYLIC_MATERIALS: Array<{
   note: string;
 }> = [
   { id: "acrylic_transparent_2t", name: "투명 2T 아크릴", thickness: 2, color: "투명", note: "가벼운 태그/소형 출력용" },
-  { id: "acrylic_transparent_3t", name: "투명 3T 아크릴", thickness: 3, color: "투명", note: "기본 키링 메인 자재" },
+  { id: "acrylic_transparent_27t", name: "투명 2.7T 아크릴", thickness: THIN_ACRYLIC_THICKNESS, color: "투명", note: "기본 키링 메인 자재" },
   { id: "acrylic_transparent_5t", name: "투명 5T 아크릴", thickness: 5, color: "투명", note: "두께감 있는 POP 보조 구조용" },
-  { id: "acrylic_white_3t", name: "진백 3T 아크릴", thickness: 3, color: "진백", note: "선명한 바탕용" },
+  { id: "acrylic_white_27t", name: "진백 2.7T 아크릴", thickness: THIN_ACRYLIC_THICKNESS, color: "진백", note: "선명한 바탕용" },
   { id: "acrylic_white_5t", name: "진백 5T 아크릴", thickness: 5, color: "진백", note: "POP 메인 판재용" },
-  { id: "acrylic_frost_3t", name: "반투명 3T 아크릴", thickness: 3, color: "반투명", note: "은은한 확산 표현용" },
+  { id: "acrylic_frost_27t", name: "반투명 2.7T 아크릴", thickness: THIN_ACRYLIC_THICKNESS, color: "반투명", note: "은은한 확산 표현용" },
   { id: "acrylic_frost_5t", name: "반투명 5T 아크릴", thickness: 5, color: "반투명", note: "입체 구조 POP용" },
-  { id: "acrylic_milky_3t", name: "유백색 3T 아크릴", thickness: 3, color: "유백색", note: "백색 확산 계열 디스플레이용" },
+  { id: "acrylic_milky_27t", name: "유백색 2.7T 아크릴", thickness: THIN_ACRYLIC_THICKNESS, color: "유백색", note: "백색 확산 계열 디스플레이용" },
   { id: "acrylic_milky_8t", name: "유백색 8T 아크릴", thickness: 8, color: "유백색", note: "고강성 구조물용" },
 ];
 
@@ -185,7 +186,7 @@ export const DEFAULT_POP_DRAFT: PopDraft = {
     "1": { width: 180, height: 250, thickness: 5, color: "진백", shape: "top_round" },
     "2": { width: 220, depth: 120, thickness: 5, color: "투명", shape: "square" },
     "3": { height: 60, thickness: 5, color: "투명", shape: "square" },
-    "4": { width: 160, height: 80, thickness: 3, color: "진백", shape: "square" },
+    "4": { width: 160, height: 80, thickness: THIN_ACRYLIC_THICKNESS, color: "진백", shape: "square" },
   },
   holeConfigs: [],
   adhesiveMode: "flat",
@@ -640,8 +641,8 @@ export function validatePopDraft(draft: PopDraft): PopConstraintResult {
       errors.push(`${panelNo}번판은 550mm를 초과할 수 없습니다.`);
     }
 
-    if (cfg.thickness === 3 && dims.some((value) => value >= 220)) {
-      warnings.push(`${panelNo}번판은 3T 대형 구조 주의가 필요합니다.`);
+    if (cfg.thickness === THIN_ACRYLIC_THICKNESS && dims.some((value) => value >= 220)) {
+      warnings.push(`${panelNo}번판은 2.7T 대형 구조 주의가 필요합니다.`);
     }
 
     if (cfg.color === "투명" || cfg.color === "반투명" || cfg.color === "유백색") {

@@ -179,7 +179,7 @@ export default function KeyringWorkbenchClient() {
                 </p>
                 <div className="kw7-meta">
                   <span>파란 랙</span>
-                  <span>두랭 3T</span>
+                  <span>두께 2.7T</span>
                   <span>투명 부자재함</span>
                   <span>완료품 보관통</span>
                 </div>
@@ -351,12 +351,12 @@ export default function KeyringWorkbenchClient() {
                   <div className="kw7-supplyBin"><strong>D고리</strong><span>소형 투명함</span></div>
                   <div className="kw7-supplyBin"><strong>O링</strong><span>소형 투명함</span></div>
                   <div className="kw7-supplyBin"><strong>OPP</strong><span>포장 준비</span></div>
-                  <div className="kw7-supplyBin"><strong>두랭 3T</strong><span>중앙 원장</span></div>
+                  <div className="kw7-supplyBin"><strong>두께 2.7T</strong><span>중앙 원장</span></div>
                 </div>
 
                 <div className="kw7-tableSurface">
                   <div className="kw7-acrylicSheet">
-                    <span>두랭 3T</span>
+                    <span>두께 2.7T</span>
                   </div>
 
                   <div className="kw7-scenePanel">

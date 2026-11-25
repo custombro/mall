@@ -10,7 +10,7 @@ export type SlotInfo = {
 };
 
 export const materialRack = [
-  { id: "mat-3t-clear", label: "투명 3T", note: "전면 아크릴 후보", shelf: "3T", stack: "18장" },
+  { id: "mat-27t-clear", label: "투명 2.7T", note: "전면 아크릴 후보", shelf: "2.7T", stack: "18장" },
   { id: "mat-5t-clear", label: "투명 5T", note: "받침/보강 샘플", shelf: "5T", stack: "10장" },
   { id: "mat-white", label: "화이트 원장", note: "후면 백판 후보", shelf: "WHITE", stack: "8장" },
   { id: "mat-opp", label: "OPP 포장재", note: "출고 포장 준비", shelf: "OPP", stack: "1000매" },

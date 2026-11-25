@@ -9,7 +9,7 @@ const materialCategories = [
 
 const materialCards = [
   {
-    name: "기본 투명 3T",
+    name: "기본 투명 2.7T",
     badge: "기본",
     price: "₩2,400",
     stock: "재고 충분",
@@ -17,7 +17,7 @@ const materialCards = [
     bullets: ["키링 기본용", "인쇄/커팅 기준 안정적", "재주문 연결 쉬움"]
   },
   {
-    name: "화이트 오팔 3T",
+    name: "화이트 오팔 2.7T",
     badge: "인기",
     price: "₩3,100",
     stock: "잔여 23",
@@ -25,7 +25,7 @@ const materialCards = [
     bullets: ["은은한 반투명", "POP 포인트용", "과한 설명 제거"]
   },
   {
-    name: "컬러 블루 3T",
+    name: "컬러 블루 2.7T",
     badge: "포인트",
     price: "₩3,400",
     stock: "잔여 12",
@@ -166,7 +166,7 @@ export default function MaterialsRoomPage() {
 
               <div className="rounded-2xl border border-black/10 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">현재 기준 선택</div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight">기본 투명 3T</div>
+                <div className="mt-2 text-2xl font-semibold tracking-tight">기본 투명 2.7T</div>
                 <div className="mt-1 text-sm text-neutral-600">가장 많이 쓰는 기본 자재를 첫 카드로 고정했다.</div>
 
                 <div className="mt-4 flex items-end justify-between gap-3">
