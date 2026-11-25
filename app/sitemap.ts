@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: "https://mall.custombro.org/display", changeFrequency: "monthly", priority: 0.9 },
     { url: "https://mall.custombro.org/acrylic-keyring", changeFrequency: "monthly", priority: 1 },
     { url: "https://mall.custombro.org/cosmetic-display", changeFrequency: "monthly", priority: 1 },
+    { url: "https://mall.custombro.org/guides/cosmetic-display-quote", changeFrequency: "monthly", priority: 0.8 },
     { url: "https://mall.custombro.org/exhibition-display", changeFrequency: "monthly", priority: 0.9 },
   ];
 }
