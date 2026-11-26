@@ -14,11 +14,11 @@ const featured = [
   {
     eyebrow: "DISPLAY STUDIO",
     title: "화장품 · 브랜드 진열대",
-    description: "제품 치수와 배치를 정하면 구조를 3D로 확인하고 예상 제작비까지 바로 볼 수 있습니다.",
+    description: "제품 치수와 배치를 정해 구조를 3D로 확인하고, 인쇄 범위와 수량을 포함해 제작 상담을 요청하세요.",
     href: STUDIO_LINKS.display,
     action: "진열대 만들기",
     kind: "display",
-    tags: ["구조 자동완성", "소재·인쇄 선택", "실시간 예상가"],
+    tags: ["구조 자동완성", "소재·인쇄 선택", "제작 사양 확인"],
   },
 ] as const;
 
@@ -48,7 +48,7 @@ export default function HomePage() {
             <a href={STUDIO_LINKS.consultation} className="cb-btn cb-btn--ghost">간편 제작 상담</a>
           </div>
           <div className="cb-home-hero__trust">
-            <span>부가세 별도 예상가 실시간 확인</span>
+            <span>인쇄·가공 범위 확인 후 견적 안내</span>
             <span>제작 전 사양 검토</span>
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function HomePage() {
         <ol className="cb-flow-grid">
           <li><b>01</b><strong>제품 선택</strong><span>키링 또는 진열대에서 시작합니다.</span></li>
           <li><b>02</b><strong>직접 설계</strong><span>치수·모양·소재·인쇄를 화면에서 조정합니다.</span></li>
-          <li><b>03</b><strong>3D · 예상가 확인</strong><span>완성 형태와 수량별 예상 공급가를 확인합니다.</span></li>
+          <li><b>03</b><strong>3D · 제작 사양 확인</strong><span>완성 형태와 인쇄 범위·수량을 확인합니다.</span></li>
           <li><b>04</b><strong>제작 검토 요청</strong><span>저장된 사양을 기준으로 실제 제작 가능 여부를 확인합니다.</span></li>
         </ol>
       </section>

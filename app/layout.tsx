@@ -6,7 +6,7 @@ import "./home-v2.css";
 
 export const metadata: Metadata = {
   title: "커스텀브로 | 아크릴 키링·미니 진열대",
-  description: "키링의 모양과 앞뒤 디자인, 화장품 미니 진열대의 구조를 직접 정하고 예상 제작비와 제작 상담을 이어가는 커스텀브로입니다.",
+  description: "키링의 모양과 앞뒤 디자인, 화장품 미니 진열대의 구조를 직접 정하고 제작 사양 확인과 상담을 이어가는 커스텀브로입니다.",
 };
 
 export default function RootLayout({
