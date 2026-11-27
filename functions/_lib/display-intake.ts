@@ -57,7 +57,7 @@ function text(value:unknown,label:string,max:number,required=false) {
 // These fields are imported by the private sales bridge as single-line text.
 // Reject control characters here so a publicly accepted record cannot block its queue.
 function contactText(value:unknown,label:string,max:number,required=false) {
-  if(typeof value==='string'&&/[\u0000-\u001F\u007F]/.test(value))throw new IntakeError(400,`${label} 형식을 확인해 주세요.`);
+  if(typeof value==='string'&&/[\u0000-\u001F\u007F\u0085\u2028\u2029]/.test(value))throw new IntakeError(400,`${label} 형식을 확인해 주세요.`);
   return text(value,label,max,required);
 }
 function number(value:unknown,label:string,min:number,max:number,optional=false) {

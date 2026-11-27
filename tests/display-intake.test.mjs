@@ -46,7 +46,7 @@ test('rate limits repeated public posts without storing raw IP addresses',async(
 });
 test('rejects contacts the private importer cannot consume while preserving multiline design notes',async()=>{
  const f=fixture();
- for(const field of ['name','company','email'])for(const control of ['\t','\n','\r','\u007f']){
+ for(const field of ['name','company','email'])for(const control of ['\t','\n','\r','\u007f','\u0085','\u2028','\u2029']){
   const body=payload();body.contact[field]=field==='email'?`test${control}@example.invalid`:`before${control}after`;
   assert.equal((await intake({request:post(body),env:f.env})).status,400,`${field} rejects control ${control.charCodeAt(0)}`);
  }
