@@ -98,15 +98,38 @@ test("healthy public Studio restores original destination for every link automat
   const withPurpose = await gate.onRequest({ request: req("?to=consultation&purpose=collection") });
   assert.equal(withPurpose.status, 302);
   assert.equal(withPurpose.headers.get("location"), studio + "/start?purpose=collection");
-  assert.equal(visited.length, (Object.keys(links.STUDIO_LINKS).length + 1) * 2);
-  for (let i = 0; i < visited.length; i += 2) {
-    assert.equal(visited[i].url, studio + "/api/service-status");
-    assert.equal(visited[i].options.headers.Accept, "application/json");
-    assert.equal(visited[i].options.cache, "no-store");
-    assert.equal(visited[i + 1].url, studio + "/start");
-    assert.equal(visited[i + 1].options.headers.Accept, "text/html");
-    assert.equal(visited[i + 1].options.cache, "no-store");
+  const expectedVisits = [];
+  for (const key of Object.keys(links.STUDIO_LINKS)) {
+    const destination = new URL(links.STUDIO_DESTINATIONS[key], studio);
+    expectedVisits.push(studio + "/api/service-status", studio + "/start");
+    if (destination.pathname !== "/start") expectedVisits.push(destination.toString());
   }
+  expectedVisits.push(studio + "/api/service-status", studio + "/start");
+  assert.deepEqual(visited.map(v => v.url), expectedVisits);
+  for (const { url, options } of visited) {
+    assert.equal(options.method, "GET");
+    assert.equal(options.redirect, "manual");
+    assert.equal(options.cache, "no-store");
+    assert.equal(options.headers.Accept, url === studio + "/api/service-status" ? "application/json" : "text/html");
+    assert.equal(options.headers.Authorization, undefined);
+  }
+});
+
+test("a healthy /start does not redirect visitors to a broken destination", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => {
+    const path = new URL(String(url)).pathname;
+    visited.push(path);
+    if (path === "/api/service-status") return siteStatus(false);
+    if (path === "/start") return available();
+    if (path === "/keyring") return new Response("unavailable", { status: 503, headers: { "content-type": "text/html" } });
+    throw new Error("Unexpected destination: " + path);
+  });
+  const response = await gate.onRequest({ request: req("?to=keyring") });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.match(await response.text(), /온라인 설계 서비스는 준비 중입니다/);
+  assert.deepEqual(visited, ["/api/service-status", "/start", "/keyring"]);
 });
 
 test("invalid destinations and unexpected parameters are not open redirects", async () => {

@@ -85,6 +85,21 @@ export async function onRequest({ request }: { request: Request }): Promise<Resp
           });
           if (page.status === 200 &&
               (page.headers.get("content-type") || "").includes("text/html")) {
+            // Each requested route can fail independently of /start. Do not
+            // redirect customers to an unavailable product, design or account page.
+            if (destination.pathname !== "/start") {
+              const destinationPage = await fetch(destination, {
+                method: "GET",
+                redirect: "manual",
+                headers: { Accept: "text/html" },
+                signal: AbortSignal.timeout(4000),
+                cache: "no-store",
+              });
+              if (destinationPage.status !== 200 ||
+                  !(destinationPage.headers.get("content-type") || "").includes("text/html")) {
+                return fallbackResponse();
+              }
+            }
             return new Response(null, { status: 302, headers: { ...headers, Location: destination.toString() } });
           }
         }
