@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "자재 선택 안내 | 커스텀브로",
+  description: "자재 규격과 종류의 화면 예시입니다. 실제 매입단가·판매가·재고는 확인 전이며, 견적 승인 후 별도 안내합니다.",
+  robots: { index: false, follow: false },
+};
 
 const materialCategories = [
   { name: "투명 아크릴", hint: "가장 기본이 되는 소재" },
@@ -11,24 +18,24 @@ const materialCards = [
   {
     name: "기본 투명 2.7T",
     badge: "기본",
-    price: "₩2,400",
-    stock: "재고 충분",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "가장 많이 쓰는 기본 소재만 먼저 보이게 정리했다.",
     bullets: ["키링 기본용", "인쇄/커팅 기준 안정적", "재주문 연결 쉬움"]
   },
   {
     name: "화이트 오팔 2.7T",
     badge: "인기",
-    price: "₩3,100",
-    stock: "잔여 23",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "설명보다 선택 판단에 필요한 정보만 남긴 소재 카드다.",
     bullets: ["은은한 반투명", "POP 포인트용", "과한 설명 제거"]
   },
   {
     name: "컬러 블루 2.7T",
     badge: "포인트",
-    price: "₩3,400",
-    stock: "잔여 12",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "색상 계열은 하나의 카드 구조로 동일하게 비교되도록 맞췄다.",
     bullets: ["유색 시리즈", "가시성 좋은 포인트", "저장 후 재사용 가능"]
   }
@@ -48,10 +55,10 @@ export default function MaterialsRoomPage() {
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">MATERIALS ROOM</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">자재 선택은 단순하게, 판단은 더 빠르게</h1>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">자재 선택 안내 · 실제 가격 확인 전</h1>
             </div>
             <p className="max-w-xl text-sm leading-6 text-neutral-600">
-              상단 장식과 중복 설명을 줄이고, 좌측 선택 · 중앙 비교 · 우측 저장/주문 구조만 남긴 자재실 화면이다.
+              소재 종류를 이해하기 위한 구성 예시입니다. 실제 원장 매입가·재고·제작비를 확인하지 않았으므로 이 화면의 항목을 확정 판매상품으로 안내하지 않습니다.
             </p>
           </div>
         </header>
@@ -104,7 +111,7 @@ export default function MaterialsRoomPage() {
                   </div>
 
                   <div className="mt-4 rounded-2xl bg-[#f8f4ec] px-4 py-3">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">기준가</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight">{card.price}</div>
                   </div>
 
@@ -120,7 +127,7 @@ export default function MaterialsRoomPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="text-neutral-500">재고 상태</span>
+                    <span className="text-neutral-500">재고 확인</span>
                     <span className="font-semibold text-neutral-900">{card.stock}</span>
                   </div>
                 </article>
@@ -171,18 +178,18 @@ export default function MaterialsRoomPage() {
 
                 <div className="mt-4 flex items-end justify-between gap-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">선택가</div>
-                    <div className="mt-1 text-2xl font-semibold tracking-tight">₩2,400</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">견적 확인 전</div>
                   </div>
                   <div className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white">기본</div>
                 </div>
 
                 <div className="mt-4 space-y-2">
                   <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    바로 주문
+                    제품 제작 상담 이동
                   </Link>
                   <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    서랍 저장
+                    보관 기능 안내
                   </Link>
                   <Link href="/materials-room" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     현재 화면 유지

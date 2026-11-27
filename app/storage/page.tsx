@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_STORAGE_20260325_232504";
+export const metadata: Metadata = {
+  title: "저장본·재주문 기능 안내 | 커스텀브로",
+  description: "실제 저장본·주문 내역은 이 안내 화면에 연결되어 있지 않습니다. 최신 저장본은 기존 커스텀브로 스튜디오에서 확인하며, 현재 고객 접속은 준비중으로 제한됩니다.",
+  robots: { index: false, follow: false },
+};
+
+
 
 const drawerGroups = [
   { name: "최근 저장본", hint: "가장 최근 작업 다시 열기" },
@@ -47,15 +54,15 @@ export default function StoragePage() {
                 STORAGE
               </p>
               <h1 className="text-2xl font-semibold tracking-tight">
-                서랍도 더 짧고 바로 꺼내 쓰기 쉽게
+                저장본·재주문 기능 안내
               </h1>
             </div>
             <div className="max-w-xl">
               <p className="text-sm leading-6 text-neutral-600">
-                중복 안내를 줄이고, 저장본 선택 · 재사용 · 재주문 흐름만 남긴 단순한 서랍 화면이다.
+                현재는 저장·재주문 기능의 화면 구성 예시입니다. 실제 저장본, 고객 주문과 연결된 내역 조회 기능이 아니므로 업무 기록처럼 해석하지 마세요.
               </p>
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                배포 확인 기준: {deployMarker}
+                운영 상태: 실제 저장 데이터 연동 전
               </p>
             </div>
           </div>

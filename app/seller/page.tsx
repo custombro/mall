@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_SELLER_20260325_234452";
+export const metadata: Metadata = {
+  title: "판매자 기능 안내 | 커스텀브로",
+  description: "현재 화면은 판매 기능의 구성 안내입니다. 실제 판매자 등록·주문 처리와 연결된 운영 화면이 아니며, 견적·판매 조건은 별도 확인 후 안내합니다.",
+  robots: { index: false, follow: false },
+};
+
+
 
 const sellerGroups = [
   { name: "판매 시작", hint: "가장 빠른 기본 흐름" },
@@ -47,15 +54,15 @@ export default function SellerPage() {
                 SELLER
               </p>
               <h1 className="text-2xl font-semibold tracking-tight">
-                판매센터도 더 짧고 바로 움직이게
+                판매자 기능 안내
               </h1>
             </div>
             <div className="max-w-xl">
               <p className="text-sm leading-6 text-neutral-600">
-                상단 보조 설명과 중복 요소를 줄이고, 판매 시작 · 재사용 · 주문 관리만 남긴 단순한 판매 화면이다.
+                현재는 판매자 기능의 화면 구성 예시입니다. 실제 판매자 등록·주문 관리나 수익 정산과 연결돼 있지 않습니다.
               </p>
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                배포 확인 기준: {deployMarker}
+                운영 상태: 판매 운영 연동 전
               </p>
             </div>
           </div>

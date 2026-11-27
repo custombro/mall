@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_B2B_20260325_234842";
+export const metadata: Metadata = {
+  title: "기업·행사 대량 제작 상담 안내 | 커스텀브로",
+  description: "제품 규격·인쇄·수량 등 필요한 정보를 정리하는 안내 화면입니다. 실시간 견적·온라인 발주는 아직 연결되지 않았으며, 실제 제작비와 납기는 확인 후 안내합니다.",
+  robots: { index: false, follow: false },
+};
+
+
 
 const b2bGroups = [
   { name: "대량 문의", hint: "행사 / 기업 주문 시작" },
@@ -47,15 +54,15 @@ export default function B2BPage() {
                 B2B
               </p>
               <h1 className="text-2xl font-semibold tracking-tight">
-                B2B도 더 짧고 바로 발주 흐름으로
+                기업·행사 대량 제작 상담 안내
               </h1>
             </div>
             <div className="max-w-xl">
               <p className="text-sm leading-6 text-neutral-600">
-                상단 보조 설명과 중복 요소를 줄이고, 대량 시작 · 샘플 확인 · 반복 발주 흐름만 남긴 단순한 B2B 화면이다.
+                현재는 대량 제작 절차의 안내 화면입니다. 실제 발주·결제와 연결되지 않으며, 제품 치수와 수량·인쇄 범위를 확인한 뒤 개별 견적을 안내합니다.
               </p>
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                배포 확인 기준: {deployMarker}
+                운영 상태: 온라인 발주 연동 전
               </p>
             </div>
           </div>

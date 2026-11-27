@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
-const deployMarker = "DEPLOY_PARTS_ROOM_20260325_222719";
+export const metadata: Metadata = {
+  title: "부자재 구성 안내 | 커스텀브로",
+  description: "연결 부자재와 POP 받침의 구성 안내입니다. 실제 재고·판매가격·주문 조건은 확인 전입니다.",
+  robots: { index: false, follow: false },
+};
+
+
 
 const partGroups = [
   { name: "링 / 체인", hint: "기본 연결 부자재" },
@@ -13,26 +20,26 @@ const partCards = [
   {
     title: "기본 키링 링",
     badge: "기본",
-    price: "₩900",
-    stock: "재고 충분",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "가장 많이 쓰는 기본 연결 부자재를 첫 카드로 고정했다.",
     bullets: ["은색 기본 링", "바로 담기 쉬움", "키링 주문과 바로 연결"]
   },
   {
     title: "미니 체인 세트",
     badge: "확장",
-    price: "₩1,400",
-    stock: "잔여 34",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "설명보다 선택 판단에 필요한 정보만 남긴 보조 부자재 카드다.",
     bullets: ["짧은 체인 연결", "옵션 비교 쉬움", "수량만 정하면 바로 진행"]
   },
   {
     title: "POP 투명 받침",
     badge: "전시",
-    price: "₩2,900",
-    stock: "잔여 12",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "전시용 부자재도 같은 카드 구조로 비교되게 맞췄다.",
-    bullets: ["투명 받침", "POP 전시용", "서랍 저장 후 재사용 가능"]
+    bullets: ["투명 받침", "POP 전시용", "보관 기능 안내 후 재사용 가능"]
   }
 ];
 
@@ -50,14 +57,14 @@ export default function PartsRoomPage() {
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">PARTS ROOM</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재 선택도 더 짧고 바로 이해되게</h1>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재 구성 안내 · 실제 가격 확인 전</h1>
             </div>
             <div className="max-w-xl">
               <p className="text-sm leading-6 text-neutral-600">
-                중복 설명과 장식성 박스를 줄이고, 선택 · 비교 · 저장 · 주문 흐름만 남긴 단순한 부자재실 화면이다.
+                부자재 구성의 시연용 화면입니다. 실제 판매가·재고·주문 가능 수량은 아직 검증되지 않았으므로 선택만으로 주문이나 예약이 발생하지 않습니다.
               </p>
               <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-neutral-500">
-                배포 확인 기준: {deployMarker}
+                운영 상태: 부자재 판매 정보 확인 전
               </p>
             </div>
           </div>
@@ -111,7 +118,7 @@ export default function PartsRoomPage() {
                   </div>
 
                   <div className="mt-4 rounded-2xl bg-[#f8f4ec] px-4 py-3">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">기준가</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight">{card.price}</div>
                   </div>
 
@@ -127,7 +134,7 @@ export default function PartsRoomPage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="text-neutral-500">재고 상태</span>
+                    <span className="text-neutral-500">재고 확인</span>
                     <span className="font-semibold text-neutral-900">{card.stock}</span>
                   </div>
                 </article>
@@ -178,18 +185,18 @@ export default function PartsRoomPage() {
 
                 <div className="mt-4 flex items-end justify-between gap-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">선택가</div>
-                    <div className="mt-1 text-2xl font-semibold tracking-tight">₩900</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">견적 확인 전</div>
                   </div>
                   <div className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white">기본</div>
                 </div>
 
                 <div className="mt-4 space-y-2">
                   <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    바로 주문
+                    제작 상담 이동
                   </Link>
                   <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    서랍 저장
+                    보관 기능 안내
                   </Link>
                   <Link href="/parts-room" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     현재 화면 유지

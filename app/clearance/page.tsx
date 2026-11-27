@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import RouteDock from "../_components/RouteDock";
-import ClearanceClient from "./_components/ClearanceClient";
+
+export const metadata: Metadata = {
+  title: "재고정리 운영 안내 | 커스텀브로",
+  description: "실제 잔여재고·상태·판매가격을 확인하기 전의 내부 운영 안내입니다. 현재 구매 가능한 상품 목록이 아닙니다.",
+  robots: { index: false, follow: false },
+};
+// The old ClearanceClient is a disconnected prototype with invented prices,
+// stock and delivery times. Keep its source for internal review only.
 
 const clearanceBuckets = [
   { title: "행사 종료 재고", body: "이벤트 종료 후 남은 수량을 빠르게 소진하는 버킷" },
@@ -41,10 +49,10 @@ export default function Page() {
                 재고정리 허브
               </p>
               <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                재고 정리 탭은 정규 제작 흐름과 분리된 소진 허브여야 합니다.
+                재고정리 운영 기준을 검토하고 있습니다.
               </h1>
               <p className="max-w-3xl text-base leading-7 text-slate-200 sm:text-lg">
-                행사 종료 재고, 샘플 잔량, 테스트 파츠, 보류 자재를 상태별로 분리해 정리합니다.
+                이 화면은 재고정리 방식의 안내이며, 실제 판매 가능한 재고나 가격을 보장하지 않습니다. 상품별 수량·상태·가격을 확인한 뒤 별도 판매합니다.
               </p>
             </div>
           </div>
@@ -97,7 +105,16 @@ export default function Page() {
           ))}
         </section>
 
-        <ClearanceClient />
+        <section aria-labelledby="clearance-public-status" className="rounded-[1.75rem] border border-amber-300/30 bg-slate-900 p-6">
+          <h2 id="clearance-public-status" className="text-xl font-semibold">확인된 재고정리 상품만 별도로 안내합니다.</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-200">
+            판매 수량·상태·할인율·가격·출고 예정일의 실제 근거를 확인하기 전에는 판매 목록을 게시하지 않습니다.
+            이 안내 화면에서는 재고 예약, 구매 신청 또는 결제가 진행되지 않습니다.
+          </p>
+          <a href="/qa#email" className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-slate-400 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+            재고정리 품목 관련 문의
+          </a>
+        </section>
         <RouteDock />
       </div>
     </main>

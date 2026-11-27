@@ -256,3 +256,32 @@ test("public keyring and exhibition copy does not promise unverified manufacturi
   assert.match(exhibition, /재단·인쇄·세팅과 조립 공정을 각각 확인한 뒤 견적을 검토/);
   assert.match(keyring, /1\.5T\+1\.5T/);
 });
+
+
+test("legacy prototype hubs are not indexed or presented as verified sales operations", () => {
+  for (const route of ["b2b", "seller", "storage", "clearance"]) {
+    const source = readFileSync(path.join(root, "app", route, "page.tsx"), "utf8");
+    assert.match(source, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/, route);
+    assert.doesNotMatch(source, /DEPLOY_(STORAGE|SELLER|B2B)_2026|배포 확인 기준/, route);
+  }
+  for (const route of ["b2b", "seller", "storage"]) {
+    const source = readFileSync(path.join(root, "app", route, "page.tsx"), "utf8");
+    assert.match(source, /운영 상태: .*연동 전/, route);
+  }
+  const clearance = readFileSync(path.join(root, "app", "clearance", "page.tsx"), "utf8");
+  assert.match(clearance, /실제 판매 가능한 재고나 가격을 보장하지 않습니다/);
+  assert.doesNotMatch(clearance, /<ClearanceClient\s*\/>/);
+  assert.match(clearance, /재고 예약, 구매 신청 또는 결제가 진행되지 않습니다/);
+});
+
+
+test("unapproved material, accessory and parts prices or stock cannot appear as retail listings", () => {
+  for (const route of ["materials-room", "option-store", "parts-room"]) {
+    const source = readFileSync(path.join(root, "app", route, "page.tsx"), "utf8");
+    assert.match(source, /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/);
+    assert.doesNotMatch(source, /₩[\d,]+|재고 충분|잔여\s*\d+/);
+    assert.match(source, /견적 확인 전/);
+    assert.match(source, /실재고 확인 전/);
+    assert.doesNotMatch(source, /배포 확인 기준|DEPLOY_PARTS_ROOM_2026/);
+  }
+});

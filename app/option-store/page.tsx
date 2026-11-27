@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "부자재 옵션 안내 | 커스텀브로",
+  description: "부자재 구성의 화면 예시입니다. 실제 옵션 판매가·재고·주문 연결은 확정되지 않았습니다.",
+  robots: { index: false, follow: false },
+};
 
 const categories = [
   { name: "링 / 체인", hint: "가장 많이 쓰는 기본 연결 부자재" },
@@ -10,22 +17,22 @@ const categories = [
 const options = [
   {
     name: "기본 링 세트",
-    price: "₩900",
-    stock: "재고 충분",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "가장 빠르게 붙는 기본 연결 부자재 구성",
     bullets: ["은색 기본 링", "즉시 선택 가능", "키링 주문과 바로 연결"]
   },
   {
     name: "패키지 간소화 세트",
-    price: "₩1,500",
-    stock: "잔여 28",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "설명 없이 바로 담는 기본 포장 옵션",
     bullets: ["기본 포장", "단일 규격", "수량만 정하면 끝"]
   },
   {
     name: "POP 받침 세트",
-    price: "₩2,900",
-    stock: "잔여 11",
+    price: "견적 확인 전",
+    stock: "실재고 확인 전",
     summary: "전시용 POP에 필요한 핵심만 남긴 구성",
     bullets: ["투명 받침", "기본 고정부", "바로 저장 가능"]
   }
@@ -45,10 +52,10 @@ export default function OptionStorePage() {
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500">OPTION STORE</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재는 복잡한 설명 없이 바로 고른다</h1>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">부자재 옵션 안내 · 실제 가격 확인 전</h1>
             </div>
             <p className="max-w-xl text-sm leading-6 text-neutral-600">
-              부자재몰을 안내 문구 중심이 아니라 선택 · 비교 · 저장 · 주문 흐름으로 다시 정리한 단순 화면이다.
+              현재 옵션 구성은 안내 예시입니다. 원자재·부자재 매입가, 실제 재고와 조립·포장 공정을 확인한 뒤에만 견적을 안내합니다.
             </p>
           </div>
         </header>
@@ -99,7 +106,7 @@ export default function OptionStorePage() {
                   </div>
 
                   <div className="mt-4 rounded-2xl bg-[#f8f4ec] px-4 py-3">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">기준가</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight">{option.price}</div>
                   </div>
 
@@ -115,7 +122,7 @@ export default function OptionStorePage() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="text-neutral-500">재고 상태</span>
+                    <span className="text-neutral-500">재고 확인</span>
                     <span className="font-semibold text-neutral-900">{option.stock}</span>
                   </div>
                 </article>
@@ -164,18 +171,18 @@ export default function OptionStorePage() {
 
                 <div className="mt-4 flex items-end justify-between gap-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">선택가</div>
-                    <div className="mt-1 text-2xl font-semibold tracking-tight">₩900</div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">견적 상태</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">견적 확인 전</div>
                   </div>
                   <div className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white">기본</div>
                 </div>
 
                 <div className="mt-4 space-y-2">
                   <Link href="/orders" className="flex w-full items-center justify-center rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-semibold text-white hover:opacity-90">
-                    바로 주문
+                    제작 상담 이동
                   </Link>
                   <Link href="/storage" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
-                    서랍 저장
+                    보관 기능 안내
                   </Link>
                   <Link href="/option-store" className="flex w-full items-center justify-center rounded-2xl border border-black/10 bg-[#f8f4ec] px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-black/20">
                     현재 화면 유지
