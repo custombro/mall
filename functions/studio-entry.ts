@@ -87,7 +87,7 @@ export async function onRequest({ request }: { request: Request }): Promise<Resp
               (page.headers.get("content-type") || "").includes("text/html")) {
             // Each requested route can fail independently of /start. Do not
             // redirect customers to an unavailable product, design or account page.
-            if (destination.pathname !== "/start") {
+            if (destination.toString() !== new URL("/start", STUDIO_ORIGIN).toString()) {
               const destinationPage = await fetch(destination, {
                 method: "GET",
                 redirect: "manual",
