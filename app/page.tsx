@@ -127,13 +127,14 @@ export default function HomePage() {
           </div>
         </div>
         <div className="cb-usecase-grid">
-          {useCases.map((item) => (
-            <Link href={item.href} key={item.title} className="cb-usecase-card">
-              <strong>{item.title}</strong>
-              <span>{item.body}</span>
-              <em>자세히 보기 →</em>
-            </Link>
-          ))}
+          {useCases.map((item) => {
+            const content = <><strong>{item.title}</strong><span>{item.body}</span><em>자세히 보기 →</em></>;
+            return item.href.startsWith("/studio-entry?") ? (
+              <a href={item.href} key={item.title} className="cb-usecase-card">{content}</a>
+            ) : (
+              <Link href={item.href} key={item.title} className="cb-usecase-card">{content}</Link>
+            );
+          })}
         </div>
       </section>
 

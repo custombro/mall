@@ -53,7 +53,7 @@ const faqs = [
   ["제품 치수를 아직 모르는데 문의할 수 있나요?", "가능합니다. 모르는 치수는 비워 두고 보내주세요. 정확한 제작 사양을 확정할 때는 실측과 끼움 여유를 확인해야 합니다. 비원형 용기는 요청사항에 가로·깊이·높이를 적어주세요."],
 ];
 
-const consultationHref = (purpose: Purpose) => STUDIO_LINKS.consultation + "?purpose=" + purpose;
+const consultationHref = (purpose: Purpose) => STUDIO_LINKS.consultation + "&purpose=" + encodeURIComponent(purpose);
 type PreviousInquiry = { draft: string; receipt: Receipt | null; unreadable: boolean };
 const emptyPrevious: PreviousInquiry = { draft: "", receipt: null, unreadable: false };
 

@@ -128,16 +128,18 @@ const oldDraft = JSON.stringify({
   recoveryCode: "NEVER-COPY-THIS-UNRELATED-FIELD",
 });
 
-test("all five purpose cards navigate directly to the existing Studio even before hydration", () => {
+test("all five purpose cards use the existing mall's public access gate before hydration", () => {
   const page = mount({ hydrate: false });
   const studio = page.load("lib/studio-links.ts").STUDIO_LINKS;
   const cards = links(page).filter(link => link.props.className === "offer");
   assert.equal(cards.length, 5);
-  assert.deepEqual(cards.map(link => new URL(link.props.href).searchParams.get("purpose")), ["hero", "collection", "exhibition", "reorder", "partner"]);
+  assert.deepEqual(cards.map(link => new URL(link.props.href, "https://mall.custombro.org").searchParams.get("purpose")), ["hero", "collection", "exhibition", "reorder", "partner"]);
   for (const link of cards) {
-    const url = new URL(link.props.href);
-    assert.equal(url.origin + url.pathname, studio.consultation);
-    assert.deepEqual([...url.searchParams.keys()], ["purpose"]);
+    const url = new URL(link.props.href, "https://mall.custombro.org");
+    const base = new URL(studio.consultation, "https://mall.custombro.org");
+    assert.equal(url.origin + url.pathname, base.origin + base.pathname);
+    assert.equal(url.searchParams.get("to"), "consultation");
+    assert.deepEqual([...url.searchParams.keys()], ["to", "purpose"]);
     assert.equal(link.props.onClick, undefined, "navigation does not depend on client state or a new POST");
   }
   assert(links(page).filter(link => link.props.href === studio.consultation).length >= 2);

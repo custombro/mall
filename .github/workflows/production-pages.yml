@@ -54,7 +54,7 @@ jobs:
         run: npm ci
 
       - name: Check stock preservation and customer consultation handoff
-        run: node --test tests/acrylic-stock-thickness.test.mjs tests/display-studio-handoff.test.mjs
+        run: node --test tests/acrylic-stock-thickness.test.mjs tests/display-studio-handoff.test.mjs tests/studio-entry.test.mjs
 
       - name: Build static export
         run: npm run build
