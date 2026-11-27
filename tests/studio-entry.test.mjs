@@ -104,7 +104,7 @@ test("healthy public Studio restores original destination for every link automat
     expectedVisits.push(studio + "/api/service-status", studio + "/start");
     if (destination.pathname !== "/start") expectedVisits.push(destination.toString());
   }
-  expectedVisits.push(studio + "/api/service-status", studio + "/start");
+  expectedVisits.push(studio + "/api/service-status", studio + "/start", studio + "/start?purpose=collection");
   assert.deepEqual(visited.map(v => v.url), expectedVisits);
   for (const { url, options } of visited) {
     assert.equal(options.method, "GET");
@@ -223,4 +223,74 @@ test("malformed or admin-scoped server status cannot authorize public traffic", 
     assert.equal(response.headers.get("location"), null);
     assert.equal(visited, 1);
   }
+});
+
+
+for (const purpose of ["hero", "collection", "exhibition", "reorder", "partner"]) {
+  test(`exact consultation URL failure: ${purpose}`, async () => {
+    const visited = [];
+    const { gate } = load(async (url, options) => {
+      const value = String(url);
+      visited.push(value);
+      assert.equal(options.redirect, "manual");
+      assert.equal(options.cache, "no-store");
+      assert.equal(options.headers.Authorization, undefined);
+      return value.endsWith("/api/service-status") ? siteStatus(false)
+        : value === studio + "/start" ? available()
+        : new Response("unavailable", { status: 503, headers: { "content-type": "text/html" } });
+    });
+    const response = await gate.onRequest({ request: req("?to=consultation&purpose=" + purpose) });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("location"), null);
+    assert.deepEqual(visited, [studio + "/api/service-status", studio + "/start", studio + "/start?purpose=" + purpose]);
+    assert.match(await response.text(), /준비 중입니다/);
+  });
+  test(`exact consultation URL success: ${purpose}`, async () => {
+    const visited = [];
+    const { gate } = load(async (url) => { visited.push(String(url)); return publicStudio(url); });
+    const response = await gate.onRequest({ request: req("?to=consultation&purpose=" + purpose) });
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get("location"), studio + "/start?purpose=" + purpose);
+    assert.deepEqual(visited, [studio + "/api/service-status", studio + "/start", studio + "/start?purpose=" + purpose]);
+  });
+}
+
+test("plain consultation does not duplicate the start request", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => { visited.push(String(url)); return publicStudio(url); });
+  const response = await gate.onRequest({ request: req("?to=consultation") });
+  assert.equal(response.status, 302);
+  assert.deepEqual(visited, [studio + "/api/service-status", studio + "/start"]);
+});
+
+test("maintenance blocks all consultation purpose destinations before page fetch", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => { visited.push(String(url)); return maintenance(); });
+  const response = await gate.onRequest({ request: req("?to=consultation&purpose=hero") });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.deepEqual(visited, [studio + "/api/service-status"]);
+});
+
+test("invalid consultation purpose cannot trigger an upstream fetch", async () => {
+  let count = 0;
+  const { gate } = load(async () => { count++; return available(); });
+  const response = await gate.onRequest({ request: req("?to=consultation&purpose=invalid") });
+  assert.equal(response.status, 400);
+  assert.equal(count, 0);
+});
+
+test("existing destination query on support route is still verified", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => {
+    const value = String(url);
+    visited.push(value);
+    return value.endsWith("/api/service-status") ? siteStatus(false)
+      : value === studio + "/start" ? available()
+      : new Response("unavailable", { status: 503, headers: { "content-type": "text/html" } });
+  });
+  const response = await gate.onRequest({ request: req("?to=support") });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.deepEqual(visited, [studio + "/api/service-status", studio + "/start", studio + "/studio?view=support"]);
 });
