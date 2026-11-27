@@ -242,3 +242,17 @@ test("landing and home describe reviewed specifications without promising an unv
   assert.match(text, /인쇄.*수량/);
   assert.match(text, /견적/);
 });
+
+
+test("public keyring and exhibition copy does not promise unverified manufacturing prices", () => {
+  const keyring = readFileSync(path.join(root, "app/acrylic-keyring/page.tsx"), "utf8");
+  const exhibition = readFileSync(path.join(root, "app/exhibition-display/page.tsx"), "utf8");
+  const cosmetic = readFileSync(path.join(root, "app/cosmetic-display/page.tsx"), "utf8");
+  assert.doesNotMatch(keyring, /예상 제작비를 확인하세요|수량별 예상가|계획용 공급가/);
+  assert.doesNotMatch(exhibition, /복잡도를 예상가격에 반영/);
+  assert.doesNotMatch(cosmetic, /예상 단가를 비교합니다/);
+  assert.match(cosmetic, /실제 작업 범위를 확인하고 최종 견적을 안내합니다/);
+  assert.match(keyring, /제작 사양을 검토한 뒤 견적을 요청하세요/);
+  assert.match(exhibition, /재단·인쇄·세팅과 조립 공정을 각각 확인한 뒤 견적을 검토/);
+  assert.match(keyring, /1\.5T\+1\.5T/);
+});
