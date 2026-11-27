@@ -35,8 +35,16 @@ function load(mockFetch) {
   return { gate: read("functions/studio-entry.ts"), links: read("lib/studio-links.ts") };
 }
 const req = (suffix, method = "GET") => new Request(prefix + "/studio-entry" + suffix, { method });
-const maintenance = () => new Response("Service temporarily unavailable", { status: 503, headers: { "content-type": "text/html" } });
-const available = () => new Response("<!doctype html><html><body>Studio ready</body></html>", { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+const siteStatus = (maintenance = true, admin = false, revision = 9) =>
+  new Response(JSON.stringify({ maintenance, isAdmin: admin, revision }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+const maintenance = () => siteStatus(true);
+const available = () => new Response("<!doctype html><html><body>Studio ready</body></html>", {
+  status: 200, headers: { "content-type": "text/html; charset=utf-8" },
+});
+const publicStudio = async (url) => String(url).endsWith("/api/service-status") ? siteStatus(false) : available();
 
 test("all public Studio links use one existing mall gate, not 503 URLs", () => {
   const { links } = load(async () => maintenance());
@@ -66,14 +74,19 @@ test("maintenance returns accessible existing-email fallback without creating a 
   assert.equal(res.headers.get("set-cookie"), null);
   assert.match(res.headers.get("x-robots-tag"), /noindex/);
   assert.equal(fetched.length, 1);
-  assert.equal(fetched[0].url, studio + "/start");
+  assert.equal(fetched[0].url, studio + "/api/service-status");
   assert.equal(fetched[0].options.method, "GET");
-  assert.equal(fetched[0].options.headers.Accept, "text/html");
+  assert.equal(fetched[0].options.headers.Accept, "application/json");
+  assert.equal(fetched[0].options.cache, "no-store");
   assert.equal(fetched[0].options.headers.Authorization, undefined);
 });
 
 test("healthy public Studio restores original destination for every link automatically", async () => {
-  const { gate, links } = load(async () => available());
+  const visited = [];
+  const { gate, links } = load(async (url, options) => {
+    visited.push({ url: String(url), options });
+    return publicStudio(url);
+  });
   for (const key of Object.keys(links.STUDIO_LINKS)) {
     const response = await gate.onRequest({ request: req("?to=" + key) });
     assert.equal(response.status, 302, key);
@@ -85,6 +98,15 @@ test("healthy public Studio restores original destination for every link automat
   const withPurpose = await gate.onRequest({ request: req("?to=consultation&purpose=collection") });
   assert.equal(withPurpose.status, 302);
   assert.equal(withPurpose.headers.get("location"), studio + "/start?purpose=collection");
+  assert.equal(visited.length, (Object.keys(links.STUDIO_LINKS).length + 1) * 2);
+  for (let i = 0; i < visited.length; i += 2) {
+    assert.equal(visited[i].url, studio + "/api/service-status");
+    assert.equal(visited[i].options.headers.Accept, "application/json");
+    assert.equal(visited[i].options.cache, "no-store");
+    assert.equal(visited[i + 1].url, studio + "/start");
+    assert.equal(visited[i + 1].options.headers.Accept, "text/html");
+    assert.equal(visited[i + 1].options.cache, "no-store");
+  }
 });
 
 test("invalid destinations and unexpected parameters are not open redirects", async () => {
@@ -127,5 +149,55 @@ test("upstream errors, blocked or misleading responses never become customer-rea
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("location"), null);
     assert.match(await response.text(), /준비 중입니다/);
+  }
+});
+
+
+test("a publicly served 200 page never overrides the Studio's maintenance authority", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => {
+    visited.push(String(url));
+    return String(url).endsWith("/api/service-status") ? siteStatus(true) : available();
+  });
+  const response = await gate.onRequest({ request: req("?to=consultation&purpose=hero") });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.match(await response.text(), /온라인 설계 서비스는 준비 중입니다/);
+  assert.deepEqual(visited, [studio + "/api/service-status"]);
+});
+
+test("even after maintenance is disabled, a failed customer page remains blocked", async () => {
+  const visited = [];
+  const { gate } = load(async (url) => {
+    visited.push(String(url));
+    return String(url).endsWith("/api/service-status")
+      ? siteStatus(false)
+      : new Response("customer page unavailable", { status: 503 });
+  });
+  const response = await gate.onRequest({ request: req("?to=keyring") });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("location"), null);
+  assert.equal(visited.length, 2);
+  assert.match(await response.text(), /준비 중입니다/);
+});
+
+test("malformed or admin-scoped server status cannot authorize public traffic", async () => {
+  const statusCases = [
+    siteStatus(false, true),
+    siteStatus(false, false, "unknown"),
+    new Response("<html>OK</html>", { status: 200, headers: { "content-type": "text/html" } }),
+    new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+    new Response("{}", { status: 403, headers: { "content-type": "application/json" } }),
+  ];
+  for (const status of statusCases) {
+    let visited = 0;
+    const { gate } = load(async () => {
+      visited += 1;
+      return status.clone();
+    });
+    const response = await gate.onRequest({ request: req("?to=products") });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("location"), null);
+    assert.equal(visited, 1);
   }
 });

@@ -56,21 +56,42 @@ export async function onRequest({ request }: { request: Request }): Promise<Resp
   const destination = new URL(STUDIO_DESTINATIONS[to], STUDIO_ORIGIN);
   if (purpose !== null) destination.searchParams.set("purpose", purpose);
 
-  // The publicly accessible start path must respond successfully; owner-only
-  // preview permissions must never be interpreted as customer readiness.
+  // This is the Studio's existing public server-authority setting. An HTML
+  // 200 alone is not proof that ordering is open (e.g. a public shell or a
+  // stale page cache). No owner credentials or customer cookies are forwarded.
   try {
-    const readiness = await fetch(new URL("/start", STUDIO_ORIGIN), {
+    const statusResponse = await fetch(new URL("/api/service-status", STUDIO_ORIGIN), {
       method: "GET",
       redirect: "manual",
-      headers: { Accept: "text/html" },
+      headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(4000),
+      cache: "no-store",
     });
-    const contentType = readiness.headers.get("content-type") || "";
-    if (readiness.status === 200 && contentType.includes("text/html")) {
-      return new Response(null, { status: 302, headers: { ...headers, Location: destination.toString() } });
+    if (statusResponse.status === 200 &&
+        (statusResponse.headers.get("content-type") || "").includes("application/json")) {
+      const raw: unknown = await statusResponse.json();
+      if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+        const status = raw as Record<string, unknown>;
+        if (status.maintenance === false &&
+            status.isAdmin === false &&
+            Number.isSafeInteger(status.revision) &&
+            Number(status.revision) >= 0) {
+          const page = await fetch(new URL("/start", STUDIO_ORIGIN), {
+            method: "GET",
+            redirect: "manual",
+            headers: { Accept: "text/html" },
+            signal: AbortSignal.timeout(4000),
+            cache: "no-store",
+          });
+          if (page.status === 200 &&
+              (page.headers.get("content-type") || "").includes("text/html")) {
+            return new Response(null, { status: 302, headers: { ...headers, Location: destination.toString() } });
+          }
+        }
+      }
     }
   } catch {
-    // Upstream inaccessible or timed out; keep customers on the existing mall.
+    // Upstream inaccessible, malformed or timed out; retain the mall fallback.
   }
   return fallbackResponse();
 }
