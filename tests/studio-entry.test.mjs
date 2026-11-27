@@ -58,7 +58,9 @@ test("maintenance returns accessible existing-email fallback without creating a 
   assert.equal(res.status, 200);
   const text = await res.text();
   assert.match(text, /온라인 설계 서비스는 준비 중입니다/);
-  assert.match(text, /custombro365@gmail.com/);
+  assert.match(text, /<!--email_off-->custombro365@gmail.com<!--\/email_off-->/);
+  assert.match(text, /mailto:custombro365@gmail.com/);
+  assert.match(res.headers.get("cache-control"), /no-transform/);
   assert.match(text, /문의만으로 확정 견적이나 제작이 시작되지는 않습니다/);
   assert.doesNotMatch(text, /<form|<input|<script/);
   assert.equal(res.headers.get("set-cookie"), null);
@@ -78,7 +80,7 @@ test("healthy public Studio restores original destination for every link automat
     const url = new URL(response.headers.get("location"));
     const target = new URL(links.STUDIO_DESTINATIONS[key], studio);
     assert.equal(url.toString(), target.toString());
-    assert.equal(response.headers.get("cache-control"), "no-store, max-age=0");
+    assert.equal(response.headers.get("cache-control"), "no-store, max-age=0, no-transform");
   }
   const withPurpose = await gate.onRequest({ request: req("?to=consultation&purpose=collection") });
   assert.equal(withPurpose.status, 302);

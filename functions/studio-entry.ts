@@ -4,7 +4,7 @@ type DestinationKey = keyof typeof STUDIO_DESTINATIONS;
 const allowedPurposes = new Set(["hero", "collection", "exhibition", "reorder", "partner"]);
 
 const headers = {
-  "Cache-Control": "no-store, max-age=0",
+  "Cache-Control": "no-store, max-age=0, no-transform",
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
   "X-Robots-Tag": "noindex, nofollow",
@@ -30,8 +30,8 @@ a.primary{background:#294b3b;color:white}nav{display:flex;flex-wrap:wrap;gap:10p
 <h1>온라인 설계 서비스는 준비 중입니다.</h1>
 <p>현재 스튜디오는 고객 접속을 제한하고 있습니다. 설계·저장·견적·주문이 정상 이용 가능하다고 안내하지 않겠습니다.</p>
 <p>제작 관련 상담은 기존 커스텀브로 고객 이메일로 접수할 수 있습니다. 제품 크기, 수량, 필요한 인쇄면 및 희망 사용일을 함께 알려주세요. 문의만으로 확정 견적이나 제작이 시작되지는 않습니다.</p>
-<p class="email"><strong>custombro365@gmail.com</strong></p>
-<nav><a class="primary" href="mailto:custombro365@gmail.com?subject=Custombro%20acrylic%20production%20inquiry">이메일로 제작 문의</a><a href="/display#display-inquiry">제작 안내로 돌아가기</a><a href="/">공개몰 홈</a></nav>
+<p class="email"><strong><!--email_off-->custombro365@gmail.com<!--/email_off--></strong></p>
+<nav><!--email_off--><a class="primary" href="mailto:custombro365@gmail.com?subject=Custombro%20acrylic%20production%20inquiry">이메일로 제작 문의</a><!--/email_off--><a href="/display#display-inquiry">제작 안내로 돌아가기</a><a href="/">공개몰 홈</a></nav>
 </main></body></html>`;
   return new Response(html, { status: 200, headers: { ...headers, "Content-Type": "text/html; charset=utf-8" } });
 }
