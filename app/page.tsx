@@ -70,8 +70,8 @@ export default function HomePage() {
       <section className="cb-home-products">
         <div className="cb-section-heading">
           <div>
-            <p className="cb-kicker">OPEN NOW</p>
-            <h2>지금 바로 만들 수 있는 제품</h2>
+            <p className="cb-kicker">PRODUCT PREVIEW</p>
+            <h2>제품 형태와 제작 옵션 살펴보기</h2>
           </div>
           <a href={STUDIO_LINKS.products}>전체 상품 보기 →</a>
         </div>

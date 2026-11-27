@@ -237,7 +237,8 @@ test("landing and home describe reviewed specifications without promising an unv
   const home = page.load("app/page.tsx").default();
   const layout = page.load("app/layout.tsx");
   const text = textOf(page.tree) + textOf(home) + layout.metadata.description;
-  assert.doesNotMatch(text, /실시간 예상가|예상가 실시간|예상 제작비까지 바로|수량별 예상 공급가|부가세 별도 예상가/);
+  assert.doesNotMatch(text, /실시간 예상가|예상가 실시간|예상 제작비까지 바로|수량별 예상 공급가|부가세 별도 예상가|OPEN NOW|지금 바로 만들 수 있는 제품/);
+  assert.match(text, /제품 형태와 제작 옵션 살펴보기/);
   assert.match(text, /인쇄.*수량/);
   assert.match(text, /견적/);
 });
